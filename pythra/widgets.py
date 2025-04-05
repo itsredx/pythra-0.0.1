@@ -18,6 +18,34 @@ Colors = Colors()
 
 # --- Container Widget Refactored ---
 class Container(Widget):
+    """
+    A layout widget that serves as a styled box to contain a single child widget.
+
+    The `Container` widget allows styling and positioning of its child through various
+    layout and style properties like padding, margin, width, height, background color,
+    decoration, alignment, and more. It automatically generates and reuses shared CSS
+    class names for identical style combinations to avoid redundancy and optimize rendering.
+
+    Attributes:
+        child (Optional[Widget]): A single widget to be contained within the container.
+        padding: Internal spacing between the container edge and its child.
+        color: Background color of the container.
+        decoration: A BoxDecoration-like object providing additional styling such as border, border-radius, etc.
+        foregroundDecoration: Overlay styling that appears in front of the child.
+        width (int): Fixed width of the container in pixels.
+        height (int): Fixed height of the container in pixels.
+        constraints: A BoxConstraints-like object controlling layout bounds.
+        margin: External spacing outside the container’s border.
+        transform: A transform to apply (e.g., scale, rotate).
+        alignment: How the child should be positioned within the container.
+        clipBehavior: Whether and how to clip content that overflows the container.
+        css_class (str): A generated or reused CSS class based on the style key.
+        style_key (Tuple): A hashable representation of all visual style properties, used for class reuse.
+
+    Class Attributes:
+        shared_styles (Dict[Tuple, str]): Shared dictionary mapping unique style keys to generated CSS class names.
+    """
+
     shared_styles: Dict[Tuple, str] = {} # Stores unique style definitions (Tuple key -> class_name)
 
     def __init__(self,
@@ -133,6 +161,35 @@ class Container(Widget):
 
 # --- Text Widget Refactored ---
 class Text(Widget):
+    """
+    A Flutter-inspired Text widget for rendering styled text content within the framework.
+
+    This widget supports shared style deduplication via dynamically generated CSS classes
+    based on a unique style key (style, textAlign, overflow). This helps reduce repeated
+    inline styles and improves CSS performance and reusability.
+
+    Args:
+        data (str): The text content to render.
+        key (Optional[Key]): Optional unique key to identify this widget in the widget tree.
+        style (Optional[TextStyle]): TextStyle object representing font, size, weight, color, etc.
+        textAlign (Optional[str]): Horizontal text alignment (e.g., "left", "center", "right").
+        overflow (Optional[str]): Text overflow behavior, e.g., "ellipsis", "clip", or "visible".
+
+    Attributes:
+        shared_styles (Dict[Tuple, str]): Class-level cache of style keys to CSS class names.
+        style_key (Tuple): A hashable tuple of style-related properties.
+        css_class (str): A CSS class name assigned to this specific style combination.
+
+    Methods:
+        render_props() -> Dict[str, Any]:
+            Returns a dictionary of render-safe properties for widget diffing and updates.
+        
+        get_required_css_classes() -> Set[str]:
+            Returns a set containing the CSS class required for this widget.
+        
+        generate_css_rule(style_key: Tuple, css_class: str) -> str:
+            Static method to generate a valid CSS rule string based on a style key.
+    """
     shared_styles: Dict[Tuple, str] = {}
 
     def __init__(self, data: str, key: Optional[Key] = None, style=None, textAlign=None, overflow=None):
