@@ -91,18 +91,69 @@ class State:
     def openDrawer(self):
          # ... (implementation as before, check self.framework) ...
          if self.framework and self.framework.root_widget and hasattr(self.framework.root_widget, 'drawer') and self.framework.root_widget.drawer:
-             self.framework.root_widget.drawer.toggle(True)
+            #print("Requesting JS toggle for left drawer")
+            # Ask framework to execute the JS function
+            self.framework.trigger_drawer_toggle('left')
          else:
-             print("Cannot open drawer: Framework or root drawer not found.")
+            print("Cannot open drawer: Framework or root drawer not found.")
 
     def closeDrawer(self):
          # ... (implementation as before, check self.framework) ...
          if self.framework and self.framework.root_widget and hasattr(self.framework.root_widget, 'drawer') and self.framework.root_widget.drawer:
-             self.framework.root_widget.drawer.toggle(False)
+            #print("Requesting JS toggle for left drawer")
+            # Ask framework to execute the JS function
+            self.framework.trigger_drawer_toggle('right')
          else:
-             print("Cannot close drawer: Framework or root drawer not found.")
+            print("Cannot close drawer: Framework or root drawer not found.")
 
     # ... other direct manipulation methods ...
+    # In MyAppState (or similar)
+
+    def open_my_bottom_sheet(self):
+        if self.framework:
+            # Get the BottomSheet instance (assuming it's on the Scaffold)
+            bottom_sheet_widget = getattr(self.framework.root_widget, 'bottomSheet', None)
+            if bottom_sheet_widget:
+                html_id = self.framework.reconciler.rendered_elements_map.get(bottom_sheet_widget.get_unique_id(), {}).get('html_id')
+                props = bottom_sheet_widget.render_props() # Get props defined in BottomSheet widget
+                is_modal = props.get('isModal', True)
+                on_dismiss_name = props.get('onDismissedName', '')
+
+                if html_id:
+                    print(f"Framework requesting JS toggleBottomSheet for ID: {html_id}")
+                    self.framework.trigger_bottom_sheet_toggle(
+                        html_id,
+                        show=True,
+                        is_modal=is_modal,
+                        on_dismiss_name=on_dismiss_name
+                    )
+                else:
+                    print("Error: Could not find HTML ID for bottom sheet in reconciler map.")
+            else:
+                print("No bottom sheet widget found on root widget.")
+
+    def close_my_bottom_sheet(self):
+        # Similar logic to open, but with show=False
+        if self.framework:
+            bottom_sheet_widget = getattr(self.framework.root_widget, 'bottomSheet', None)
+            if bottom_sheet_widget:
+                html_id = self.framework.reconciler.rendered_elements_map.get(bottom_sheet_widget.get_unique_id(), {}).get('html_id')
+                props = bottom_sheet_widget.render_props()
+                is_modal = props.get('isModal', True)
+                # Dismiss name not needed when explicitly closing
+                if html_id:
+                    self.framework.trigger_bottom_sheet_toggle(
+                        html_id,
+                        show=False,
+                        is_modal=is_modal
+                    )
+                # ... error handling ...
+            # ... error handling ...
+
+    def handle_dismiss(self): # Example dismiss callback
+        print("Bottom Sheet was dismissed (e.g., by scrim click)")
+        # Optionally update state here if needed
+        # self.setState() # Only if dismiss changes app state that build() uses
 
     def openSnackBar(self):
          # ... (implementation using QTimer as before) ...

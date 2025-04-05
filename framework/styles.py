@@ -1,6 +1,7 @@
 #framework/styles.py
 from enum import Enum
 
+Colors = Colors()
 
 class EdgeInsets:
     """
