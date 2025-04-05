@@ -118,7 +118,7 @@ class Container(Widget):
         return {self.css_class}
 
     @staticmethod
-    def generate_css_rule(style_key: Tuple, css_class: str) -> str:
+    def generate_css_rScrollPhysicsule(style_key: Tuple, css_class: str) -> str:
         """
         Static method accessible by the Reconciler to generate the CSS rule string.
         """
