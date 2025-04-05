@@ -1,4 +1,4 @@
-# framework/state.py
+# pythra/state.py
 import weakref
 import time
 from PySide6.QtCore import QTimer

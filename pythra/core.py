@@ -1,4 +1,4 @@
-# framework/core.py
+# pythra/core.py
 import os
 import time
 import weakref

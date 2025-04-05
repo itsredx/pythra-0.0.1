@@ -4,12 +4,12 @@ import sys
 import time # For delays in test scheduling
 from PySide6.QtCore import QTimer # For countdown and scheduling test actions
 
-# Framework Imports (assuming they are in the 'framework' package)
-from framework.core import Framework
-from framework.state import StatefulWidget, State
-from framework.base import Key # Import Key
-from framework.widgets import Container, Text, Column # Only import compatible widgets
-from framework.styles import * # Use Colors if needed
+# Framework Imports (assuming they are in the 'pythra' package)
+from pythra.core import Framework
+from pythra.state import StatefulWidget, State
+from pythra.base import Key # Import Key
+from pythra.widgets import Container, Text, Column # Only import compatible widgets
+from pythra.styles import * # Use Colors if needed
 
 
 Colors = Colors()

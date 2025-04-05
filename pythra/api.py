@@ -1,4 +1,4 @@
-# framework/api.py
+# pythra/api.py
 # Import the Api class from webwidget
 from .window.webwidget import Api as WebWidgetApi
 

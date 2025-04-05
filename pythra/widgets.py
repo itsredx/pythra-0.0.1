@@ -1,4 +1,4 @@
-# framework/widgets.py
+# pythra/widgets.py
 import uuid
 import yaml
 import os

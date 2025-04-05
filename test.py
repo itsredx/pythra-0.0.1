@@ -1,6 +1,6 @@
-from framework.styles import *
-from framework.widgets import Text
-from framework.base import *
+from pythra.styles import *
+from pythra.widgets import Text
+from pythra.base import *
 
 class Column(Widget):
     shared_styles = {}  # Shared CSS for Column styles

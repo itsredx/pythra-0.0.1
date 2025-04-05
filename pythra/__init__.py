@@ -1,4 +1,4 @@
-# framework/__init__.py
+# pythra/__init__.py
 
 """
 PyThra Framework Initialization

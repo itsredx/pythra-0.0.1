@@ -1,9 +1,9 @@
 # main.py state v--01 test
 
-from framework.core import Framework
-from framework.widgets import *
-from framework.styles import *
-from framework.state import StatefulWidget, State
+from pythra.core import Framework
+from pythra.widgets import *
+from pythra.styles import *
+from pythra.state import StatefulWidget, State
 
 Colors = Colors()
 

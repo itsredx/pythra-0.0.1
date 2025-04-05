@@ -1,4 +1,4 @@
-#framework/styles.py
+#pythra/styles.py
 from enum import Enum
 
 Colors = Colors()
