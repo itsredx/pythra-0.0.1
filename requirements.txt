@@ -1,0 +1,15 @@
+eel
+pywebview
+uuid
+cython
+setuptools
+yaml
+importlib
+threading
+inspect
+weakref
+sys
+os
+time
+socketserver
+http

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PySide WebView</title>
+    <script type="text/javascript" src="qrc:///qtwebchannel/qwebchannel.js"></script>
+</head>
+<body style="border-radius: 20px; margin: 0px;">
+    <div style="border-radius: 20px; width: 100vw; height: 100vh; background-color: lightpink; box-sizing: border-box;padding: 16px;">
+    <button id="sendButton" onclick="handleClick('testCallback')">Send Message</button>
+    <button id="ChangeBG" onclick="handleClick('close')">Change BG</button>
+    </div>
+    <script>
+        function handleClick(callback_name) {
+        if(window.pywebview){
+            window.pywebview.on_pressed(callback_name).then(function(response) {
+                console.log(response);
+            }).catch(function(error) {
+                console.error(error);
+            });
+        }else {
+            console.error('pywebview is not defined');
+        }
+        }
+
+        new QWebChannel(qt.webChannelTransport, function(channel) {
+            window.pywebview = channel.objects.pywebview;
+        });
+
+        </script>
+</body>
+</html>

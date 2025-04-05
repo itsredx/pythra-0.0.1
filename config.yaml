@@ -1,0 +1,12 @@
+assets_dir: "assets"
+
+assets_server_port: 8004
+
+font_dir: "fonts"
+
+Debug: True
+
+
+dependencies: 
+  "yaml"
+

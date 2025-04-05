@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reconciliation Test</title>
+    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1743810041">
+    <style id="dynamic-styles">
+            .shared-container-2 {
+                position: relative; /* Or other positioning as needed */
+                box-sizing: border-box;
+                padding: 12px 12px 12px 12px;
+                
+                
+                
+                background-color: lightgrey;
+                
+                
+                
+            }
+            
+.shared-column-0 { display: flex; flex-direction: column; justify-content: flex-start; align-items: center; flex-grow: 1; flex-basis: 0; direction: ltr; }
+
+            .shared-container-1 {
+                position: relative; /* Or other positioning as needed */
+                box-sizing: border-box;
+                padding: 10px 10px 10px 10px;
+                
+                
+                
+                background-color: white;
+                
+                
+                
+            }
+            
+
+            .shared-text-1 {
+                margin: 0; /* Reset default paragraph margin */
+                padding: 0;
+                
+                
+                
+            }
+            
+
+            .shared-container-0 {
+                position: relative; /* Or other positioning as needed */
+                box-sizing: border-box;
+                
+                
+                
+                height: 10px;
+                
+                
+                
+                
+            }
+            
+
+            .shared-text-0 {
+                margin: 0; /* Reset default paragraph margin */
+                padding: 0;
+                
+                
+                
+            }
+            </style> 
+    
+              <script src="qwebchannel.js"></script>
+              <script>
+                   document.addEventListener('DOMContentLoaded', function() {
+                       if (typeof qt !== 'undefined' && qt.webChannelTransport) {
+                           new QWebChannel(qt.webChannelTransport, function (channel) {
+                               window.pywebview = channel.objects.pywebview;
+                               console.log("PyWebChannel connected: window.pywebview is ready.");
+                               // Optionally dispatch a custom event when ready
+                               // document.dispatchEvent(new Event('pywebviewready'));
+                           });
+                       } else {
+                           console.error("qt.webChannelTransport not found. QWebChannel cannot connect.");
+                           // Fallback or error handling
+                       }
+                   });
+
+                   // Basic handleClick for callbacks
+                   function handleClick(callbackName) {
+                       console.log("handleClick called for:", callbackName);
+                       if (window.pywebview) {
+                           // Use on_pressed_str for no-argument callbacks
+                           window.pywebview.on_pressed_str(callbackName, function(result) {
+                               console.log(`Callback ${callbackName} result: `, result);
+                           });
+                           // Add on_pressed if you need arguments later
+                       } else {
+                           console.error("window.pywebview not ready for callback:", callbackName);
+                       }
+                   }
+              </script>
+              <script>// web/main.js
+
+function handleClick(callback_name) {
+    if (window.pywebview) {
+        window.pywebview.on_pressed_str(callback_name).then(function(response) {
+            console.log(response);
+        }).catch(function(error) {
+            console.error(error);
+        });
+    } else {
+        console.error('pywebview is not defined');
+    }
+}
+
+function handleClickOnTap(callback_name, ...args) {
+    if (window.pywebview) {
+        console.log("index", args);
+        window.pywebview.on_pressed(callback_name, ...args).then(function(response) {
+            console.log(response);
+        }).catch(function(error) {
+            console.error(error);
+        });
+    } else {
+        console.error('pywebview is not defined');
+    }
+}
+
+new QWebChannel(qt.webChannelTransport, function(channel) {
+    window.pywebview = channel.objects.pywebview;
+});
+
+
+function updateLayout() {
+    {
+        // Find elements *inside* the function
+        const leftDrawer = document.getElementById('leftDrawer');
+        const rightDrawer = document.getElementById('rightDrawer');
+        const content = document.getElementById('content');
+        const appBar = document.querySelector('.app-bar'); // Assuming only one app-bar
+
+        // Basic null checks
+        if (!content || !appBar || !leftDrawer || !rightDrawer) {
+            {
+                console.warn("updateLayout: Could not find all required elements (content, appBar, leftDrawer, rightDrawer).");
+                return;
+            }
+        }
+
+        const leftOpen = leftDrawer.classList.contains('open');
+        const rightOpen = rightDrawer.classList.contains('open');
+
+        // Get widths dynamically from the elements themselves
+        const leftDrawerWidth = leftDrawer.offsetWidth;
+        const rightDrawerWidth = rightDrawer.offsetWidth;
+        console.log(`${leftDrawerWidth}`);
+
+        // Apply styles
+        content.style.marginLeft = leftOpen ? `${leftDrawerWidth}px` : '0px';
+        content.style.marginRight = rightOpen ? `${rightDrawerWidth}px` : '0px';
+        appBar.style.marginLeft = leftOpen ? `${leftDrawerWidth}px` : '0px';
+        appBar.style.marginRight = rightOpen ? `${rightDrawerWidth}px` : '0px';
+
+        console.log(`Layout Updated: LeftOpen = ${leftOpen}, RightOpen = ${rightOpen}, LeftWidth = ${leftDrawerWidth}, RightWidth = ${rightDrawerWidth}`); // Debug
+    }
+}
+
+function toggleDrawer(side) {
+    {
+        // Find elements *inside* the function
+        const leftDrawer = document.getElementById('leftDrawer');
+        const rightDrawer = document.getElementById('rightDrawer');
+        const bottomNav = document.getElementById('bottomNav'); // Expects ID to exist
+
+        // Check if drawers exist
+        if (!leftDrawer || !rightDrawer) {
+            {
+                console.error("toggleDrawer: Cannot find left or right drawer element!");
+                return;
+            }
+        }
+
+        const drawer = side === 'left' ? leftDrawer : rightDrawer;
+        const isOpen = drawer.classList.contains('open');
+
+        console.log(`Toggling drawer: ${side}, Currently Open: ${isOpen}`); // Debug
+
+        if (isOpen) {
+            {
+                drawer.classList.remove('open');
+            }
+        } else {
+            {
+                drawer.classList.add('open');
+                if (bottomNav) {
+                    {
+                        bottomNav.classList.add('hidden');
+                    }
+                } else {
+                    {
+                        console.warn("toggleDrawer: bottomNav element not found to hide.");
+                    }
+                }
+            }
+        }
+
+        // Call layout update AFTER changing class
+        updateLayout();
+
+        // Check final state to decide on bottomNav visibility
+        const leftIsOpenAfter = leftDrawer.classList.contains('open');
+        const rightIsOpenAfter = rightDrawer.classList.contains('open');
+
+        if (!leftIsOpenAfter && !rightIsOpenAfter) {
+            {
+                if (bottomNav) {
+                    {
+                        bottomNav.classList.remove('hidden');
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+/*
+function handleClick(callback_name) {
+    if (window.pywebview) {
+        window.pywebview.api.on_pressed(callback_name).then(function(response) {
+            console.log(response);
+        }).catch(function(error) {
+            console.error(error);
+        });
+    } else {
+        console.error('pywebview is not defined');
+    }
+}
+
+
+function openDrawer() {
+    var drawer = document.getElementById('drawer');
+    drawer.classList.remove('drawer-closed');
+    drawer.classList.add('drawer-open');
+}
+
+function closeDrawer() {
+    var drawer = document.getElementById('drawer');
+    drawer.classList.remove('drawer-open');
+    drawer.classList.add('drawer-closed');
+}
+
+*/</script> 
+         
+</head>
+<body>
+    <div id="root-container">
+        <div id="fw_id_1" class="shared-container-2"><div id="fw_id_2" class="shared-container-1"><div id="fw_id_3" class="shared-column-0"><p id="fw_id_4" class="shared-text-1">Countdown: 10</p><div id="fw_id_5" class="shared-container-0"></div><p id="fw_id_6" class="shared-text-0">Items:</p><p id="fw_id_7" class="shared-text-0">- Apple</p><p id="fw_id_8" class="shared-text-0">- Banana</p><p id="fw_id_9" class="shared-text-0">- Cherry</p><div id="fw_id_10" class="shared-container-0"></div><p id="fw_id_11" class="shared-text-0">Footer Text (No Key)</p></div></div></div> 
+    </div>
+</body>
+</html>

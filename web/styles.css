@@ -1,0 +1,6 @@
+
+         /* Base styles - fonts, resets, body */
+         body { margin: 0; font-family: sans-serif; background-color: #f0f0f0; }
+         * { box-sizing: border-box; }
+         /* Add other base rules */
+         
