@@ -1,9 +1,18 @@
+import os
+
+#os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--disable-gpu --disable-software-rasterizer"
+#os.environ["QT_QUICK_BACKEND"] = "software"
+#os.environ["QTWEBENGINE_DISABLE_GPU"] = "1"
+#os.environ["QTWEBENGINE_DISABLE_SANDBOX"] = "1"
+os.environ["QT_OPENGL"] = "software"
+
 from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout
 from PySide6.QtCore import Qt, QObject, Slot, QUrl
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineSettings
 from PySide6.QtWebChannel import QWebChannel
 import sys
+
 
 app = QApplication(sys.argv)
 

@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Optional, Union, Tuple, List, Dict, Any
 import re # For hex validation
 
-Colors = Colors()
+#Colors = Color()
 
 # framework/styles.py
 
@@ -124,7 +124,7 @@ class EdgeInsets:
     def to_tuple(self) -> Tuple[float, float, float, float]:
          """Returns a hashable tuple representation (left, top, right, bottom)."""
          return (self.left, self.top, self.right, self.bottom)
-         
+
 class Alignment:
     """
     Represents alignment for widgets using flexbox concepts (justify-content, align-items).
@@ -409,25 +409,7 @@ class BoxConstraints:
          """Returns a hashable tuple representation."""
          return (self.minWidth, self.maxWidth, self.minHeight, self.maxHeight)
 
-class Colors:
-    """
-    A class to handle color representations, including hexadecimal and RGBA formats.
-    """
-    
-    def __getattr__(self, name):
-        """
-        Retrieves the color name as an attribute of the class.
-        
-        Args:
-            name (str): The name of the color attribute.
-
-        Returns:
-            str: The color name.
-        """
-        return name
-
-
-class Colors:
+class Color:
     """
     Provides utility methods for defining CSS colors (hex, rgba)
     and defines common Material Design 3 color role constants (approximations).
@@ -436,7 +418,7 @@ class Colors:
         color = Colors.primary
         custom_hex = Colors.hex("#FF5733")
         transparent_red = Colors.rgba(255, 0, 0, 0.5)
-    """
+    """   
 
     # --- Material Design 3 Color Role Constants (Examples - Use your theme's values) ---
     # Primary Palette
@@ -556,7 +538,7 @@ class Colors:
 
     # --- Removed __getattr__ ---
     # def __getattr__(self, name): ...
-    
+Colors = Color()
 
 # Assume Offset helper exists or define it here/import
 # Example definition if needed:
@@ -644,138 +626,6 @@ class BoxShadow:
          return (self.color, self.offset, self.blurRadius, self.spreadRadius)
 
 
-# --- BoxDecoration Refactored ---
-class BoxDecoration:
-    """
-    Describes how to paint a box (background, border, shadow, shape).
-    Compatible with reconciliation.
-    """
-    def __init__(self,
-                 color: Optional[str] = None,
-                 # image: Optional[DecorationImage] = None, # TODO: If image backgrounds needed
-                 border: Optional[Union[str, BorderSide]] = None, # Allow BorderSide object or CSS string? Prefer object.
-                 borderRadius: Optional[Union[int, float, BorderRadius]] = None, # Allow number or BorderRadius obj
-                 boxShadow: Optional[Union[BoxShadow, List[BoxShadow]]] = None, # Allow single or list
-                 # gradient: Optional[Gradient] = None, # TODO: If gradients needed
-                 # shape: BoxShape = BoxShape.rectangle, # TODO: If specific shapes like circle needed
-                 # For simplicity, sticking to properties easily mappable to CSS:
-                 transform: Optional[str] = None, # Raw CSS transform string
-                 # Padding is usually handled by Padding widget, not BoxDecoration
-                 # padding: Optional[EdgeInsets] = None,
-                 ):
-        """
-        Initializes the BoxDecoration.
-
-        Args:
-            color: Background color.
-            border: Border definition (BorderSide object preferred).
-            borderRadius: Corner radius (number for all corners or BorderRadius object).
-            boxShadow: BoxShadow object or list of BoxShadow objects.
-            transform: CSS transform string (e.g., 'rotate(45deg)').
-        """
-        self.color = color
-        self.border = border
-        self.borderRadius = borderRadius
-        # Ensure boxShadow is always a list for consistent handling
-        if isinstance(boxShadow, BoxShadow):
-            self.boxShadow = [boxShadow]
-        elif isinstance(boxShadow, list):
-            self.boxShadow = boxShadow
-        else:
-            self.boxShadow = None
-        self.transform = transform
-        # self.padding = padding # Removed padding, use Padding widget
-
-    # --- Compatibility Methods ---
-
-    def to_css_dict(self) -> Dict[str, str]:
-        """Converts decoration properties to a dictionary of CSS styles."""
-        styles = {}
-        if self.color:
-            styles['background-color'] = self.color
-        if self.border:
-            if isinstance(self.border, BorderSide):
-                 # Assumes BorderSide has a way to generate full border property
-                 if hasattr(self.border, 'border_to_css_shorthand'):
-                      styles['border'] = self.border.border_to_css_shorthand() # Example method name
-                 else: # Fallback using individual properties if needed
-                      border_dict = self.border.to_css_dict() # Assume BorderSide returns dict
-                      styles.update(border_dict)
-            elif isinstance(self.border, str): # Allow raw CSS string (less safe)
-                 styles['border'] = self.border
-        if self.borderRadius:
-            if isinstance(self.borderRadius, BorderRadius):
-                # Assumes BorderRadius has a way to generate border-radius property
-                 styles['border-radius'] = self.borderRadius.to_css_value() # Example method name
-            elif isinstance(self.borderRadius, (int, float)):
-                 styles['border-radius'] = f"{self.borderRadius}px"
-            # Else handle string? For now, require object or number
-        if self.boxShadow:
-            # Combine multiple shadows with comma
-            shadow_strings = [shadow.to_css() for shadow in self.boxShadow if isinstance(shadow, BoxShadow)]
-            if shadow_strings:
-                 styles['box-shadow'] = ", ".join(shadow_strings)
-        if self.transform:
-            styles['transform'] = self.transform
-        # if self.padding and isinstance(self.padding, EdgeInsets): # Padding removed
-        #     styles['padding'] = self.padding.to_css()
-        return styles
-
-    def to_css(self) -> str:
-        """Converts decoration properties to a CSS string snippet."""
-        style_dict = self.to_css_dict()
-        return " ".join(f"{prop}: {value};" for prop, value in style_dict.items())
-
-    # --- Hashability & Equality ---
-    def __eq__(self, other):
-        if not isinstance(other, BoxDecoration):
-            return NotImplemented
-        # Compare all relevant attributes
-        # Note: Comparing lists requires order to be the same for equality
-        return (self.color == other.color and
-                self.border == other.border and
-                self.borderRadius == other.borderRadius and
-                self.boxShadow == other.boxShadow and # Relies on BoxShadow __eq__ and list order
-                self.transform == other.transform)
-
-    def __hash__(self):
-        # Hash a tuple of hashable representations of attributes
-        # Ensure nested objects (BorderSide, BorderRadius, BoxShadow) are hashable
-        # Convert list of shadows to tuple for hashing
-        shadow_tuple = tuple(self.boxShadow) if self.boxShadow else None
-        return hash((
-            self.color,
-            self.border, # Relies on BorderSide/str hash
-            self.borderRadius, # Relies on BorderRadius/number hash
-            shadow_tuple, # Relies on BoxShadow hash
-            self.transform
-        ))
-
-    # --- Representation ---
-    def __repr__(self):
-        props = []
-        if self.color: props.append(f"color='{self.color}'")
-        if self.border: props.append(f"border={self.border!r}")
-        if self.borderRadius: props.append(f"borderRadius={self.borderRadius!r}")
-        if self.boxShadow: props.append(f"boxShadow={self.boxShadow!r}")
-        if self.transform: props.append(f"transform='{self.transform}'")
-        return f"BoxDecoration({', '.join(props)})"
-
-    # --- Reconciler Prop Representation ---
-    def to_dict(self):
-         # Convert nested objects to dicts too if needed for serialization
-         border_repr = self.border.to_dict() if hasattr(self.border, 'to_dict') else self.border
-         radius_repr = self.borderRadius.to_dict() if hasattr(self.borderRadius, 'to_dict') else self.borderRadius
-         shadow_repr = [s.to_dict() for s in self.boxShadow if hasattr(s, 'to_dict')] if self.boxShadow else None
-
-         return {'color': self.color, 'border': border_repr,
-                 'borderRadius': radius_repr, 'boxShadow': shadow_repr,
-                 'transform': self.transform}
-
-    def to_tuple(self):
-         """Returns a hashable tuple representation."""
-         shadow_tuple = tuple(self.boxShadow) if self.boxShadow else None
-         return (self.color, self.border, self.borderRadius, shadow_tuple, self.transform)
 
 # --- ClipBehavior Refactored (Using Enum) ---
 class ClipBehavior(Enum):
@@ -1521,3 +1371,270 @@ class BoxFit:
     COVER = 'cover'
     FILL = 'fill'
     NONE = 'none'
+    
+# --- BoxDecoration Refactored ---
+class BoxDecoration:
+    """
+    Describes how to paint a box (background, border, shadow, shape).
+    Compatible with reconciliation.
+    """
+    def __init__(self,
+                 color: Optional[str] = None,
+                 # image: Optional[DecorationImage] = None, # TODO: If image backgrounds needed
+                 border: Optional[Union[str, BorderSide]] = None, # Allow BorderSide object or CSS string? Prefer object.
+                 borderRadius: Optional[Union[int, float, BorderRadius]] = None, # Allow number or BorderRadius obj
+                 boxShadow: Optional[Union[BoxShadow, List[BoxShadow]]] = None, # Allow single or list
+                 # gradient: Optional[Gradient] = None, # TODO: If gradients needed
+                 # shape: BoxShape = BoxShape.rectangle, # TODO: If specific shapes like circle needed
+                 # For simplicity, sticking to properties easily mappable to CSS:
+                 transform: Optional[str] = None, # Raw CSS transform string
+                 # Padding is usually handled by Padding widget, not BoxDecoration
+                 # padding: Optional[EdgeInsets] = None,
+                 ):
+        """
+        Initializes the BoxDecoration.
+
+        Args:
+            color: Background color.
+            border: Border definition (BorderSide object preferred).
+            borderRadius: Corner radius (number for all corners or BorderRadius object).
+            boxShadow: BoxShadow object or list of BoxShadow objects.
+            transform: CSS transform string (e.g., 'rotate(45deg)').
+        """
+        self.color = color
+        self.border = border
+        self.borderRadius = borderRadius
+        # Ensure boxShadow is always a list for consistent handling
+        if isinstance(boxShadow, BoxShadow):
+            self.boxShadow = [boxShadow]
+        elif isinstance(boxShadow, list):
+            self.boxShadow = boxShadow
+        else:
+            self.boxShadow = None
+        self.transform = transform
+        # self.padding = padding # Removed padding, use Padding widget
+
+    # --- Compatibility Methods ---
+
+    def to_css_dict(self) -> Dict[str, str]:
+        """Converts decoration properties to a dictionary of CSS styles."""
+        styles = {}
+        if self.color:
+            styles['background-color'] = self.color
+        if self.border:
+            if isinstance(self.border, BorderSide):
+                 # Assumes BorderSide has a way to generate full border property
+                 if hasattr(self.border, 'border_to_css_shorthand'):
+                      styles['border'] = self.border.border_to_css_shorthand() # Example method name
+                 else: # Fallback using individual properties if needed
+                      border_dict = self.border.to_css_dict() # Assume BorderSide returns dict
+                      styles.update(border_dict)
+            elif isinstance(self.border, str): # Allow raw CSS string (less safe)
+                 styles['border'] = self.border
+        if self.borderRadius:
+            if isinstance(self.borderRadius, BorderRadius):
+                # Assumes BorderRadius has a way to generate border-radius property
+                 styles['border-radius'] = self.borderRadius.to_css_value() # Example method name
+            elif isinstance(self.borderRadius, (int, float)):
+                 styles['border-radius'] = f"{self.borderRadius}px"
+            # Else handle string? For now, require object or number
+        if self.boxShadow:
+            # Combine multiple shadows with comma
+            shadow_strings = [shadow.to_css() for shadow in self.boxShadow if isinstance(shadow, BoxShadow)]
+            if shadow_strings:
+                 styles['box-shadow'] = ", ".join(shadow_strings)
+        if self.transform:
+            styles['transform'] = self.transform
+        # if self.padding and isinstance(self.padding, EdgeInsets): # Padding removed
+        #     styles['padding'] = self.padding.to_css()
+        return styles
+
+    def to_css(self) -> str:
+        """Converts decoration properties to a CSS string snippet."""
+        style_dict = self.to_css_dict()
+        return " ".join(f"{prop}: {value};" for prop, value in style_dict.items())
+
+    # --- Hashability & Equality ---
+    def __eq__(self, other):
+        if not isinstance(other, BoxDecoration):
+            return NotImplemented
+        # Compare all relevant attributes
+        # Note: Comparing lists requires order to be the same for equality
+        return (self.color == other.color and
+                self.border == other.border and
+                self.borderRadius == other.borderRadius and
+                self.boxShadow == other.boxShadow and # Relies on BoxShadow __eq__ and list order
+                self.transform == other.transform)
+
+    def __hash__(self):
+        # Hash a tuple of hashable representations of attributes
+        # Ensure nested objects (BorderSide, BorderRadius, BoxShadow) are hashable
+        # Convert list of shadows to tuple for hashing
+        shadow_tuple = tuple(self.boxShadow) if self.boxShadow else None
+        return hash((
+            self.color,
+            self.border, # Relies on BorderSide/str hash
+            self.borderRadius, # Relies on BorderRadius/number hash
+            shadow_tuple, # Relies on BoxShadow hash
+            self.transform
+        ))
+
+    # --- Representation ---
+    def __repr__(self):
+        props = []
+        if self.color: props.append(f"color='{self.color}'")
+        if self.border: props.append(f"border={self.border!r}")
+        if self.borderRadius: props.append(f"borderRadius={self.borderRadius!r}")
+        if self.boxShadow: props.append(f"boxShadow={self.boxShadow!r}")
+        if self.transform: props.append(f"transform='{self.transform}'")
+        return f"BoxDecoration({', '.join(props)})"
+
+    # --- Reconciler Prop Representation ---
+    def to_dict(self):
+         # Convert nested objects to dicts too if needed for serialization
+         border_repr = self.border.to_dict() if hasattr(self.border, 'to_dict') else self.border
+         radius_repr = self.borderRadius.to_dict() if hasattr(self.borderRadius, 'to_dict') else self.borderRadius
+         shadow_repr = [s.to_dict() for s in self.boxShadow if hasattr(s, 'to_dict')] if self.boxShadow else None
+
+         return {'color': self.color, 'border': border_repr,
+                 'borderRadius': radius_repr, 'boxShadow': shadow_repr,
+                 'transform': self.transform}
+
+    def to_tuple(self):
+         """Returns a hashable tuple representation."""
+         shadow_tuple = tuple(self.boxShadow) if self.boxShadow else None
+         return (self.color, self.border, self.borderRadius, shadow_tuple, self.transform)
+
+# --- BoxDecoration Refactored ---
+class BoxDecoration:
+    """
+    Describes how to paint a box (background, border, shadow, shape).
+    Compatible with reconciliation.
+    """
+    def __init__(self,
+                 color: Optional[str] = None,
+                 # image: Optional[DecorationImage] = None, # TODO: If image backgrounds needed
+                 border: Optional[Union[str, BorderSide]] = None, # Allow BorderSide object or CSS string? Prefer object.
+                 borderRadius: Optional[Union[int, float, BorderRadius]] = None, # Allow number or BorderRadius obj
+                 boxShadow: Optional[Union[BoxShadow, List[BoxShadow]]] = None, # Allow single or list
+                 # gradient: Optional[Gradient] = None, # TODO: If gradients needed
+                 # shape: BoxShape = BoxShape.rectangle, # TODO: If specific shapes like circle needed
+                 # For simplicity, sticking to properties easily mappable to CSS:
+                 transform: Optional[str] = None, # Raw CSS transform string
+                 # Padding is usually handled by Padding widget, not BoxDecoration
+                 # padding: Optional[EdgeInsets] = None,
+                 ):
+        """
+        Initializes the BoxDecoration.
+
+        Args:
+            color: Background color.
+            border: Border definition (BorderSide object preferred).
+            borderRadius: Corner radius (number for all corners or BorderRadius object).
+            boxShadow: BoxShadow object or list of BoxShadow objects.
+            transform: CSS transform string (e.g., 'rotate(45deg)').
+        """
+        self.color = color
+        self.border = border
+        self.borderRadius = borderRadius
+        # Ensure boxShadow is always a list for consistent handling
+        if isinstance(boxShadow, BoxShadow):
+            self.boxShadow = [boxShadow]
+        elif isinstance(boxShadow, list):
+            self.boxShadow = boxShadow
+        else:
+            self.boxShadow = None
+        self.transform = transform
+        # self.padding = padding # Removed padding, use Padding widget
+
+    # --- Compatibility Methods ---
+
+    def to_css_dict(self) -> Dict[str, str]:
+        """Converts decoration properties to a dictionary of CSS styles."""
+        styles = {}
+        if self.color:
+            styles['background-color'] = self.color
+        if self.border:
+            if isinstance(self.border, BorderSide):
+                 # Assumes BorderSide has a way to generate full border property
+                 if hasattr(self.border, 'border_to_css_shorthand'):
+                      styles['border'] = self.border.border_to_css_shorthand() # Example method name
+                 else: # Fallback using individual properties if needed
+                      border_dict = self.border.to_css_dict() # Assume BorderSide returns dict
+                      styles.update(border_dict)
+            elif isinstance(self.border, str): # Allow raw CSS string (less safe)
+                 styles['border'] = self.border
+        if self.borderRadius:
+            if isinstance(self.borderRadius, BorderRadius):
+                # Assumes BorderRadius has a way to generate border-radius property
+                 styles['border-radius'] = self.borderRadius.to_css_value() # Example method name
+            elif isinstance(self.borderRadius, (int, float)):
+                 styles['border-radius'] = f"{self.borderRadius}px"
+            # Else handle string? For now, require object or number
+        if self.boxShadow:
+            # Combine multiple shadows with comma
+            shadow_strings = [shadow.to_css() for shadow in self.boxShadow if isinstance(shadow, BoxShadow)]
+            if shadow_strings:
+                 styles['box-shadow'] = ", ".join(shadow_strings)
+        if self.transform:
+            styles['transform'] = self.transform
+        # if self.padding and isinstance(self.padding, EdgeInsets): # Padding removed
+        #     styles['padding'] = self.padding.to_css()
+        return styles
+
+    def to_css(self) -> str:
+        """Converts decoration properties to a CSS string snippet."""
+        style_dict = self.to_css_dict()
+        return " ".join(f"{prop}: {value};" for prop, value in style_dict.items())
+
+    # --- Hashability & Equality ---
+    def __eq__(self, other):
+        if not isinstance(other, BoxDecoration):
+            return NotImplemented
+        # Compare all relevant attributes
+        # Note: Comparing lists requires order to be the same for equality
+        return (self.color == other.color and
+                self.border == other.border and
+                self.borderRadius == other.borderRadius and
+                self.boxShadow == other.boxShadow and # Relies on BoxShadow __eq__ and list order
+                self.transform == other.transform)
+
+    def __hash__(self):
+        # Hash a tuple of hashable representations of attributes
+        # Ensure nested objects (BorderSide, BorderRadius, BoxShadow) are hashable
+        # Convert list of shadows to tuple for hashing
+        shadow_tuple = tuple(self.boxShadow) if self.boxShadow else None
+        return hash((
+            self.color,
+            self.border, # Relies on BorderSide/str hash
+            self.borderRadius, # Relies on BorderRadius/number hash
+            shadow_tuple, # Relies on BoxShadow hash
+            self.transform
+        ))
+
+    # --- Representation ---
+    def __repr__(self):
+        props = []
+        if self.color: props.append(f"color='{self.color}'")
+        if self.border: props.append(f"border={self.border!r}")
+        if self.borderRadius: props.append(f"borderRadius={self.borderRadius!r}")
+        if self.boxShadow: props.append(f"boxShadow={self.boxShadow!r}")
+        if self.transform: props.append(f"transform='{self.transform}'")
+        return f"BoxDecoration({', '.join(props)})"
+
+    # --- Reconciler Prop Representation ---
+    def to_dict(self):
+         # Convert nested objects to dicts too if needed for serialization
+         border_repr = self.border.to_dict() if hasattr(self.border, 'to_dict') else self.border
+         radius_repr = self.borderRadius.to_dict() if hasattr(self.borderRadius, 'to_dict') else self.borderRadius
+         shadow_repr = [s.to_dict() for s in self.boxShadow if hasattr(s, 'to_dict')] if self.boxShadow else None
+
+         return {'color': self.color, 'border': border_repr,
+                 'borderRadius': radius_repr, 'boxShadow': shadow_repr,
+                 'transform': self.transform}
+
+    def to_tuple(self):
+         """Returns a hashable tuple representation."""
+         shadow_tuple = tuple(self.boxShadow) if self.boxShadow else None
+         return (self.color, self.border, self.borderRadius, shadow_tuple, self.transform)
+

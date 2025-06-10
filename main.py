@@ -1,145 +1,276 @@
 # main.py
 
 import sys
-import time # For delays in test scheduling
-from PySide6.QtCore import QTimer # For countdown and scheduling test actions
+import random
+import string
+from PySide6.QtCore import QTimer, QCoreApplication # Use QCoreApplication for timer loop if needed
 
-# Framework Imports (assuming they are in the 'pythra' package)
-from pythra.core import Framework
-from pythra.state import StatefulWidget, State
-from pythra.base import Key # Import Key
-from pythra.widgets import Container, Text, Column # Only import compatible widgets
-from pythra.styles import * # Use Colors if needed
+# Framework Imports
+from pythra import (
+    Framework, State, StatefulWidget, Key, Widget, Icon,
+    Container, Column, Row, Text, ElevatedButton, Spacer, IconButton,
+    Colors, EdgeInsets, MainAxisAlignment, CrossAxisAlignment,
+    ButtonStyle, # Assuming ButtonStyle is compatible
+    ListTile, Divider, __all__ # Example usage
+)
 
-
-Colors = Colors()
-
-# --- Test State ---
+# --- Application State ---
 class TestAppState(State):
     def __init__(self):
         super().__init__()
-        self.countdown = 10
-        self.items = ["Apple", "Banana", "Cherry"]
-        self.timer = QTimer()
-        self.timer.timeout.connect(self._tick)
+        self.counter = 0
+        # Initial items with keys derived from their names
+        self.items = [
+            {'id': 'apple', 'name': 'Apple 🍎'},
+            {'id': 'banana', 'name': 'Banana 🍌'},
+            {'id': 'cherry', 'name': 'Cherry 🍒'},
+        ]
+        self.show_extra = False
+        self._timer = None
         print("TestAppState Initialized")
 
-    def start_countdown(self):
-        if not self.timer.isActive():
-             print(f"Starting countdown from {self.countdown}...")
-             self.timer.start(1000) # 1 second interval
+    # --- Actions ---
+    def increment(self):
+        print("ACTION: Increment Counter")
+        self.counter += 1
+        self.setState()
+    
+    def decrement(self):
+        print("ACTION: Decrement Counter")
+        self.counter -= 1
+        self.setState()
 
-    def _tick(self):
-        """Called by the QTimer every second."""
-        if self.countdown > 0:
-            self.countdown -= 1
-            print(f"Countdown Tick: {self.countdown}")
-            self.setState() # Trigger rebuild to update the text
+    def add_item(self):
+        print("ACTION: Add Item")
+        # Generate a pseudo-random ID/name
+        new_id = ''.join(random.choices(string.ascii_lowercase, k=4))
+        new_name = f"New {new_id.capitalize()} ✨"
+        self.items.append({'id': new_id, 'name': new_name})
+        self.setState()
+
+    def remove_last_item(self):
+        print("ACTION: Remove Last Item")
+        if self.items:
+            removed = self.items.pop()
+            print(f"  Removed: {removed['name']}")
+            self.setState()
         else:
-            print("Countdown Finished.")
-            self.timer.stop()
-            self.setState() # Update one last time to show 0
+             print("  No items to remove.")
 
-    def add_item(self, name):
-        print(f"ACTION: Adding item '{name}'")
-        if name not in self.items:
-            self.items.append(name)
+    def remove_first_item(self):
+        print("ACTION: Remove First Item")
+        if self.items:
+            removed = self.items.pop(0)
+            print(f"  Removed: {removed['name']}")
             self.setState()
+        else:
+             print("  No items to remove.")
 
-    def remove_item(self, name):
-        print(f"ACTION: Removing item '{name}'")
-        if name in self.items:
-            self.items.remove(name)
-            self.setState()
 
     def swap_items(self):
-        print("ACTION: Swapping first two items")
+        print("ACTION: Swap First Two Items")
         if len(self.items) >= 2:
             self.items[0], self.items[1] = self.items[1], self.items[0]
+            print(f"  Swapped. New order: {[item['name'] for item in self.items]}")
             self.setState()
+        else:
+             print("  Not enough items to swap.")
 
-    def build(self):
-        """Build the UI using only Container and Text."""
-        print(f"\n--- Building TestApp UI (Countdown: {self.countdown}, Items: {self.items}) ---")
+    def toggle_extra(self):
+        print("ACTION: Toggle Extra Text")
+        self.show_extra = not self.show_extra
+        self.setState()
 
-        # Create Text widgets for list items, using the item value as the Key
+    # --- Build Method ---
+    def build(self) -> Widget:
+        print(f"\n--- Building TestApp UI (Counter: {self.counter}, Items: {len(self.items)}, ShowExtra: {self.show_extra}) ---")
+
+        # Create list item widgets using keys
         list_item_widgets = []
-        for item_value in self.items:
+        for item in self.items:
             list_item_widgets.append(
-                Text(f"- {item_value}", key=Key(item_value)) # Keyed by value
+                # Use ListTile for better structure
+                ListTile(
+                    key=Key(item['id']), # Use stable ID for key
+                    # leading=Icon(icon_name='check', size=18), # Requires Icon widget
+                    title=Text(item['name']),
+                    # Add a button within the list item for removal
+                    trailing=IconButton( # Requires IconButton widget
+                         icon=Icon(icon_name='times-circle'), # Requires Icon widget
+                         onPressed=lambda item_id=item['id']: self.remove_item_by_id(item_id), # Pass ID
+                         onPressedName=f"remove_{item['id']}" # Unique name
+                    ),
+                    selected=(self.counter % len(self.items) == self.items.index(item)) if self.items else False # Example selection
+                )
             )
+            list_item_widgets.append(Divider(key=Key(f"div_{item['id']}"))) # Divider with key
 
-        # Basic Structure
         return Container(
-            key=Key("root_cont"),
-            color=Colors.lightgrey, # Use basic color name
-            padding=EdgeInsets.all(12), # Simple integer padding for now if EdgeInsets needs hash fix
-            child=Container( # Simulate a Column with nested Containers
-                 key=Key("inner_col"),
-                 color=Colors.white,
-                 padding=EdgeInsets.all(10),
-                 child=Column( # Container for text elements
-                      key=Key("text_group"),
-                      children=[
-                           Text(
-                                f"Countdown: {self.countdown}",
-                                key=Key("timer_text"), # Key for the countdown text
-                                style={'fontSize': 20, 'fontWeight': 'bold'} # Basic style dict
-                           ),
-                           Container(height=10), # Simulate spacing
-                           Text("Items:", key=Key("items_header")),
-                           # Include the list item widgets directly as children
-                           *list_item_widgets, # Unpack the list
-                           Container(height=10), # Simulate spacing
-                           # Example of a widget without a key
-                           Text("Footer Text (No Key)")
-                      ]
-                 )
+            key=Key("root_container"),
+            padding=EdgeInsets.all(10),
+            child=Column(
+                key=Key("main_column"),
+                crossAxisAlignment=CrossAxisAlignment.START, # Align items left
+                children=[
+                    # Counter Row
+                    Row(
+                        key=Key("counter_row"),
+                        mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
+                        children=[
+                            Text(f"Counter: {self.counter}", key=Key("counter_text")),
+                            ElevatedButton(
+                                key=Key("inc_button"),
+                                child=Text("Increment"),
+                                onPressed=self.increment
+                            ),
+                            ElevatedButton(
+                                key=Key("dec_button"),
+                                child=Text("Decrement"),
+                                onPressed=self.decrement
+                            )
+                        ]
+                    ),
+                    Container(height=10), # SizedBox equivalent
+
+                    # Item List Control Row
+                    Row(
+                         key=Key("control_row"),
+                         mainAxisAlignment=MainAxisAlignment.SPACE_AROUND,
+                         children=[
+                              ElevatedButton(
+                                   key=Key("add_button"),
+                                   child=Text("Add Item"),
+                                   onPressed=self.add_item,
+                              ),
+                              ElevatedButton(
+                                   key=Key("swap_button"),
+                                   child=Text("Swap First Two"),
+                                   onPressed=self.swap_items,
+                              ),
+                              ElevatedButton(
+                                   key=Key("remove_last_button"),
+                                   child=Text("Remove Last"),
+                                   onPressed=self.remove_last_item,
+                              ),
+                              ElevatedButton(
+                                   key=Key("remove_first_button"),
+                                   child=Text("Remove First"),
+                                   onPressed=self.remove_first_item,
+                              ),
+                         ]
+                    ),
+                    Container(height=10),
+
+                     # Conditional Widget Button
+                     ElevatedButton(
+                          key=Key("toggle_button"),
+                          child=Text("Toggle Extra Text"),
+                          onPressed=self.toggle_extra,
+                     ),
+                     Container(height=10),
+
+                     # Conditional Widget
+                     Container(
+                          key = Key("conditional_container"),
+                          # Render conditionally - reconciler should handle insert/remove
+                          child=Text("This text appears/disappears!", key=Key("extra_text")) if self.show_extra else None
+                     ),
+
+                    Container(height=20),
+                    Divider(key=Key("list_divider")),
+                    Text("Item List:", key=Key("list_header")),
+                    Container(height=10),
+
+                    # Column for the List Items
+                    Column(
+                         key=Key("item_list_column"),
+                         children=list_item_widgets if list_item_widgets else [Text("No items.", key=Key("empty_list"))]
+                    )
+                ]
             )
         )
 
-# --- Test StatefulWidget ---
+    # Helper to remove item by ID (used by ListTile trailing button)
+    def remove_item_by_id(self, item_id_to_remove):
+        print(f"ACTION: Removing item by ID '{item_id_to_remove}'")
+        original_length = len(self.items)
+        self.items = [item for item in self.items if item['id'] != item_id_to_remove]
+        if len(self.items) < original_length:
+            self.setState()
+        else:
+            print(f"  Item with ID '{item_id_to_remove}' not found.")
+
+
+# --- App Definition ---
 class TestApp(StatefulWidget):
-    def createState(self):
+    def createState(self) -> TestAppState:
         return TestAppState()
 
 # --- Application Runner ---
 class Application:
     def __init__(self):
+        print("Initializing Application...")
         self.framework = Framework()
-        self.my_app = TestApp(key=Key("my_test_app")) # Give the root a key
-        self.state_instance: Optional[TestAppState] = None # To hold the state instance
+        self.my_app = TestApp(key=Key("test_app_root")) # Give root a key
+        self.state_instance: Optional[TestAppState] = None
+
+    def schedule_tests(self):
+        """Schedules a sequence of state changes."""
+        if not self.state_instance:
+            print("Error: State instance not available for scheduling tests.")
+            return
+
+        print("\n>>> Scheduling Test Sequence <<<")
+        delays = [2000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000, 15000]
+        actions = [
+            lambda: print("\n--- Starting Tests ---"),
+            self.state_instance.increment,           # Test Update
+            self.state_instance.add_item,            # Test Insert
+            self.state_instance.increment,           # Test Update
+            self.state_instance.swap_items,          # Test Move (keyed)
+            self.state_instance.toggle_extra,        # Test Conditional Insert
+            self.state_instance.increment,           # Test Update
+            self.state_instance.remove_last_item,    # Test Remove
+            self.state_instance.toggle_extra,        # Test Conditional Remove
+            self.state_instance.remove_first_item,   # Test Remove (keyed)
+            self.state_instance.increment,           # Test Update
+            lambda: print("\n>>> Test Sequence Complete <<<")
+        ]
+
+        for delay, action in zip(delays, actions):
+            QTimer.singleShot(delay, action)
+
 
     def run(self):
-        # Set root must happen before run
         self.framework.set_root(self.my_app)
 
-        # Get the state instance AFTER framework is linked in StatefulWidget init
-        # This assumes get_state() is implemented on StatefulWidget
-        self.state_instance = self.my_app.get_state()
+        # Get state instance *after* set_root ensures framework is linked
+        if isinstance(self.my_app, StatefulWidget):
+             self.state_instance = self.my_app.get_state()
+        else:
+             print("Error: Root widget is not a StatefulWidget.")
+             return # Cannot schedule tests without state
 
-        # --- Schedule Test Actions using QTimer.singleShot ---
-        # These will run *after* the Qt event loop starts
-        QTimer.singleShot(2000, lambda: print("\n>>> Starting Test Sequence <<<"))
-        QTimer.singleShot(3000, lambda: self.state_instance.start_countdown())
-        # Let countdown run for a few seconds...
-        QTimer.singleShot(7000, lambda: self.state_instance.add_item("Date"))
-        QTimer.singleShot(9000, lambda: self.state_instance.swap_items())
-        QTimer.singleShot(11000, lambda: self.state_instance.remove_item("Apple"))
-        # Allow countdown to finish around 13s...
-        QTimer.singleShot(15000, lambda: print("\n>>> Test Sequence Complete <<<"))
-        # Optional: Close after tests
-        # QTimer.singleShot(17000, lambda: self.framework.window.close() if self.framework.window else None)
+        # Schedule tests *after* the event loop starts (run will block)
+        # Use QTimer with 0 delay to run after initial events are processed
+        QTimer.singleShot(0, self.schedule_tests)
 
-
-        # Start the framework and Qt event loop
-        self.framework.run(title='Reconciliation Test')
+        # Run the framework (starts Qt event loop via webwidget)
+        self.framework.run(title='Framework Reconciliation Test') # Blocks here
 
 # --- Main Execution ---
 if __name__ == "__main__":
-    # Ensure PySide6 Application exists (usually done by webwidget.start or similar)
-    # If webwidget.start doesn't create QApplication, uncomment the next line
-    # from PySide6.QtWidgets import QApplication; app_instance = QApplication.instance() or QApplication(sys.argv)
+    # PySide6/Qt Application instance is usually created by webwidget.py or framework.run
+    # If not, create it here:
+    # app_instance = QCoreApplication.instance()
+    # if app_instance is None:
+    #     print("Creating QApplication instance...")
+    #     from PySide6.QtWidgets import QApplication
+    #     app_instance = QApplication(sys.argv)
 
-    app = Application()
-    app.run()
+    print("Starting Application...")
+    app_runner = Application()
+    app_runner.run()
+
+    # No sys.exit(app_instance.exec()) needed here, framework.run handles it.
+    print("Application Finished.")

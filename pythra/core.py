@@ -1,6 +1,7 @@
 # pythra/core.py
 import os
 import time
+import json
 import weakref
 from typing import Optional, Set, List, Dict, TYPE_CHECKING
 
@@ -18,6 +19,7 @@ from .base import Widget, Key # Import refactored base Widget and Key
 from .state import State, StatefulWidget # Import refactored State/StatefulWidget
 from .reconciler import Reconciler, Patch # Import the Reconciler engine
 from .widgets import * # Import specific widgets for CSS generation lookup
+
 
 # Type Hinting for circular dependencies
 if TYPE_CHECKING:
@@ -107,24 +109,43 @@ class Framework:
 
         # 1. Build the initial widget tree fully
         initial_tree = self._build_widget_tree(self.root_widget)
-        #print("Root Widget: ", self.root_widget)
-        #print("initial_tree: ", initial_tree)
 
         # 2. Perform initial reconciliation (populates map, assigns HTML IDs)
-        # The patches aren't used for initial load, but map population is key.
-        self.reconciler.reconcile(initial_tree, parent_html_id='root-container')
+        #    *** CALL reconcile_subtree INSTEAD OF reconcile ***
+        print("  Performing initial reconciliation...")
+        self.reconciler.reconcile_subtree(
+            current_subtree_root=initial_tree,
+            parent_html_id='root-container', # Target the main container div in index.html
+            context_key='main' # Use the 'main' context for the root
+        )
+        print("  Initial reconciliation complete.")
+
 
         # 3. Generate initial HTML structure string using the populated map
-        initial_html_content = self._generate_initial_html(initial_tree)
+        #    Make sure _generate_initial_html uses the 'main' context map
+        print("  Generating initial HTML...")
+        initial_html_content = self._generate_initial_html(initial_tree, context_key='main') # Pass context key
+        print("  Initial HTML generated.")
+
 
         # 4. Generate initial CSS rules based on the tree
+        #    Make sure _collect... and _generate... use the reconciler's active_css_details
+        print("  Generating initial CSS...")
         active_classes = self._collect_active_css_classes(initial_tree)
-        initial_css_rules = self._generate_css_for_active_classes(active_classes)
+        initial_css_rules = self._generate_css_for_active_classes(active_classes) # Uses reconciler.active_css_details
+        print("  Initial CSS generated.")
 
-        # 5. Write initial HTML and *Base* CSS files
+
+        # 5. Write initial HTML and Base CSS files
+        #    Ensure _write_initial_files includes <div id="root-container"></div>
+        #    and <style id="dynamic-styles">...</style> with initial rules
+        print("  Writing initial files...")
         self._write_initial_files(title, initial_html_content, initial_css_rules)
+        print("  Initial files written.")
+
 
         # 6. Create the PySide Window
+        print("  Creating application window...")
         self.window = webwidget.create_window(
             title,
             self.id, # Use the consistent window ID
@@ -134,11 +155,12 @@ class Framework:
             height=height,
             frameless=frameless
         )
+        print("  Window created.")
+
 
         # 7. Start the application event loop
-        print("Framework: Starting application...")
+        print("Framework: Starting application event loop...")
         webwidget.start(window=self.window, debug=bool(config.get("Debug", False)))
-
 
     # --- State Update / Reconciliation ---
 
@@ -209,7 +231,43 @@ class Framework:
             # Return the (potentially mutated) original widget instance
             return widget
 
-    # --- Update Reconciliation Process ---
+    # framework/core.py (Inside Framework class)
+
+    # --- Add a new helper method for recursive registration ---
+    def _register_widget_callbacks(self, widget: Optional[Widget]):
+        """Recursively traverses the built tree and registers callbacks."""
+        if widget is None:
+            return
+
+        widget_type_name = type(widget).__name__
+
+        # Check for standard button onPressed
+        if widget_type_name in ['TextButton', 'ElevatedButton', 'IconButton', 'FloatingActionButton', 'SnackBarAction']:
+            callback_func = getattr(widget, 'onPressed', None)
+            callback_id = getattr(widget, 'onPressed_id', None) # Use the ID stored on the instance
+            if callback_func and callback_id:
+                # Check if already registered? Api could handle duplicates.
+                # print(f"  Framework registering: '{callback_id}'") # Debug
+                self.api.register_callback(callback_id, callback_func)
+            # elif callback_id: # Debugging if function is missing
+            #     print(f"Warning: Found callback ID '{callback_id}' but no function on widget {widget.key}")
+
+        # Check for ListTile onTap
+        elif widget_type_name == 'ListTile':
+            callback_func = getattr(widget, 'onTap', None)
+            callback_id = getattr(widget, 'onTapName', None)
+            if callback_func and callback_id:
+                # print(f"  Framework registering: '{callback_id}'") # Debug
+                self.api.register_callback(callback_id, callback_func)
+
+        # Add checks for other widgets with specific callback props (e.g., onSubmitted for Input)
+
+        # --- Recurse for Children ---
+        # Important: Traverse the *actual* children in the current tree structure
+        if hasattr(widget, 'get_children'):
+            for child in widget.get_children():
+                self._register_widget_callbacks(child)
+
     def _process_reconciliation(self):
         """Performs reconciliation for main tree AND active dialog."""
         self._reconciliation_requested = False
@@ -220,45 +278,58 @@ class Framework:
         print("\n--- Framework: Processing Reconciliation Cycle ---")
         start_time = time.time()
 
-        # 1. Build the main widget tree (from root_widget)
+        # 1. Build the main widget tree
         build_start = time.time()
         main_tree = self._build_widget_tree(self.root_widget)
         print(f"  Main Tree Build time: {time.time() - build_start:.4f}s")
 
-        # 2. Combine Trees? Or Reconcile Separately?
-        # Option A: Reconcile main tree, then overlay dialog patches (simpler DOM structure)
-        # Option B: Create a combined conceptual tree (harder)
+        # --- NEW: Step 1.5 - Register Callbacks ---
+        callback_reg_start = time.time()
+        print("  Registering callbacks...")
+        self._register_widget_callbacks(main_tree)
+        active_dialog = self._active_dialog_instance
+        if active_dialog:
+            self._register_widget_callbacks(active_dialog) # Register dialog callbacks too
+        print(f"  Callback Registration time: {time.time() - callback_reg_start:.4f}s")
+        # --- END NEW STEP ---
 
-        # --- Using Option A ---
+        # --- Using Option A: Reconcile Separately ---
 
         # 2a. Reconcile the main tree
         reconcile_main_start = time.time()
-        main_patches = self.reconciler.reconcile_subtree( # New method needed in Reconciler
+        # *** CORRECTED CALL: Removed previous_map_subset_key ***
+        main_patches = self.reconciler.reconcile_subtree(
              current_subtree_root=main_tree,
              parent_html_id='root-container', # Target main content area
-             previous_map_subset_key='main' # Identify subset of map
+             context_key='main' # Identify subset of map
         )
         print(f"  Main Tree Reconcile time: {time.time() - reconcile_main_start:.4f}s")
 
-        # 2b. Reconcile the active dialog (if any)
+        # 2b. Reconcile the active dialog (if any) or handle removal
         dialog_patches = []
+        dialog_context_key = 'dialog' # Example context key
         if self._active_dialog_instance:
              reconcile_dialog_start = time.time()
-             # Reconcile dialog, targeting document.body or a specific overlay div
+             # *** CORRECTED CALL: Removed previous_map_subset_key ***
              dialog_patches = self.reconciler.reconcile_subtree(
                   current_subtree_root=self._active_dialog_instance,
                   parent_html_id='body', # Append directly to body or overlay div
-                  previous_map_subset_key='dialog' # Use separate map key
+                  context_key=dialog_context_key # Use separate map key
              )
              print(f"  Dialog Reconcile time: {time.time() - reconcile_dialog_start:.4f}s")
-        # else: # Handle case where dialog was just hidden - need REMOVE patch
-        #    dialog_patches = self.reconciler.reconcile_subtree(None, 'body', 'dialog')
-
+        elif self.reconciler.get_map_for_context(dialog_context_key): # Check if dialog *was* previously rendered
+             print(f"  Reconciling Dialog context with None to generate removal patches.")
+             # *** CORRECTED CALL: Removed previous_map_subset_key ***
+             dialog_patches = self.reconciler.reconcile_subtree(
+                  current_subtree_root=None, # Signal removal
+                  parent_html_id='body',
+                  context_key=dialog_context_key
+             )
 
         # Combine patches
         all_patches = main_patches + dialog_patches
 
-        # 3. Generate CSS updates (scan both trees or combine?)
+        # 3. Generate CSS updates
         css_start = time.time()
         active_classes = set()
         active_classes.update(self._collect_active_css_classes(main_tree))
@@ -277,19 +348,16 @@ class Framework:
         combined_script = css_update_script + "\n" + dom_patch_script
         if combined_script.strip():
             js_start = time.time()
+            # *** CORRECTED len() call ***
             print(f"Framework: Executing {len(all_patches)} DOM patches and CSS update.")
-            # print("--- JS START ---") # Debug
-            # print(combined_script) # Debug
-            # print("--- JS END ---")   # Debug
             self.window.evaluate_js(self.id, combined_script)
             print(f"  JS Execution time: {time.time() - js_start:.4f}s")
         else:
             print("Framework: No DOM or CSS changes detected.")
 
         self._pending_state_updates.clear()
-        print("Pending updates: ", self._pending_state_updates)
+        # print("Pending updates cleared: ", self._pending_state_updates) # Debugging clear
         print(f"--- Framework: Reconciliation Complete (Total: {time.time() - start_time:.4f}s) ---")
-
 
     # --- CSS Generation / Collection Helpers ---
 
@@ -442,34 +510,45 @@ class Framework:
 
 
 
+    
+
     # --- DOM Patch Script Generation ---
     def _generate_dom_patch_script(self, patches: List[Patch]) -> str:
-        """Converts the list of patches from the reconciler into executable JavaScript."""
+        """Converts the list of Patch objects from the reconciler into executable JavaScript."""
         js_commands = []
-        for action, target_id, data in patches:
-            # Wrap each action in a try-catch for robustness
+        # --- CORRECTED LOOP ---
+        for patch_obj in patches: # Iterate through Patch objects
+            action = patch_obj.action
+            target_id = patch_obj.html_id
+            data = patch_obj.data
+            # --- END CORRECTION ---
+
             command_js = ""
             if action == 'INSERT':
-                parent_id = data.get('parent_html_id', 'root-container') # Default parent?
+                parent_id = data.get('parent_html_id', 'root-container')
                 html_stub = data.get('html', '<!-- Error: Missing HTML -->')
                 props = data.get('props', {}) # Get props for initial styling
-                layout_override = props.get('layout_override') # Check for layout overrides
+                # layout_override = props.get('layout_override') # Already in props if set by reconciler
 
-                # Use JSON dumps for robust escaping of HTML stub
                 escaped_html = json.dumps(html_stub)[1:-1]
+                before_id_js = f"document.getElementById('{data.get('before_id')}')" if data.get('before_id') else 'null'
 
-                # Generate JS for insertion
                 command_js = f'''
                     var parentEl = document.getElementById('{parent_id}');
                     if (parentEl) {{
-                        parentEl.insertAdjacentHTML('beforeend', `{escaped_html}`);
-                        var insertedEl = document.getElementById('{target_id}'); // Get reference to inserted element
+                        var tempContainer = document.createElement('div');
+                        tempContainer.innerHTML = `{escaped_html}`;
+                        var insertedEl = tempContainer.firstChild; 
+
                         if (insertedEl) {{
+                            var beforeNode = {before_id_js};
+                            parentEl.insertBefore(insertedEl, beforeNode);
                             // Apply initial props (including layout overrides) after insertion
+                            // Pass target_id (which is insertedEl.id) to _generate_prop_update_js
                             {self._generate_prop_update_js(target_id, props, is_insert=True)}
-                            // console.log('INSERTED {target_id} into {parent_id}');
+                            // console.log('INSERTED {target_id} into {parent_id}' + ({f"' before {data.get('before_id')}'" if data.get('before_id') else "''"}));
                         }} else {{
-                             console.warn('Could not find element {target_id} immediately after insert.');
+                             console.warn('Could not parse HTML stub for {target_id} or stub was empty. Stub: `{escaped_html}`');
                         }}
                     }} else {{
                         console.warn('Parent element {parent_id} not found for INSERT of {target_id}');
@@ -486,13 +565,11 @@ class Framework:
                     }}
                 '''
             elif action == 'UPDATE':
-                props = data.get('props', {}) # Changed props
-                layout_override = data.get('layout_override') # Layout context (might be None)
+                props = data.get('props', {}) # Changed props (includes layout_override if any)
+                # layout_override = data.get('layout_override') # Already included in props by reconciler
 
-                # Get JS for standard prop changes AND layout overrides
-                prop_update_js = self._generate_prop_update_js(target_id, props, layout_override=layout_override)
-
-                if prop_update_js: # Only add block if there are updates
+                prop_update_js = self._generate_prop_update_js(target_id, props) # No need to pass layout_override separately
+                if prop_update_js:
                     command_js = f'''
                         var elToUpdate = document.getElementById('{target_id}');
                         if (elToUpdate) {{
@@ -504,25 +581,27 @@ class Framework:
                     '''
             elif action == 'MOVE':
                 parent_id = data.get('parent_html_id')
-                before_id = data.get('before_id') # ID of node to insert before (or null for end)
+                before_id = data.get('before_id')
+                before_id_js = f"document.getElementById('{before_id}')" if before_id else 'null'
                 command_js = f'''
                     var elToMove = document.getElementById('{target_id}');
                     var parentEl = document.getElementById('{parent_id}');
                     if (elToMove && parentEl) {{
-                        var beforeNode = {f"document.getElementById('{before_id}')" if before_id else 'null'};
+                        var beforeNode = {before_id_js};
                         parentEl.insertBefore(elToMove, beforeNode);
                         // console.log('MOVED {target_id} into {parent_id}' + ({f"' before {before_id}'" if before_id else "' to end'"}));
                     }} else {{
-                        console.warn('Element or parent not found for MOVE: el={target_id}, parent={parent_id}');
+                        console.warn('Element or parent not found for MOVE: el={target_id}, parent={parent_id}, before_id={before_id}');
                     }}
                 '''
 
             if command_js:
-                # Add individual try-catch for each operation
-                js_commands.append(f"try {{\n{command_js}\n}} catch (e) {{ console.error('Error applying patch {action} {target_id}:', e); }}")
+                js_commands.append(f"try {{\n{command_js}\n}} catch (e) {{ console.error('Error applying patch {action} {target_id}:', e, e.stack); }}")
 
         return "\n".join(js_commands)
 
+    # Ensure _generate_prop_update_js correctly handles 'layout_override' if it's nested in props
+    # ... (rest of the Framework class) ...
     def _generate_prop_update_js(self,
                                  target_id: str,
                                  props: Dict,
@@ -737,49 +816,134 @@ class Framework:
          except IOError as e:
               print(f"Error writing initial files: {e}")
 
-    def _generate_initial_html(self, widget_node: Optional[Widget]) -> str:
-        """Recursively generates the full HTML string for the initial load."""
-        print("Widget node: ", widget_node)
-        if not widget_node: return "<p>Widget Node is None</p>"
+    # --- Need to ensure _generate_initial_html uses the context map ---
+    def _generate_initial_html(self, widget_node: Optional[Widget], context_key: str = 'main') -> str:
+        """Recursively generates the full HTML string for the initial load for a specific context."""
+        if not widget_node: return ""
 
-        # Get assigned HTML ID from reconciler map
+        # Get assigned HTML ID from the correct reconciler context map
         unique_id = widget_node.get_unique_id()
-        node_data = self.reconciler.rendered_elements_map.get(unique_id)
+        # *** Use get_map_for_context ***
+        context_map = self.reconciler.get_map_for_context(context_key)
+        node_data = context_map.get(unique_id)
+
         if not node_data:
-             print(f"Warning: No data found in reconciler map for initial HTML generation of {widget_node}")
-             return "<!-- Error: Widget data not found -->"
+             # This *shouldn't* happen if reconcile_subtree was called first for this context
+             print(f"CRITICAL WARNING: No data found in reconciler map ('{context_key}') for initial HTML generation of {widget_node}")
+             # Maybe try generating a temporary ID? Or raise error?
+             # For now, return error comment
+             return f"<!-- Error: Widget data not found for key {unique_id} in context {context_key} -->"
+
         html_id = node_data['html_id']
         props = node_data['props']
-        css_class = props.get('css_class', '') # Get class from props
 
-        # Determine tag (Simplified - needs improvement)
-        tag = "div"
-        content = ""
-        if isinstance(widget_node, Text):
-            tag = "p"
-            content = props.get('data', '')
-        # Add more elif for other widget types...
+        # --- Handle Layout Widget Passthrough ---
+        # If it's a layout widget that doesn't render itself, render its child
+        layout_props_override = None
+        actual_widget_to_render = widget_node
+        widget_type_name = type(widget_node).__name__
+        layout_widget_types = [ # Keep list consistent with reconciler
+             'Padding', 'Align', 'Center', 'Expanded', 'Spacer',
+             'Positioned', 'AspectRatio', 'FittedBox', 'FractionallySizedBox'
+        ]
+        if widget_type_name in layout_widget_types:
+             if widget_type_name == 'Placeholder' and props.get('has_child'):
+                  actual_widget_to_render = widget_node.get_children()[0] if widget_node.get_children() else None
+                  # Get data for the actual child from the map
+                  if actual_widget_to_render:
+                       child_unique_id = actual_widget_to_render.get_unique_id()
+                       node_data = context_map.get(child_unique_id)
+                       if not node_data: return f"<!-- Error: Placeholder child data not found ({child_unique_id}) -->"
+                       html_id = node_data['html_id']
+                       props = node_data['props']
+                  else:
+                       return "<!-- Placeholder has child flag but no child found -->"
 
-        # Generate children HTML recursively
-        children_html = "".join(self._generate_initial_html(child) for child in widget_node.get_children())
+             elif widget_type_name != 'Placeholder':
+                  layout_props_override = props # Store layout props
+                  actual_widget_to_render = widget_node.get_children()[0] if widget_node.get_children() else None
+                  # Get data for the actual child
+                  if actual_widget_to_render:
+                       child_unique_id = actual_widget_to_render.get_unique_id()
+                       node_data = context_map.get(child_unique_id)
+                       if not node_data: return f"<!-- Error: Layout child data not found ({child_unique_id}) -->"
+                       html_id = node_data['html_id']
+                       props = node_data['props'] # Use child's props
+                  else:
+                       return "" # Layout widget with no child renders nothing
 
-        # Add onclick for callbacks if widget has onPressed prop
-        onclick_attr = ""
-        if 'onPressed' in props and props['onPressed']:
-             callback_name = props['onPressed'] # Assuming prop stores the callback name string
-             # Escape callback name for JS string literal
-             import json
-             escaped_cb_name = json.dumps(callback_name)[1:-1]
-             onclick_attr = f' onclick="handleClick(\'{escaped_cb_name}\')"'
+        # Check if we ended up with nothing to render
+        if not actual_widget_to_render: return ""
+
+        # --- Generate HTML for the actual_widget_to_render ---
+        # Use the _generate_html_stub method (ensure it's accessible or copy logic)
+        # Pass the potentially overridden props (child props + layout override)
+        final_props = props.copy()
+        if layout_props_override:
+             final_props['layout_override'] = layout_props_override # Add override info
+
+        # Generate the element's opening tag with initial styles/attributes
+        # Stub generator needs props to create correct initial tag
+        element_html = self.reconciler._generate_html_stub(actual_widget_to_render, html_id, final_props)
+
+        # --- Recursively generate children HTML ---
+        # Get children of the *actual* widget being rendered
+        children_html = "".join(self._generate_initial_html(child, context_key) for child in actual_widget_to_render.get_children())
+
+        # --- Combine ---
+        # If the stub included content already (like Text), adjust logic
+        # For container-like widgets, inject children HTML
+        if '>' in element_html and '</' in element_html: # Basic check for container tag
+             parts = element_html.split('>', 1)
+             if len(parts) == 2:
+                 opening_tag = parts[0] + '>'
+                 closing_tag = parts[1].split('<',1)[-1] # Get closing tag part
+                 # Check if closing tag matches opening tag logic is complex, assume simple cases
+                 tag_name = opening_tag.split(' ')[0].lstrip('<')
+                 expected_closing = f"</{tag_name}>"
+                 if element_html.endswith(expected_closing):
+                     return f"{opening_tag}{children_html}{expected_closing}"
+
+        # Fallback for self-closing tags or if split fails
+        return element_html + children_html # Children appended after self-closing or if only opening tag generated
 
 
-        # Basic HTML structure
-        # TODO: Add inline styles or other attributes based on props if necessary
-        import html
-        escaped_content = html.escape(str(content)) if content else ''
+    # --- Also ensure _write_initial_files uses initial_css_rules ---
+    def _write_initial_files(self, title, html_content: str, initial_css_rules: str):
+         """Writes the initial HTML and CSS needed to start the app."""
+         base_css = """
+         /* Base styles */
+         body { margin: 0; font-family: sans-serif; background-color: #f0f0f0; overflow: hidden;}
+         * { box-sizing: border-box; }
+         #root-container { height: 100vh; width: 100vw; overflow: hidden; position: relative;}
+         """
+         try:
+              # Write base CSS
+              with open(self.css_file_path, 'w') as c: c.write(base_css)
+              print(f"Base styles written to {self.css_file_path}")
 
-        return f'<{tag} id="{html_id}" class="{css_class}"{onclick_attr}>{escaped_content}{children_html}</{tag}>'
-
+              # Write HTML file
+              with open(self.html_file_path, 'w') as f:
+                    f.write(f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{title}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v={int(time.time())}">
+    <style id="dynamic-styles">{initial_css_rules}</style>
+    {self._get_js_includes()}
+</head>
+<body>
+    <div id="root-container">
+        {html_content}
+    </div>
+</body>
+</html>""")
+              print(f"Initial HTML written to {self.html_file_path}")
+              print(f"Initial HTML: {html_content}")
+         except IOError as e:
+              print(f"Error writing initial files: {e}")
     def _get_js_includes(self):
          """Generates standard script includes for QWebChannel etc."""
          # Make sure files exist or paths are correct

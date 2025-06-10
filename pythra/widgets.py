@@ -7,12 +7,12 @@ from .base import *
 from .styles import *
 from .config import Config
 import weakref
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union,Callable
 
 config = Config()
 assets_dir = config.get('assets_dir', 'assets')
 port = config.get('assets_server_port')
-Colors = Colors()
+#Colors = Colors()
 
 
 
@@ -316,62 +316,121 @@ class TextButton(Widget):
         """Return the set of CSS class names needed."""
         return {self.css_class}
 
+    
+
     @staticmethod
     def generate_css_rule(style_key: Tuple, css_class: str) -> str:
         """Static method callable by the Reconciler to generate the CSS rule."""
         try:
-            # Unpack the style key (contains the hashable representation of ButtonStyle)
-            style_repr, = style_key
-            # How to get back the ButtonStyle object or its properties from style_repr?
-            # This is tricky. We need the actual style properties.
-            # --- Option A: Assume style_key IS the ButtonStyle (requires ButtonStyle to be hashable) ---
-            # style_obj = style_repr # If style_key = (self.style,) and ButtonStyle is hashable
+            # --- Unpack the style_key tuple ---
+            # Assumes order from ButtonStyle.to_tuple() or make_hashable(ButtonStyle)
+            # This MUST match the structure created in __init__
+            try:
+                # Option A: style_key = (hashable_button_style_repr,)
+                style_repr = style_key[0] # Get the representation
 
-            # --- Option B: Store properties in style_key (more robust if ButtonStyle isn't easily hashable) ---
-            # Example: style_key = (bgcolor, fgcolor, padding_tuple, ...)
-            # Then unpack here: bgcolor, fgcolor, padding_tuple = style_key
-            # style_obj = ButtonStyle(backgroundColor=bgcolor, ...) # Recreate if needed
+                # Option B: style_key = (prop1, prop2, ...) - unpack directly
+                # (textColor, textStyle_tuple, padding_tuple, ...) = style_key # Example unpack
 
-            # Let's proceed assuming Option A for simplicity, ButtonStyle needs __hash__/__eq__
-            style_obj = style_repr
+            except (ValueError, TypeError, IndexError) as unpack_error:
+                 print(f"Warning: Could not unpack style_key for TextButton {css_class}. Using defaults. Key: {style_key}. Error: {unpack_error}")
+                 style_repr = None # Will trigger default ButtonStyle() below
+
+            # --- Reconstruct/Access ButtonStyle ---
+            # This remains the most complex part depending on style_key structure
+            style_obj = None
+            try:
+                 if isinstance(style_repr, tuple): # Check if it's a tuple of props
+                      # Attempt reconstruction (requires knowing tuple order)
+                      # style_obj = ButtonStyle(*style_repr) # Example if tuple matches init
+                      pass # Skip reconstruction for now, access values if possible or use defaults
+                 elif isinstance(style_repr, ButtonStyle): # If key stored the object directly
+                      style_obj = style_repr
+            except Exception as recon_error:
+                 print(f"Warning: Error reconstructing ButtonStyle for {css_class} from key. Error: {recon_error}")
+
             if not isinstance(style_obj, ButtonStyle):
-                # This might happen if make_hashable returned something else
-                print(f"Warning: Cannot generate CSS rule for TextButton {css_class}, style_key[0] is not ButtonStyle: {style_repr}")
-                # Attempt to create a default style or return empty rule
-                style_obj = ButtonStyle() # Default
+                 # print(f"  Using default fallback style for TextButton {css_class}")
+                 style_obj = ButtonStyle() # Default (or TextButton specific defaults)
 
-            style_str = style_obj.to_css() if style_obj else ""
+            # Use getattr for safe access
+            # M3 Text Buttons often use Primary color for text
+            fg_color = getattr(style_obj, 'foregroundColor', Colors.primary or '#6750A4')
+            bg_color = getattr(style_obj, 'backgroundColor', 'transparent') # Usually transparent
+            padding_obj = getattr(style_obj, 'padding', EdgeInsets.symmetric(horizontal=12)) # M3 has specific padding
+            text_style_obj = getattr(style_obj, 'textStyle', None) # Get text style if provided
+            shape_obj = getattr(style_obj, 'shape', BorderRadius.all(20)) # M3 full rounded shape often
+            min_height = getattr(style_obj, 'minimumSize', (None, 40))[1] or 40 # M3 min height 40px
 
-            # Basic TextButton styles often reset browser defaults
-            return f"""
-            .{css_class} {{
-                display: inline-flex; /* Align icon/text */
-                align-items: center;
-                justify-content: center;
-                padding: 8px 16px; /* Default padding? */
-                margin: 4px;
-                border: none; /* Text buttons often have no border */
-                background-color: transparent; /* Usually transparent */
-                color: inherit; /* Inherit text color */
-                cursor: pointer;
-                text-align: center;
-                text-decoration: none;
-                outline: none;
-                -webkit-appearance: none; /* Remove default browser styles */
-                -moz-appearance: none;
-                appearance: none;
-                {style_str} /* Apply styles from ButtonStyle */
-            }}
-            /* Add :hover, :active styles if possible via ButtonStyle or here */
-            .{css_class}:hover {{
-                 /* Example: background-color: rgba(0,0,0,0.05); */
-                 /* TODO: Get hover styles from ButtonStyle if defined */
-            }}
-            """
+            # --- Base TextButton Styles (M3 Inspired) ---
+            base_styles_dict = {
+                'display': 'inline-flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'padding': padding_obj.to_css_value() if isinstance(padding_obj, EdgeInsets) else '4px 12px', # Use style padding or M3-like default
+                'margin': '4px', # Default margin between adjacent buttons
+                'border': 'none', # Text buttons have no border
+                'border-radius': shape_obj.to_css_value() if isinstance(shape_obj, BorderRadius) else f"{shape_obj or 20}px", # Use shape or M3 default
+                'background-color': bg_color or 'transparent',
+                'color': fg_color, # Use style foreground or M3 primary
+                'cursor': 'pointer',
+                'text-align': 'center',
+                'text-decoration': 'none',
+                'outline': 'none',
+                'min-height': f"{min_height}px", # M3 min target size
+                'min-width': '48px', # Ensure min width for touch target even if padding is small
+                'box-sizing': 'border-box',
+                'position': 'relative', # For state layer/ripple
+                'overflow': 'hidden', # Clip state layer/ripple
+                'transition': 'background-color 0.15s linear', # For hover/active state
+                '-webkit-appearance': 'none',
+                '-moz-appearance': 'none',
+                'appearance': 'none',
+            }
+
+            # --- Assemble Main Rule ---
+            main_rule = f".{css_class} {{ {' '.join(f'{k}: {v};' for k, v in base_styles_dict.items())} }}"
+
+            # --- State Styles ---
+            # M3 uses semi-transparent state layers matching the text color
+            hover_bg_color = Colors.rgba(0,0,0,0.08) # Fallback dark overlay
+            active_bg_color = Colors.rgba(0,0,0,0.12) # Fallback dark overlay
+            try: # Try to make overlay from foreground color
+                 # Basic check: Assume hex format #RRGGBB
+                 if fg_color and fg_color.startswith('#') and len(fg_color) == 7:
+                     r, g, b = int(fg_color[1:3], 16), int(fg_color[3:5], 16), int(fg_color[5:7], 16)
+                     hover_bg_color = Colors.rgba(r, g, b, 0.08) # 8% opacity overlay
+                     active_bg_color = Colors.rgba(r, g, b, 0.12) # 12% opacity overlay
+            except: pass # Ignore errors, use fallback
+
+            hover_rule = f".{css_class}:hover {{ background-color: {hover_bg_color}; }}"
+            active_rule = f".{css_class}:active {{ background-color: {active_bg_color}; }}"
+
+            # Disabled state
+            disabled_color = Colors.rgba(0,0,0,0.38) # M3 Disabled content approx
+            disabled_rule = f".{css_class}.disabled {{ color: {disabled_color}; background-color: transparent; cursor: default; pointer-events: none; }}"
+
+            # Apply TextStyle to children (e.g., direct Text widget child)
+            text_style_rule = ""
+            if isinstance(text_style_obj, TextStyle):
+                 # Apply base text style - M3 uses Button label style
+                 base_text_styles = "font-weight: 500; font-size: 14px; letter-spacing: 0.1px; line-height: 20px;"
+                 # Merge with specific TextStyle passed in
+                 specific_text_styles = text_style_obj.to_css()
+                 text_style_rule = f".{css_class} > * {{ {base_text_styles} {specific_text_styles} }}"
+            else:
+                  # Apply default M3 Button label style if no TextStyle provided
+                  default_text_styles = "font-weight: 500; font-size: 14px; letter-spacing: 0.1px; line-height: 20px;"
+                  text_style_rule = f".{css_class} > * {{ {default_text_styles} }}"
+
+
+            return "\n".join([main_rule, text_style_rule, hover_rule, active_rule, disabled_rule])
+
         except Exception as e:
+            import traceback
             print(f"Error generating CSS for TextButton {css_class} with key {style_key}: {e}")
+            traceback.print_exc()
             return f"/* Error generating rule for .{css_class} */"
-
 
 # --- ElevatedButton Refactored ---
 class ElevatedButton(Widget):
@@ -430,67 +489,160 @@ class ElevatedButton(Widget):
         """Return the set of CSS class names needed."""
         return {self.css_class}
 
+    # framework/widgets.py (Inside ElevatedButton class)
+
     @staticmethod
     def generate_css_rule(style_key: Tuple, css_class: str) -> str:
         """Static method callable by the Reconciler to generate the CSS rule."""
         try:
-            # --- Reconstruct ButtonStyle or get properties from style_key ---
-            # This depends heavily on how `make_hashable(self.style)` works
-            # Assuming it produces a tuple/dict that can be used to reconstruct or access properties:
+            # --- Unpack the style_key tuple ---
+            # This order MUST match the order defined in ButtonStyle.to_tuple()
+            # or the output of make_hashable(ButtonStyle(...))
+            try:
+                (bgColor, fgColor, disBgColor, disFgColor, shadowColor, elevation,
+                 padding_tuple, minSize_tuple, maxSize_tuple, side_tuple, shape_repr,
+                 textStyle_tuple, alignment_tuple) = style_key
+            except (ValueError, TypeError) as unpack_error:
+                 # Handle cases where the key doesn't match the expected structure
+                 print(f"Warning: Could not unpack style_key for ElevatedButton {css_class}. Using defaults. Key: {style_key}. Error: {unpack_error}")
+                 # Set default values if unpacking fails
+                 bgColor, fgColor, elevation = ('#6200ee', 'white', 2.0) # Basic defaults
+                 padding_tuple, minSize_tuple, maxSize_tuple, side_tuple, shape_repr = (None,) * 5
+                 textStyle_tuple, alignment_tuple, shadowColor, disBgColor, disFgColor = (None,) * 5
 
-            # Example if make_hashable creates a dict:
-            # style_dict = dict(style_key) # If style_key was tuple of tuples (('prop', val),..)
-            # style_obj = ButtonStyle(**style_dict) # Recreate
 
-            # Example if make_hashable returns the ButtonStyle instance directly (if hashable):
-            style_obj = style_key # Assumes key is the ButtonStyle object itself
+            # --- Base Button Styles ---
+            base_styles_dict = {
+                'display': 'inline-flex', # Use inline-flex to size with content but allow block behavior
+                'align-items': 'center', # Vertically center icon/text
+                'justify-content': 'center', # Horizontally center icon/text
+                'padding': '8px 16px', # Default padding (M3 like)
+                'margin': '4px', # Default margin
+                'border': 'none', # Elevated buttons usually have no border by default
+                'border-radius': '20px', # M3 full rounded shape (default for elevated)
+                'background-color': bgColor or '#6200ee', # Use provided or default
+                'color': fgColor or 'white', # Use provided or default
+                'cursor': 'pointer',
+                'text-align': 'center',
+                'text-decoration': 'none',
+                'outline': 'none',
+                'box-sizing': 'border-box',
+                'overflow': 'hidden', # Clip potential ripple effects
+                'position': 'relative', # For potential ripple pseudo-elements
+                'transition': 'box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s linear', # Smooth transitions
+                '-webkit-appearance': 'none', # Reset default styles
+                '-moz-appearance': 'none',
+                'appearance': 'none',
+            }
 
-            if not isinstance(style_obj, ButtonStyle):
-                print(f"Warning: Cannot generate CSS rule for ElevatedButton {css_class}, style_key is not ButtonStyle: {style_key}")
-                style_obj = ButtonStyle() # Default
+            # --- Apply specific styles from unpacked key ---
 
-            style_str = style_obj.to_css() if style_obj else ""
+            # Padding
+            if padding_tuple:
+                 # Recreate EdgeInsets or use tuple directly if to_css_value works
+                 try:
+                      padding_obj = EdgeInsets(*padding_tuple) # Assumes tuple is (l,t,r,b)
+                      base_styles_dict['padding'] = padding_obj.to_css_value()
+                 except Exception: pass # Ignore if padding_tuple isn't valid
 
-            # Base styles for ElevatedButton
-            return f"""
-            .{css_class} {{
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                padding: 8px 16px; /* Sensible default */
-                margin: 4px;
-                border: none; /* Elevated buttons usually have no border */
-                border-radius: 4px; /* Default rounding */
-                background-color: {getattr(style_obj, 'backgroundColor', '#6200ee')}; /* Default blue */
-                color: {getattr(style_obj, 'foregroundColor', 'white')}; /* Default white text */
-                cursor: pointer;
-                text-align: center;
-                text-decoration: none;
-                outline: none;
-                box-shadow: 0 2px 2px 0 rgba(0,0,0,0.14), /* Default elevation */
-                            0 3px 1px -2px rgba(0,0,0,0.12),
-                            0 1px 5px 0 rgba(0,0,0,0.20);
-                transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth shadow transition */
-                -webkit-appearance: none;
-                -moz-appearance: none;
-                appearance: none;
-                {style_str} /* Apply specific styles from ButtonStyle */
-            }}
-            .{css_class}:hover {{
-                 /* Example: Slightly raise shadow */
-                 box-shadow: 0 4px 5px 0 rgba(0,0,0,0.14),
-                             0 1px 10px 0 rgba(0,0,0,0.12),
-                             0 2px 4px -1px rgba(0,0,0,0.20);
-                 /* TODO: Get hover styles from ButtonStyle if defined */
-            }}
-            .{css_class}:active {{
-                 /* Example: Flatten shadow */
-                 box-shadow: 0 0 0 0 rgba(0,0,0,0);
-                 /* TODO: Get active styles from ButtonStyle if defined */
-            }}
-            """
+            # Minimum/Maximum Size
+            if minSize_tuple:
+                 min_w, min_h = minSize_tuple
+                 if min_w is not None: base_styles_dict['min-width'] = f"{min_w}px"
+                 if min_h is not None: base_styles_dict['min-height'] = f"{min_h}px"
+            if maxSize_tuple:
+                 max_w, max_h = maxSize_tuple
+                 if max_w is not None: base_styles_dict['max-width'] = f"{max_w}px"
+                 if max_h is not None: base_styles_dict['max-height'] = f"{max_h}px"
+
+            # Border (Side)
+            if side_tuple:
+                 try:
+                      side_obj = BorderSide(*side_tuple) # Assumes tuple is (w, style, color)
+                      shorthand = side_obj.to_css_shorthand_value()
+                      if shorthand != 'none': base_styles_dict['border'] = shorthand
+                      else: base_styles_dict['border'] = 'none'
+                 except Exception: pass
+
+            # Shape (BorderRadius)
+            if shape_repr:
+                if isinstance(shape_repr, tuple) and len(shape_repr) == 4: # Assumes (tl, tr, br, bl)
+                    try:
+                         shape_obj = BorderRadius(*shape_repr)
+                         base_styles_dict['border-radius'] = shape_obj.to_css_value()
+                    except Exception: pass
+                elif isinstance(shape_repr, (int, float)): # Single value
+                     base_styles_dict['border-radius'] = f"{max(0.0, shape_repr)}px"
+
+            # Elevation / Shadow
+            effective_elevation = elevation if elevation is not None else 2.0 # Default elevation = 2
+            if effective_elevation > 0:
+                 # M3 Elevation Level 2 (approx)
+                 offset_y = 1 + effective_elevation * 0.5
+                 blur = 2 + effective_elevation * 1.0
+                 spread = 0 # Generally 0 for M3 elevations 1-3
+                 s_color = shadowColor or Colors.rgba(0,0,0,0.2)
+                 # Use multiple shadows for better M3 feel
+                 shadow1 = f"0px {offset_y * 0.5}px {blur * 0.5}px {spread}px rgba(0,0,0,0.15)" # Ambient
+                 shadow2 = f"0px {offset_y}px {blur}px {spread+1}px rgba(0,0,0,0.10)" # Key
+                 base_styles_dict['box-shadow'] = f"{shadow1}, {shadow2}"
+
+
+            # Text Style (Apply to direct text children - using descendant selector)
+            text_style_css = ""
+            if textStyle_tuple:
+                 try:
+                      ts_obj = TextStyle(*textStyle_tuple) # Assumes tuple matches TextStyle init
+                      text_style_css = ts_obj.to_css()
+                 except Exception: pass
+
+            # Alignment (Applies flex to button itself if needed for icon+label)
+            if alignment_tuple:
+                 try:
+                      align_obj = Alignment(*alignment_tuple) # Assumes tuple is (justify, align)
+                      base_styles_dict['display'] = 'inline-flex' # Use flex to align internal items
+                      base_styles_dict['justify-content'] = align_obj.justify_content
+                      base_styles_dict['align-items'] = align_obj.align_items
+                      base_styles_dict['gap'] = '8px' # Default gap
+                 except Exception: pass
+
+
+            # --- Assemble CSS Rules ---
+            main_rule = f".{css_class} {{ {' '.join(f'{k}: {v};' for k, v in base_styles_dict.items())} }}"
+
+            # Hover state (M3: Raise elevation slightly, potentially overlay)
+            hover_shadow_str = "" # Calculate slightly higher shadow based on elevation
+            if effective_elevation > 0:
+                  h_offset_y = 1 + (effective_elevation + 2) * 0.5 # Increase elevation effect
+                  h_blur = 2 + (effective_elevation + 2) * 1.0
+                  h_spread = 0
+                  h_s_color = shadowColor or Colors.rgba(0,0,0,0.25) # Slightly darker?
+                  h_shadow1 = f"0px {h_offset_y * 0.5}px {h_blur * 0.5}px {h_spread}px rgba(0,0,0,0.18)"
+                  h_shadow2 = f"0px {h_offset_y}px {h_blur}px {h_spread+1}px rgba(0,0,0,0.13)"
+                  hover_shadow_str = f"box-shadow: {h_shadow1}, {h_shadow2};"
+            hover_rule = f".{css_class}:hover {{ {hover_shadow_str} /* Add background overlay? */ }}"
+
+            # Active state (M3: Lower/remove elevation)
+            active_rule = f".{css_class}:active {{ box-shadow: none; /* Add background overlay? */ }}"
+
+            # Disabled state (Handled by adding .disabled class)
+            disabled_bg = disBgColor or Colors.rgba(0,0,0,0.12) # M3 Disabled container approx
+            disabled_fg = disFgColor or Colors.rgba(0,0,0,0.38) # M3 Disabled content approx
+            disabled_rule = f".{css_class}.disabled {{ background-color: {disabled_bg}; color: {disabled_fg}; box-shadow: none; cursor: default; pointer-events: none; }}"
+
+            # Apply text style to children (e.g., direct Text widget child)
+            text_style_rule = ""
+            if text_style_css:
+                 # Target direct children or specific class if Text widget adds one
+                 text_style_rule = f".{css_class} > * {{ {text_style_css} }}"
+
+
+            return "\n".join([main_rule, hover_rule, active_rule, disabled_rule, text_style_rule])
+
         except Exception as e:
+            import traceback
             print(f"Error generating CSS for ElevatedButton {css_class} with key {style_key}: {e}")
+            traceback.print_exc()
             return f"/* Error generating rule for .{css_class} */"
 
     # Removed instance methods: to_html(), to_css(), to_js()
@@ -563,65 +715,156 @@ class IconButton(Widget):
         """Return the set of CSS class names needed."""
         return {self.css_class}
 
+    # framework/widgets.py (Inside IconButton class)
+
     @staticmethod
     def generate_css_rule(style_key: Tuple, css_class: str) -> str:
         """Static method callable by the Reconciler to generate the CSS rule."""
         try:
-            # Unpack style key
-            style_repr, iconSize = style_key # Adapt if key structure changes
+            # --- Unpack the style_key tuple ---
+            # Assumes order: (hashable_button_style_repr, iconSize)
+            # This MUST match the order in __init__
+            try:
+                style_repr, icon_size = style_key
+            except (ValueError, TypeError) as unpack_error:
+                 print(f"Warning: Could not unpack style_key for IconButton {css_class}. Using defaults. Key: {style_key}. Error: {unpack_error}")
+                 # Set defaults if unpacking fails
+                 style_repr = None # Will trigger ButtonStyle() below
+                 icon_size = 24 # Default icon size
 
-            # --- Reconstruct ButtonStyle or get properties ---
-            # (Requires ButtonStyle hashability or make_hashable providing details)
-            style_obj = style_repr # Assuming key[0] IS the ButtonStyle object
+
+            # --- Reconstruct/Access ButtonStyle ---
+            # Depends on how make_hashable or ButtonStyle.to_tuple works
+            # Option A: Assume style_repr IS the hashable ButtonStyle object
+            # style_obj = style_repr
+            # Option B: Assume style_repr is a tuple/dict and reconstruct
+            # Example reconstruction (adjust based on actual tuple structure):
+            style_obj = None
+            default_padding = EdgeInsets.all(8)
+            default_bg = 'transparent'
+            try:
+                 if isinstance(style_repr, tuple): # Or dict
+                     # Attempt reconstruction based on assumed tuple structure
+                     # This is fragile and depends heavily on ButtonStyle.to_tuple() order
+                     # Example: if tuple is (bgColor, fgColor, ..., padding_tuple, ...)
+                     # padding_idx = 6 # Example index
+                     # bg_idx = 0
+                     # padding_val = style_repr[padding_idx] if len(style_repr) > padding_idx else default_padding
+                     # bg_val = style_repr[bg_idx] if len(style_repr) > bg_idx else default_bg
+                     # style_obj = ButtonStyle(backgroundColor=bg_val, padding=padding_val) # Recreate with needed values
+                     # OR access values directly without full reconstruction below
+                     pass # Skip reconstruction for now, use defaults/direct access below
+                 elif isinstance(style_repr, ButtonStyle): # If key stored the object
+                      style_obj = style_repr
+            except Exception as recon_error:
+                 print(f"Warning: Error reconstructing ButtonStyle for {css_class} from key. Error: {recon_error}")
+
+            # --- Use Defaults if Reconstruction Failed ---
             if not isinstance(style_obj, ButtonStyle):
-                 print(f"Warning: Cannot generate CSS rule for IconButton {css_class}, style_key[0] is not ButtonStyle: {style_repr}")
-                 style_obj = ButtonStyle(padding=EdgeInsets.all(8), backgroundColor='transparent') # Default fallback
+                 print(f"  Using default fallback style for IconButton {css_class}")
+                 style_obj = ButtonStyle(padding=default_padding, backgroundColor=default_bg)
 
-            style_str = style_obj.to_css() if style_obj else ""
+            # Use getattr for safe access to potentially None style_obj attributes
+            padding_obj = getattr(style_obj, 'padding', default_padding)
+            bg_color = getattr(style_obj, 'backgroundColor', default_bg)
+            fg_color = getattr(style_obj, 'foregroundColor', None) # Default is inherit
+            border_obj = getattr(style_obj, 'side', None)
+            shape_obj = getattr(style_obj, 'shape', None) # Usually circular for IconButton
 
-            # Basic IconButton styles
-            # Often includes resetting button defaults and centering the icon
-            return f"""
-            .{css_class} {{
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                padding: {getattr(style_obj.padding, 'to_css', lambda: '8px')()}; /* Use style padding or default */
-                margin: 0; /* Reset margin */
-                border: none;
-                background-color: transparent; /* Usually transparent */
-                color: inherit; /* Inherit color for icon */
-                cursor: pointer;
-                text-align: center;
-                text-decoration: none;
-                outline: none;
-                border-radius: 50%; /* Often circular */
-                width: calc({iconSize}px + {getattr(style_obj.padding, 'to_int_horizontal', lambda: 16)()}px); /* Size based on icon + padding */
-                height: calc({iconSize}px + {getattr(style_obj.padding, 'to_int_vertical', lambda: 16)()}px);
-                -webkit-appearance: none;
-                -moz-appearance: none;
-                appearance: none;
-                overflow: hidden; /* Hide potential overflow if icon is slightly larger */
-                {style_str} /* Apply other styles from ButtonStyle (e.g., overlayColor) */
-            }}
-            /* Style the icon *inside* the button if needed */
-            .{css_class} > i, /* Assuming Font Awesome */
-            .{css_class} > img,
-            .{css_class} > svg {{ /* Or direct child widget */
-                font-size: {iconSize}px;
-                width: {iconSize}px;
-                height: {iconSize}px;
-                display: block; /* Prevent extra space */
-            }}
-            /* Add :hover, :active styles */
-            .{css_class}:hover {{
-                 background-color: rgba(0, 0, 0, 0.08); /* Example subtle hover */
-            }}
-            """
+            # --- Base IconButton Styles ---
+            # Resetting button defaults, centering content, basic shape/size
+            base_styles_dict = {
+                'display': 'inline-flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'padding': padding_obj.to_css_value() if isinstance(padding_obj, EdgeInsets) else '8px', # Use style padding or default
+                'margin': '0', # Reset margin
+                'border': 'none', # Default no border
+                'background-color': bg_color or 'transparent', # Use style bg or default transparent
+                'color': fg_color or 'inherit', # Use style fg or inherit container color
+                'cursor': 'pointer',
+                'text-decoration': 'none',
+                'outline': 'none',
+                'border-radius': '50%', # Default circular shape
+                'overflow': 'hidden', # Clip potential ripple/icon overflow
+                'position': 'relative', # For ripple
+                'box-sizing': 'border-box',
+                'transition': 'background-color 0.15s linear', # Smooth hover transition
+                '-webkit-appearance': 'none',
+                '-moz-appearance': 'none',
+                'appearance': 'none',
+            }
+
+            # --- Calculate Size based on Icon + Padding ---
+            # Use helper methods if they exist and handle non-EdgeInsets padding
+            h_padding = 16 # Default horizontal padding total
+            v_padding = 16 # Default vertical padding total
+            if isinstance(padding_obj, EdgeInsets):
+                try:
+                    h_padding = padding_obj.to_int_horizontal()
+                    v_padding = padding_obj.to_int_vertical()
+                except AttributeError: pass # Use defaults if methods missing
+
+            base_styles_dict['width'] = f"calc({icon_size or 24}px + {h_padding}px)"
+            base_styles_dict['height'] = f"calc({icon_size or 24}px + {v_padding}px)"
+
+            # --- Apply BorderSide if specified ---
+            if isinstance(border_obj, BorderSide):
+                 shorthand = border_obj.to_css_shorthand_value()
+                 if shorthand != 'none': base_styles_dict['border'] = shorthand
+
+            # --- Apply BorderRadius if specified (overrides default 50%) ---
+            if shape_obj:
+                 if isinstance(shape_obj, BorderRadius):
+                      base_styles_dict['border-radius'] = shape_obj.to_css_value()
+                 elif isinstance(shape_obj, (int, float)):
+                      base_styles_dict['border-radius'] = f"{max(0.0, shape_obj)}px"
+
+            # --- Assemble Main Rule ---
+            main_rule = f".{css_class} {{ {' '.join(f'{k}: {v};' for k, v in base_styles_dict.items())} }}"
+
+            # --- Icon Styling (Child Selector) ---
+            # Ensures the icon itself uses the specified size
+            icon_rule = f"""
+            .{css_class} > i, /* Font Awesome */
+            .{css_class} > img, /* Custom Image */
+            .{css_class} > svg, /* SVG Icon */
+            .{css_class} > * {{ /* General direct child as fallback */
+                font-size: {icon_size or 24}px;
+                width: {icon_size or 24}px;
+                height: {icon_size or 24}px;
+                display: block; /* Prevent extra space below inline elements */
+                max-width: 100%; /* Ensure icon doesn't overflow padding */
+                max-height: 100%;
+                object-fit: contain; /* For img/svg */
+                /* Color is inherited from button unless Icon widget overrides */
+            }}"""
+
+            # --- State Styles ---
+            # M3 style hover/focus often uses a state layer overlay (semi-transparent background)
+            hover_bg_color = Colors.rgba(0, 0, 0, 0.08) # Example: Dark overlay
+            if fg_color and fg_color != 'inherit': # Try calculating based on foreground
+                 # This is a very basic heuristic, real M3 uses complex color roles
+                 try:
+                      # Example: Make overlay from foreground with low alpha
+                      # Requires parsing fg_color (complex) - using fixed value is easier
+                      pass # Keep default hover_bg_color
+                 except: pass
+            hover_rule = f".{css_class}:hover {{ background-color: {hover_bg_color}; }}"
+            # Active state might use a stronger overlay
+            active_bg_color = Colors.rgba(0, 0, 0, 0.12)
+            active_rule = f".{css_class}:active {{ background-color: {active_bg_color}; }}"
+            # Disabled state
+            disabled_color = Colors.rgba(0, 0, 0, 0.38) # M3 disabled content approx
+            disabled_rule = f".{css_class}.disabled {{ color: {disabled_color}; background-color: transparent; cursor: default; pointer-events: none; }}"
+
+            return "\n".join([main_rule, icon_rule, hover_rule, active_rule, disabled_rule])
+
         except Exception as e:
+            import traceback
             print(f"Error generating CSS for IconButton {css_class} with key {style_key}: {e}")
+            traceback.print_exc()
             return f"/* Error generating rule for .{css_class} */"
-
     # Removed instance methods: to_html(), to_css(), to_js()
 
 
@@ -686,66 +929,149 @@ class FloatingActionButton(Widget):
         """Return the set of CSS class names needed."""
         return {self.css_class}
 
+
     @staticmethod
     def generate_css_rule(style_key: Tuple, css_class: str) -> str:
         """Static method callable by the Reconciler to generate the CSS rule."""
         try:
             # --- Reconstruct ButtonStyle or get properties from style_key ---
-            style_obj = style_key # Assuming key IS the ButtonStyle object (requires hashability)
-            if not isinstance(style_obj, ButtonStyle):
-                 print(f"Warning: Cannot generate CSS rule for FAB {css_class}, style_key is not ButtonStyle: {style_key}")
-                 # Sensible FAB defaults
-                 style_obj = ButtonStyle(shape=28, elevation=6, padding=EdgeInsets.all(16), backgroundColor=Colors.blue)
+            # This depends *exactly* on how the style_key was created.
+            # Assuming style_key = make_hashable(self.style) which produces a tuple:
+            try:
+                # Example unpack based on assumed ButtonStyle.to_tuple() order
+                (bgColor, fgColor, disBgColor, disFgColor, shadowColor, elevation,
+                 padding_tuple, minSize_tuple, maxSize_tuple, side_tuple, shape_repr,
+                 textStyle_tuple, alignment_tuple) = style_key
+                style_reconstructed = True
+            except (ValueError, TypeError) as unpack_error:
+                 print(f"Warning: Could not unpack style_key for FAB {css_class}. Using defaults. Key: {style_key}. Error: {unpack_error}")
+                 style_reconstructed = False
+                 # Set defaults needed below if unpacking fails
+                 bgColor = Colors.primaryContainer or '#EADDFF'
+                 fgColor = Colors.onPrimaryContainer or '#21005D'
+                 elevation = 6.0
+                 shape_repr = 28 # Default radius for circular 56px FAB
+                 shadowColor = Colors.shadow or '#000000'
 
-            style_str = style_obj.to_css() if style_obj else ""
+            # --- Base FAB Styles ---
+            # Define defaults using M3 roles where possible
+            fab_size = 56 # Standard FAB size
+            fab_padding = 16 # Standard FAB icon padding
+            fab_radius = fab_size / 2 # Default circular
 
-            # Base styles for FloatingActionButton, including fixed positioning
-            return f"""
-            .{css_class} {{
-                display: inline-flex; /* Use inline-flex to size based on content+padding */
-                align-items: center;
-                justify-content: center;
-                position: fixed; /* <<< FAB is fixed position */
-                bottom: 16px;    /* <<< Default position */
-                right: 16px;     /* <<< Default position */
-                width: 56px;     /* <<< Default size */
-                height: 56px;    /* <<< Default size */
-                padding: 0;      /* Reset padding, rely on inner container or direct style */
-                margin: 0;
-                border: none;
-                border-radius: 50%; /* <<< Circular */
-                background-color: {getattr(style_obj, 'backgroundColor', '#6200ee')};
-                color: {getattr(style_obj, 'foregroundColor', 'white')};
-                cursor: pointer;
-                text-align: center;
-                text-decoration: none;
-                outline: none;
-                box-shadow: 0 6px 10px 0 rgba(0,0,0,0.14), /* Default FAB shadow */
-                            0 1px 18px 0 rgba(0,0,0,0.12),
-                            0 3px 5px -1px rgba(0,0,0,0.20);
-                transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease-out;
-                -webkit-appearance: none;
-                -moz-appearance: none;
-                appearance: none;
-                z-index: 1000; /* Ensure it's above most content */
-                {style_str} /* Apply specific overrides from ButtonStyle */
-            }}
-            /* Style the icon *inside* the button */
-            .{css_class} > * {{ /* Target direct child (icon) */
+            # --- Apply Styles based on Unpacked/Default Values ---
+            base_styles_dict = {
+                'display': 'inline-flex',
+                'align-items': 'center',
+                'justify-content': 'center',
+                'position': 'fixed', # FAB is fixed
+                'bottom': '16px',   # Default position
+                'right': '16px',    # Default position
+                'width': f"{fab_size}px",
+                'height': f"{fab_size}px",
+                'padding': f"{fab_padding}px", # Apply uniform padding for icon centering
+                'margin': '0',
+                'border': 'none',
+                'border-radius': f"{fab_radius}px", # Default circular
+                'background-color': bgColor or (Colors.primaryContainer or '#EADDFF'), # M3 Primary Container
+                'color': fgColor or (Colors.onPrimaryContainer or '#21005D'), # M3 On Primary Container
+                'cursor': 'pointer',
+                'text-decoration': 'none',
+                'outline': 'none',
+                'box-sizing': 'border-box',
+                'overflow': 'hidden', # Clip ripple/shadow correctly
+                # M3 Transition for shadow/transform
+                'transition': 'box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s ease-out, background-color 0.15s linear',
+                '-webkit-appearance': 'none', 'moz-appearance': 'none', 'appearance': 'none',
+                'z-index': 1000, # High z-index
+            }
+
+            # --- Apply Overrides from Style Key (if reconstructed successfully) ---
+            if style_reconstructed:
+                 # Override specific defaults if they were set in the ButtonStyle key
+                 if bgColor is not None: base_styles_dict['background-color'] = bgColor
+                 if fgColor is not None: base_styles_dict['color'] = fgColor
+                 # Override padding if provided in key
+                 if padding_tuple:
+                     try: padding_obj = EdgeInsets(*padding_tuple); base_styles_dict['padding'] = padding_obj.to_css_value()
+                     except: pass
+                 # Override shape if provided in key
+                 if shape_repr:
+                     if isinstance(shape_repr, tuple) and len(shape_repr) == 4:
+                          try: shape_obj = BorderRadius(*shape_repr); base_styles_dict['border-radius'] = shape_obj.to_css_value()
+                          except: pass
+                     elif isinstance(shape_repr, (int, float)): base_styles_dict['border-radius'] = f"{max(0.0, shape_repr)}px"
+                 # Note: width/height overrides are less common for standard FAB, but could be added if needed
+
+            # --- Elevation / Shadow (Based on M3 levels) ---
+            eff_elevation = elevation if style_reconstructed and elevation is not None else 6.0 # Default level 6
+            s_color = shadowColor or Colors.shadow or '#000000'
+            if eff_elevation >= 6: # M3 Level 3 Shadow (High elevation)
+                shadow1 = f"0px 3px 5px -1px rgba(0,0,0,0.2)" # Adjusted based on M3 spec examples
+                shadow2 = f"0px 6px 10px 0px rgba(0,0,0,0.14)"
+                shadow3 = f"0px 1px 18px 0px rgba(0,0,0,0.12)"
+                base_styles_dict['box-shadow'] = f"{shadow1}, {shadow2}, {shadow3}"
+            elif eff_elevation >= 3: # M3 Level 2 Shadow
+                shadow1 = f"0px 1px 3px 1px rgba(0,0,0,0.15)"
+                shadow2 = f"0px 1px 2px 0px rgba(0,0,0,0.30)"
+                base_styles_dict['box-shadow'] = f"{shadow1}, {shadow2}"
+            elif eff_elevation > 0: # M3 Level 1 Shadow
+                shadow1 = f"0px 1px 3px 0px rgba(0,0,0,0.30)"
+                shadow2 = f"0px 1px 1px 0px rgba(0,0,0,0.15)"
+                base_styles_dict['box-shadow'] = f"{shadow1}, {shadow2}"
+            else:
+                 base_styles_dict['box-shadow'] = 'none' # No shadow if elevation is 0
+
+
+            # --- Assemble Main Rule ---
+            main_rule = f".{css_class} {{ {' '.join(f'{k}: {v};' for k, v in base_styles_dict.items())} }}"
+
+            # --- Icon Styling (Child Selector) ---
+            icon_rule = f"""
+            .{css_class} > i, /* Font Awesome */
+            .{css_class} > img, /* Custom Image */
+            .{css_class} > svg, /* SVG Icon */
+            .{css_class} > * {{ /* General direct child */
                 display: block; /* Prevent extra space */
-            }}
-             /* Add :hover, :active styles */
-            .{css_class}:hover {{
-                 box-shadow: 0 12px 17px 2px rgba(0,0,0,0.14),
-                             0 5px 22px 4px rgba(0,0,0,0.12),
-                             0 7px 8px -4px rgba(0,0,0,0.20);
-            }}
-            """
-            # Note: :active styles might involve slight scale transform too
-        except Exception as e:
-            print(f"Error generating CSS for FloatingActionButton {css_class} with key {style_key}: {e}")
-            return f"/* Error generating rule for .{css_class} */"
+                width: 24px; /* M3 Standard icon size */
+                height: 24px;
+                object-fit: contain; /* For img/svg */
+                /* Color is inherited from button */
+            }}"""
 
+            # --- State Styles ---
+            # Hover: Raise elevation more
+            hover_shadow_str = ""
+            if eff_elevation >= 1: # Only show hover elevation if base has elevation
+                 # M3 Hover elevation often adds +2dp equivalent
+                 h_elevation = eff_elevation + 2
+                 if h_elevation >= 12: # M3 Level 5 Shadow (Max hover approx)
+                      h_shadow1 = f"0px 5px 5px -3px rgba(0,0,0,0.2)"; h_shadow2 = f"0px 8px 10px 1px rgba(0,0,0,0.14)"; h_shadow3 = f"0px 3px 14px 2px rgba(0,0,0,0.12)";
+                      hover_shadow_str = f"box-shadow: {h_shadow1}, {h_shadow2}, {h_shadow3};"
+                 elif h_elevation >= 8: # M3 Level 4 Shadow
+                      h_shadow1 = f"0px 3px 5px -1px rgba(0,0,0,0.2)"; h_shadow2 = f"0px 7px 10px 1px rgba(0,0,0,0.14)"; h_shadow3 = f"0px 2px 16px 1px rgba(0,0,0,0.12)";
+                      hover_shadow_str = f"box-shadow: {h_shadow1}, {h_shadow2}, {h_shadow3};"
+                 else: # Slightly higher than base
+                      h_shadow1 = f"0px 3px 5px -1px rgba(0,0,0,0.2)"; h_shadow2 = f"0px 6px 10px 0px rgba(0,0,0,0.14)"; h_shadow3 = f"0px 1px 18px 0px rgba(0,0,0,0.12)";
+                      hover_shadow_str = f"box-shadow: {h_shadow1}, {h_shadow2}, {h_shadow3};" # Use base shadow slightly stronger
+            hover_rule = f".{css_class}:hover {{ {hover_shadow_str} }}"
+
+            # Active: Usually slight transform or minimal shadow change
+            active_rule = f".{css_class}:active {{ transform: scale(0.98); /* Example subtle press */ }}"
+
+            # Disabled state (add .disabled class)
+            disabled_bg = disBgColor or Colors.rgba(0,0,0,0.12) # M3 Disabled container approx
+            disabled_fg = disFgColor or Colors.rgba(0,0,0,0.38) # M3 Disabled content approx
+            disabled_rule = f".{css_class}.disabled {{ background-color: {disabled_bg}; color: {disabled_fg}; box-shadow: none; cursor: default; pointer-events: none; }}"
+
+
+            return "\n".join([main_rule, icon_rule, hover_rule, active_rule, disabled_rule])
+
+        except Exception as e:
+            import traceback
+            print(f"Error generating CSS for FloatingActionButton {css_class} with key {style_key}: {e}")
+            traceback.print_exc()
+            return f"/* Error generating rule for .{css_class} */"
     # Removed instance methods: to_html(), to_css(), to_js()
 
 class Column(Widget):
