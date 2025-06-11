@@ -8,8 +8,13 @@ using Python, rendering via HTML/CSS/JS in a webview (like PySide6 QtWebEngine).
 """
 
 # --- Core Framework Classes ---
-from .core import Framework
-from .config import Config # Expose configuration access
+try:
+    from .core import Framework
+    from .config import Config # Expose configuration access
+except ImportError as e:
+    print(f"PyThra Core/Config not loaded in __init__: {e}")
+    Framework = None
+    Config = None
 
 # --- Base Widget and State Management ---
 from .base import Widget
@@ -99,8 +104,10 @@ from .widgets import (
 # and also serves as documentation for the public API.
 __all__ = [
     # --- Core & Base ---
-    'Framework',
-    'Config',
+    # 'Framework', # Potentially None
+    # 'Config',    # Potentially None
+    # 'Framework', # Comment out if it can be None due to import error
+    # 'Config',    # Comment out if it can be None
     'Widget',
     'Key',
     'State',
