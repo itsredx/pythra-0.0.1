@@ -306,7 +306,7 @@ class TextButton(Widget):
             # 'style_details': self.style.to_dict(), # Example if needed
             'css_class': self.css_class,
             # Pass the identifier for the callback, not the function object
-            'onPressed': self.onPressed_id,
+            'onPressedName': self.onPressed_id,
             # Note: Child diffing handled separately
         }
         return {k: v for k, v in props.items() if v is not None}
@@ -481,7 +481,7 @@ class ElevatedButton(Widget):
         props = {
             # 'style_details': self.style.to_dict(), # Or specific props if needed
             'css_class': self.css_class,
-            'onPressed': self.onPressed_id,
+            'onPressedName': self.onPressed_id,
         }
         return {k: v for k, v in props.items() if v is not None}
 
@@ -704,7 +704,7 @@ class IconButton(Widget):
         props = {
             # 'style_details': self.style.to_dict(),
             'css_class': self.css_class,
-            'onPressed': self.onPressed_id,
+            'onPressedName': self.onPressed_id,
             'iconSize': self.iconSize, # Pass iconSize if JS needs it
             'tooltip': self.tooltip, # Pass tooltip for title attribute
             # Child (icon) diffing handled separately
@@ -919,7 +919,7 @@ class FloatingActionButton(Widget):
         props = {
             # 'style_details': self.style.to_dict(),
             'css_class': self.css_class,
-            'onPressed': self.onPressed_id,
+            'onPressedName': self.onPressed_id,
             'tooltip': self.tooltip,
             # Child (icon) diffing handled separately
         }

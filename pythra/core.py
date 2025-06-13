@@ -2,6 +2,7 @@
 import os
 import time
 import json
+import html
 import weakref
 from typing import Optional, Set, List, Dict, TYPE_CHECKING
 
@@ -407,6 +408,9 @@ class Framework:
         # active_classes argument might not even be needed if reconciler holds all info
         # css_details_map = self.reconciler.active_css_details
 
+        print(f"  Attempting to generate CSS. Reconciler's active_css_details keys: {list(self.reconciler.active_css_details.keys())}")
+        print(f"  Active classes passed to function: {active_classes}")
+
         # Iterate through the details collected during the latest reconcile cycle
         # Use active_classes set to ensure we only process classes relevant to current trees
         for css_class_name in active_classes:
@@ -419,8 +423,8 @@ class Framework:
                           generated_count += 1
                 except Exception as e:
                      print(f"Error calling generate_css_rule for {css_class_name}: {e}")
-            # else: # Debugging
-            #     print(f"Warning: CSS class '{css_class_name}' was collected but no details found in reconciler map.")
+            else: # Debugging
+                print(f"Warning: CSS class '{css_class_name}' was collected but no details found in reconciler map.")
 
 
         # --- Remove manual list and loop ---
@@ -530,15 +534,33 @@ class Framework:
                 props = data.get('props', {}) # Get props for initial styling
                 # layout_override = props.get('layout_override') # Already in props if set by reconciler
 
-                escaped_html = json.dumps(html_stub)[1:-1]
+                # Robust escaping for embedding in JS template literal for innerHTML
+                # 1. Escape backticks `
+                # 2. Escape ${ (dollar curly)
+                # 3. JSON dumps handles other JS string special chars (quotes, newlines, backslashes)
+                js_safe_html_stub = html_stub.replace('`', '\\`').replace('${', '\\${')
+                # No, json.dumps is better as it handles more things
+                # Let's use json.dumps and then ensure it's safe for template literal
+
+                # For template literals, only backticks (`), backslashes (\), and ${} need escaping.
+                # json.dumps will handle \ and other chars for regular strings.
+                # If we put json.dumps output directly into backticks, it should be fine.
+                escaped_html_for_template_literal = json.dumps(html_stub)[1:-1]
+                # The above line handles newlines (\n), quotes ("), backslashes (\\).
+                # It does NOT handle backticks (`) or ${} within the string itself.
+                # If your HTML stub could contain these, they need additional specific escaping:
+                final_escaped_html = escaped_html_for_template_literal.replace('`', '\\`').replace('${', '\\${')
+
                 before_id_js = f"document.getElementById('{data.get('before_id')}')" if data.get('before_id') else 'null'
+                #print("ESCAPED HTML", escaped_html.replace('\\', ''))
 
                 command_js = f'''
                     var parentEl = document.getElementById('{parent_id}');
                     if (parentEl) {{
                         var tempContainer = document.createElement('div');
-                        tempContainer.innerHTML = `{escaped_html}`;
+                        tempContainer.innerHTML = `{final_escaped_html}`;
                         var insertedEl = tempContainer.firstChild; 
+
 
                         if (insertedEl) {{
                             var beforeNode = {before_id_js};
@@ -548,7 +570,9 @@ class Framework:
                             {self._generate_prop_update_js(target_id, props, is_insert=True)}
                             // console.log('INSERTED {target_id} into {parent_id}' + ({f"' before {data.get('before_id')}'" if data.get('before_id') else "''"}));
                         }} else {{
-                             console.warn('Could not parse HTML stub for {target_id} or stub was empty. Stub: `{escaped_html}`');
+                             //console.log('Stub: {final_escaped_html});
+                             console.log('INSERTED : ' , insertedEl);
+                             console.warn(`Could not parse HTML stub for {target_id} or stub was empty. Stub: {json.dumps(html_stub)}`);
                         }}
                     }} else {{
                         console.warn('Parent element {parent_id} not found for INSERT of {target_id}');
@@ -789,12 +813,12 @@ class Framework:
          """
          try:
               # Write base CSS (optional, could be empty if dynamic handles all)
-              with open(self.css_file_path, 'w') as c:
+              with open(self.css_file_path, 'w', encoding='utf-8') as c:
                    c.write(base_css)
               print(f"Base styles written to {self.css_file_path}")
 
               # Write HTML file including dynamic style tag and root container
-              with open(self.html_file_path, 'w') as f:
+              with open(self.html_file_path, 'w', encoding='utf-8') as f:
                     f.write(f"""<!DOCTYPE html>
 <html>
 <head>
@@ -816,100 +840,129 @@ class Framework:
          except IOError as e:
               print(f"Error writing initial files: {e}")
 
-    # --- Need to ensure _generate_initial_html uses the context map ---
-    def _generate_initial_html(self, widget_node: Optional[Widget], context_key: str = 'main') -> str:
-        """Recursively generates the full HTML string for the initial load for a specific context."""
-        if not widget_node: return ""
 
-        # Get assigned HTML ID from the correct reconciler context map
-        unique_id = widget_node.get_unique_id()
-        # *** Use get_map_for_context ***
+    # --- Need to ensure _generate_initial_html uses the context map ---
+    # framework/core.py (Inside Framework class)
+
+    def _generate_initial_html(self, widget_node: Optional[Widget], context_key: str = 'main') -> str:
+        if not widget_node: return ""
+        # import html # Already imported at module level
+
         context_map = self.reconciler.get_map_for_context(context_key)
-        node_data = context_map.get(unique_id)
+        node_data = context_map.get(widget_node.get_unique_id())
 
         if not node_data:
-             # This *shouldn't* happen if reconcile_subtree was called first for this context
-             print(f"CRITICAL WARNING: No data found in reconciler map ('{context_key}') for initial HTML generation of {widget_node}")
-             # Maybe try generating a temporary ID? Or raise error?
-             # For now, return error comment
-             return f"<!-- Error: Widget data not found for key {unique_id} in context {context_key} -->"
+            print(f"CRITICAL WARNING: No data found in reconciler map ('{context_key}') for initial HTML generation of {widget_node}")
+            return f"<!-- Error: Widget data for {widget_node.get_unique_id()} not found in {context_key} -->"
 
         html_id = node_data['html_id']
-        props = node_data['props']
+        props = node_data['props'] # These include layout_override if already applied by reconciler
 
-        # --- Handle Layout Widget Passthrough ---
-        # If it's a layout widget that doesn't render itself, render its child
-        layout_props_override = None
+        # --- Handle Layout Widget Passthrough for initial HTML ---
         actual_widget_to_render = widget_node
+        # This props will be for the actual_widget_to_render
+        current_props_for_stub = props
+        current_html_id_for_stub = html_id
+
         widget_type_name = type(widget_node).__name__
-        layout_widget_types = [ # Keep list consistent with reconciler
-             'Padding', 'Align', 'Center', 'Expanded', 'Spacer',
-             'Positioned', 'AspectRatio', 'FittedBox', 'FractionallySizedBox'
-        ]
+        layout_widget_types = ['Padding', 'Align', 'Center', 'Expanded', 'Spacer', 'Positioned', 'AspectRatio', 'FittedBox', 'FractionallySizedBox']
+
         if widget_type_name in layout_widget_types:
-             if widget_type_name == 'Placeholder' and props.get('has_child'):
-                  actual_widget_to_render = widget_node.get_children()[0] if widget_node.get_children() else None
-                  # Get data for the actual child from the map
-                  if actual_widget_to_render:
-                       child_unique_id = actual_widget_to_render.get_unique_id()
-                       node_data = context_map.get(child_unique_id)
-                       if not node_data: return f"<!-- Error: Placeholder child data not found ({child_unique_id}) -->"
-                       html_id = node_data['html_id']
-                       props = node_data['props']
-                  else:
-                       return "<!-- Placeholder has child flag but no child found -->"
-
-             elif widget_type_name != 'Placeholder':
-                  layout_props_override = props # Store layout props
-                  actual_widget_to_render = widget_node.get_children()[0] if widget_node.get_children() else None
-                  # Get data for the actual child
-                  if actual_widget_to_render:
-                       child_unique_id = actual_widget_to_render.get_unique_id()
-                       node_data = context_map.get(child_unique_id)
-                       if not node_data: return f"<!-- Error: Layout child data not found ({child_unique_id}) -->"
-                       html_id = node_data['html_id']
-                       props = node_data['props'] # Use child's props
-                  else:
-                       return "" # Layout widget with no child renders nothing
-
-        # Check if we ended up with nothing to render
+            if widget_type_name == 'Placeholder' and props.get('has_child'):
+                child_candidate = widget_node.get_children()[0] if widget_node.get_children() else None
+                if child_candidate:
+                    actual_widget_to_render = child_candidate
+                    child_node_data = context_map.get(actual_widget_to_render.get_unique_id())
+                    if not child_node_data: return f"<!-- Error: Placeholder child data for {actual_widget_to_render.get_unique_id()} -->"
+                    current_html_id_for_stub = child_node_data['html_id']
+                    current_props_for_stub = child_node_data['props'].copy()
+                    current_props_for_stub['layout_override'] = widget_node.render_props() # Parent layout is override
+                # else: actual_widget_to_render remains the Placeholder, renders box
+            elif widget_type_name != 'Placeholder':
+                child_candidate = widget_node.get_children()[0] if widget_node.get_children() else None
+                if child_candidate:
+                    actual_widget_to_render = child_candidate
+                    child_node_data = context_map.get(actual_widget_to_render.get_unique_id())
+                    if not child_node_data: return f"<!-- Error: Layout child data for {actual_widget_to_render.get_unique_id()} -->"
+                    current_html_id_for_stub = child_node_data['html_id']
+                    current_props_for_stub = child_node_data['props'].copy()
+                    current_props_for_stub['layout_override'] = widget_node.render_props()
+                else: return "" # Layout widget with no child renders nothing
         if not actual_widget_to_render: return ""
 
         # --- Generate HTML for the actual_widget_to_render ---
-        # Use the _generate_html_stub method (ensure it's accessible or copy logic)
-        # Pass the potentially overridden props (child props + layout override)
-        final_props = props.copy()
-        if layout_props_override:
-             final_props['layout_override'] = layout_props_override # Add override info
+        # Get the basic stub (tag, id, class, simple content, attrs like onclick)
+        # _generate_html_stub for initial render needs the map to get child props if pre-rendering
+        element_stub_html = self.reconciler._generate_html_stub(actual_widget_to_render, current_html_id_for_stub, current_props_for_stub)
 
-        # Generate the element's opening tag with initial styles/attributes
-        # Stub generator needs props to create correct initial tag
-        element_html = self.reconciler._generate_html_stub(actual_widget_to_render, html_id, final_props)
 
-        # --- Recursively generate children HTML ---
-        # Get children of the *actual* widget being rendered
-        children_html = "".join(self._generate_initial_html(child, context_key) for child in actual_widget_to_render.get_children())
+        # --- Recursively generate children HTML for container types ---
+        children_html_str = ""
+        # List of widget types whose stubs do NOT inherently include their children
+        # and thus need children to be recursively generated here.
+        container_types_needing_recursive_children = [
+            'Container', 'Column', 'Row', 'Flex', 'Wrap', 'Stack', 'AppBar',
+            'ListTile', # Its stub is now simple, children (slots) are added recursively
+            'Dialog', 'BottomSheet', 'SnackBar', # These also manage children via slots
+            'Padding', 'Align', 'Center', 'Expanded', 'Positioned',
+            'AspectRatio', 'FittedBox', 'FractionallySizedBox',
+            'Placeholder' if current_props_for_stub.get('has_child') else None, # If placeholder HAS a child
+        ]
+        # Remove None from the list if Placeholder condition was false
+        container_types_needing_recursive_children = [t for t in container_types_needing_recursive_children if t]
+
+
+        if type(actual_widget_to_render).__name__ in container_types_needing_recursive_children:
+            children_html_str = "".join(
+                self._generate_initial_html(child, context_key)
+                for child in actual_widget_to_render.get_children()
+            )
 
         # --- Combine ---
-        # If the stub included content already (like Text), adjust logic
-        # For container-like widgets, inject children HTML
-        if '>' in element_html and '</' in element_html: # Basic check for container tag
-             parts = element_html.split('>', 1)
-             if len(parts) == 2:
-                 opening_tag = parts[0] + '>'
-                 closing_tag = parts[1].split('<',1)[-1] # Get closing tag part
-                 # Check if closing tag matches opening tag logic is complex, assume simple cases
-                 tag_name = opening_tag.split(' ')[0].lstrip('<')
-                 expected_closing = f"</{tag_name}>"
-                 if element_html.endswith(expected_closing):
-                     return f"{opening_tag}{children_html}{expected_closing}"
+        # If the stub is self-closing (e.g., <img>), return it.
+        # Otherwise, inject children_html_str into it.
+        tag_for_actual_render = self.reconciler._get_widget_render_tag(actual_widget_to_render)
+        if tag_for_actual_render in ['img', 'hr', 'br', 'input']: # Common self-closing
+            return element_stub_html
 
-        # Fallback for self-closing tags or if split fails
-        return element_html + children_html # Children appended after self-closing or if only opening tag generated
+        # For container tags, find where to inject children
+        # This assumes stub is like "<tag attrs>content_from_stub</tag>"
+        try:
+            opening_tag, rest_of_stub = element_stub_html.split('>', 1)
+            opening_tag += '>' # Re-add the '>'
+            
+            # The content part of the stub (e.g., for Text) should be preserved if children_html is empty
+            # If children_html exists, it replaces the stub's direct content.
+            # But if the stub was like <button><p>Child Text</p></button>, children_html should be empty here.
+            
+            # This logic is for simple containers that have NO direct content in their stub
+            # but get children from the recursive calls.
+            expected_closing_tag = f"</{tag_for_actual_render}>"
+            if element_stub_html.endswith(expected_closing_tag):
+                 # If the stub was like <div id="x"></div> (empty content)
+                 if rest_of_stub == expected_closing_tag:
+                      return f"{opening_tag}{children_html_str}{expected_closing_tag}"
+                 else: # Stub had some content, e.g. <p>Text</p> or <button><p>Label</p></button>
+                      # If children_html_str is also present, it means actual_widget_to_render
+                      # is a container AND its stub also generated content (e.g. a button's child).
+                      # This shouldn't happen if the lists above are correct.
+                      if children_html_str:
+                           print(f"Warning: Initial HTML for {actual_widget_to_render} - stub had content AND recursive children were generated. Using stub content + recursive children.")
+                           # This is complex; ideally one or the other.
+                           # For now, let's assume stub content is for the element itself, children are separate.
+                           # We need to find the *end* of the direct content in the stub.
+                           stub_content_part = rest_of_stub[:-len(expected_closing_tag)]
+                           return f"{opening_tag}{stub_content_part}{children_html_str}{expected_closing_tag}"
+                      else:
+                           return element_stub_html # Stub was self-contained
+            else: # Malformed stub or unexpected structure
+                 return element_stub_html + children_html_str # Fallback
+        except ValueError: # split failed, likely self-closing already handled or malformed
+            return element_stub_html + children_html_str
 
 
-    # --- Also ensure _write_initial_files uses initial_css_rules ---
-    def _write_initial_files(self, title, html_content: str, initial_css_rules: str):
+    # --- Initial File Generation ---
+    def _write_initial_files(self, title: str, html_content: str, initial_css_rules: str): # Added title type hint
          """Writes the initial HTML and CSS needed to start the app."""
          base_css = """
          /* Base styles */
@@ -918,17 +971,18 @@ class Framework:
          #root-container { height: 100vh; width: 100vw; overflow: hidden; position: relative;}
          """
          try:
-              # Write base CSS
-              with open(self.css_file_path, 'w') as c: c.write(base_css)
+              # Write base CSS with UTF-8 encoding
+              with open(self.css_file_path, 'w', encoding='utf-8') as c: # <<< ADD encoding='utf-8'
+                   c.write(base_css)
               print(f"Base styles written to {self.css_file_path}")
 
-              # Write HTML file
-              with open(self.html_file_path, 'w') as f:
+              # Write HTML file with UTF-8 encoding
+              with open(self.html_file_path, 'w', encoding='utf-8') as f: # <<< ADD encoding='utf-8'
                     f.write(f"""<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{title}</title>
+    <title>{html.escape(title)}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v={int(time.time())}">
     <style id="dynamic-styles">{initial_css_rules}</style>
@@ -941,9 +995,15 @@ class Framework:
 </body>
 </html>""")
               print(f"Initial HTML written to {self.html_file_path}")
-              print(f"Initial HTML: {html_content}")
+              print(f"Initial HTML: {html_content}") # Be careful printing large HTML to console
          except IOError as e:
               print(f"Error writing initial files: {e}")
+         except Exception as e_gen: # Catch other potential errors during write
+             print(f"Generic error writing initial files: {e_gen}")
+             import traceback
+             traceback.print_exc()
+
+
     def _get_js_includes(self):
          """Generates standard script includes for QWebChannel etc."""
          # Make sure files exist or paths are correct

@@ -1,9 +1,8 @@
-eel
-pywebview
+PySide==6.8.0.2
 uuid
 cython
 setuptools
-yaml
+pyyaml
 importlib
 threading
 inspect

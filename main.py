@@ -120,12 +120,12 @@ class TestAppState(State):
                             Text(f"Counter: {self.counter}", key=Key("counter_text")),
                             ElevatedButton(
                                 key=Key("inc_button"),
-                                child=Text("Increment"),
+                                child=Text("Increment", key=Key("inc_button_txt")),
                                 onPressed=self.increment
                             ),
                             ElevatedButton(
                                 key=Key("dec_button"),
-                                child=Text("Decrement"),
+                                child=Text("Decrement", key=Key("dec_button_txt")),
                                 onPressed=self.decrement
                             )
                         ]
@@ -139,22 +139,22 @@ class TestAppState(State):
                          children=[
                               ElevatedButton(
                                    key=Key("add_button"),
-                                   child=Text("Add Item"),
+                                   child=Text("Add Item", key=Key("add_button_txt")),
                                    onPressed=self.add_item,
                               ),
                               ElevatedButton(
                                    key=Key("swap_button"),
-                                   child=Text("Swap First Two"),
+                                   child=Text("Swap First Two", key=Key("swap_button_txt")),
                                    onPressed=self.swap_items,
                               ),
                               ElevatedButton(
                                    key=Key("remove_last_button"),
-                                   child=Text("Remove Last"),
+                                   child=Text("Remove Last", key=Key("remove_last_button_txt")),
                                    onPressed=self.remove_last_item,
                               ),
                               ElevatedButton(
                                    key=Key("remove_first_button"),
-                                   child=Text("Remove First"),
+                                   child=Text("Remove First", key=Key("remove_first_button_txt")),
                                    onPressed=self.remove_first_item,
                               ),
                          ]
@@ -164,7 +164,7 @@ class TestAppState(State):
                      # Conditional Widget Button
                      ElevatedButton(
                           key=Key("toggle_button"),
-                          child=Text("Toggle Extra Text"),
+                          child=Text("Toggle Extra Text", key=Key("toggle_button_txt")),
                           onPressed=self.toggle_extra,
                      ),
                      Container(height=10),

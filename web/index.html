@@ -1,19 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Framework Reconciliation Test</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1749597973">
-    <style id="dynamic-styles">.shared-elevatedbutton-0 { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; margin: 4px; border: none; border-radius: 20px; background-color: blue; color: white; cursor: pointer; text-align: center; text-decoration: none; outline: none; box-sizing: border-box; overflow: hidden; position: relative; transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s linear; -webkit-appearance: none; -moz-appearance: none; appearance: none; box-shadow: 0px 1.0px 2.0px 0px rgba(0,0,0,0.15), 0px 2.0px 4.0px 1px rgba(0,0,0,0.10); }
-.shared-elevatedbutton-0:hover { box-shadow: 0px 1.5px 3.0px 0px rgba(0,0,0,0.18), 0px 3.0px 6.0px 1px rgba(0,0,0,0.13); /* Add background overlay? */ }
-.shared-elevatedbutton-0:active { box-shadow: none; /* Add background overlay? */ }
-.shared-elevatedbutton-0.disabled { background-color: rgba(0, 0, 0, 0.12); color: rgba(0, 0, 0, 0.38); box-shadow: none; cursor: default; pointer-events: none; }
-
-.shared-row-0 { display: flex; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; direction: ltr; }
-.shared-column-0 { display: flex; flex-direction: column; justify-content: flex-start; align-items: center; flex-grow: 1; flex-basis: 0; direction: ltr; }
-.shared-column-1 { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; flex-grow: 1; flex-basis: 0; direction: ltr; }
-
+    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1749793596">
+    <style id="dynamic-styles">
             .shared-text-0 {
                 margin: 0; /* Reset default paragraph margin */
                 padding: 0;
@@ -22,7 +14,7 @@
                 
             }
             
-.shared-icon-0 { width: 16px; height: 16px; display: inline-block; vertical-align: middle; line-height: 16px;  font-size: 16px; color: inherit; }
+.shared-column-0 { display: flex; flex-direction: column; justify-content: flex-start; align-items: center; flex-grow: 1; flex-basis: 0; direction: ltr; }
 .shared-iconbutton-0 { display: inline-flex; align-items: center; justify-content: center; padding: 8px; margin: 0; border: none; background-color: transparent; color: inherit; cursor: pointer; text-decoration: none; outline: none; border-radius: 50%; overflow: hidden; position: relative; box-sizing: border-box; transition: background-color 0.15s linear; -webkit-appearance: none; -moz-appearance: none; appearance: none; width: calc(24px + 16px); height: calc(24px + 16px); }
 
             .shared-iconbutton-0 > i, /* Font Awesome */
@@ -41,6 +33,14 @@
 .shared-iconbutton-0:hover { background-color: rgba(0, 0, 0, 0.08); }
 .shared-iconbutton-0:active { background-color: rgba(0, 0, 0, 0.12); }
 .shared-iconbutton-0.disabled { color: rgba(0, 0, 0, 0.38); background-color: transparent; cursor: default; pointer-events: none; }
+.shared-elevatedbutton-0 { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; margin: 4px; border: none; border-radius: 20px; background-color: blue; color: white; cursor: pointer; text-align: center; text-decoration: none; outline: none; box-sizing: border-box; overflow: hidden; position: relative; transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s linear; -webkit-appearance: none; -moz-appearance: none; appearance: none; box-shadow: 0px 1.0px 2.0px 0px rgba(0,0,0,0.15), 0px 2.0px 4.0px 1px rgba(0,0,0,0.10); }
+.shared-elevatedbutton-0:hover { box-shadow: 0px 1.5px 3.0px 0px rgba(0,0,0,0.18), 0px 3.0px 6.0px 1px rgba(0,0,0,0.13); /* Add background overlay? */ }
+.shared-elevatedbutton-0:active { box-shadow: none; /* Add background overlay? */ }
+.shared-elevatedbutton-0.disabled { background-color: rgba(0, 0, 0, 0.12); color: rgba(0, 0, 0, 0.38); box-shadow: none; cursor: default; pointer-events: none; }
+
+.shared-row-0 { display: flex; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; direction: ltr; }
+.shared-icon-0 { width: 16px; height: 16px; display: inline-block; vertical-align: middle; line-height: 16px;  font-size: 16px; color: inherit; }
+.shared-column-1 { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; flex-grow: 1; flex-basis: 0; direction: ltr; }
 .shared-row-1 { display: flex; flex-direction: row; justify-content: space-around; align-items: center; width: 100%; direction: ltr; }</style>
     
               <script src="qwebchannel.js"></script>
@@ -488,7 +488,7 @@ function closeDrawer() {
 </head>
 <body>
     <div id="root-container">
-        <div id="fw_id_1" class="shared-container-3"><div id="fw_id_2" class="shared-column-1"><div id="fw_id_3" class="shared-row-0"><p id="fw_id_4" class="shared-text-0"></p><button id="fw_id_5" class="shared-elevatedbutton-0"><p id="fw_id_6" class="shared-text-0"></p></button><button id="fw_id_7" class="shared-elevatedbutton-0"><p id="fw_id_8" class="shared-text-0"></p></button></div><div id="fw_id_9" class="shared-container-0"></div><div id="fw_id_10" class="shared-row-1"><button id="fw_id_11" class="shared-elevatedbutton-0"><p id="fw_id_12" class="shared-text-0"></p></button><button id="fw_id_13" class="shared-elevatedbutton-0"><p id="fw_id_14" class="shared-text-0"></p></button><button id="fw_id_15" class="shared-elevatedbutton-0"><p id="fw_id_16" class="shared-text-0"></p></button><button id="fw_id_17" class="shared-elevatedbutton-0"><p id="fw_id_18" class="shared-text-0"></p></button></div><div id="fw_id_19" class="shared-container-0"></div><button id="fw_id_20" class="shared-elevatedbutton-0"><p id="fw_id_21" class="shared-text-0"></p></button><div id="fw_id_22" class="shared-container-0"></div><div id="fw_id_23" class="shared-container-1"></div><div id="fw_id_24" class="shared-container-2"></div><div id="fw_id_25" class="" role="separator"></div><p id="fw_id_26" class="shared-text-0"></p><div id="fw_id_27" class="shared-container-0"></div><div id="fw_id_28" class="shared-column-0"><div id="fw_id_29" class="shared-listtile-0  selected " role="listitem"><p id="fw_id_30" class="shared-text-0"></p><button id="fw_id_31" class="shared-iconbutton-0"><i id="fw_id_32" class="fa fa-times-circle shared-icon-0"></i></button></div><div id="fw_id_33" class="" role="separator"></div><div id="fw_id_34" class="shared-listtile-0   " role="listitem"><p id="fw_id_35" class="shared-text-0"></p><button id="fw_id_36" class="shared-iconbutton-0"><i id="fw_id_37" class="fa fa-times-circle shared-icon-0"></i></button></div><div id="fw_id_38" class="" role="separator"></div><div id="fw_id_39" class="shared-listtile-0   " role="listitem"><p id="fw_id_40" class="shared-text-0"></p><button id="fw_id_41" class="shared-iconbutton-0"><i id="fw_id_42" class="fa fa-times-circle shared-icon-0"></i></button></div><div id="fw_id_43" class="" role="separator"></div></div></div></div>
+        <div id="fw_id_1" class="shared-container-3"><div id="fw_id_2" class="shared-column-1"><div id="fw_id_3" class="shared-row-0"><p id="fw_id_4" class="shared-text-0">Counter: 0</p><button id="fw_id_5" class="shared-elevatedbutton-0" onclick="handleClick('increment')"><p id="fw_id_5_child_stub" class="shared-text-0">Increment</p></button><button id="fw_id_7" class="shared-elevatedbutton-0" onclick="handleClick('decrement')"><p id="fw_id_7_child_stub" class="shared-text-0">Decrement</p></button></div><div id="fw_id_9" class="shared-container-0"></div><div id="fw_id_10" class="shared-row-1"><button id="fw_id_11" class="shared-elevatedbutton-0" onclick="handleClick('add_item')"><p id="fw_id_11_child_stub" class="shared-text-0">Add Item</p></button><button id="fw_id_13" class="shared-elevatedbutton-0" onclick="handleClick('swap_items')"><p id="fw_id_13_child_stub" class="shared-text-0">Swap First Two</p></button><button id="fw_id_15" class="shared-elevatedbutton-0" onclick="handleClick('remove_last_item')"><p id="fw_id_15_child_stub" class="shared-text-0">Remove Last</p></button><button id="fw_id_17" class="shared-elevatedbutton-0" onclick="handleClick('remove_first_item')"><p id="fw_id_17_child_stub" class="shared-text-0">Remove First</p></button></div><div id="fw_id_19" class="shared-container-0"></div><button id="fw_id_20" class="shared-elevatedbutton-0" onclick="handleClick('toggle_extra')"><p id="fw_id_20_child_stub" class="shared-text-0">Toggle Extra Text</p></button><div id="fw_id_22" class="shared-container-0"></div><div id="fw_id_23" class="shared-container-1"></div><div id="fw_id_24" class="shared-container-2"></div><div id="fw_id_25" class="" role="separator"></div><p id="fw_id_26" class="shared-text-0">Item List:</p><div id="fw_id_27" class="shared-container-0"></div><div id="fw_id_28" class="shared-column-0"><div id="fw_id_29" class="shared-listtile-0  selected " role="listitem"><p id="fw_id_30" class="shared-text-0">Apple 🍎</p><button id="fw_id_31" class="shared-iconbutton-0" onclick="handleClick('remove_apple')"><i id="fw_id_31_child_stub" class="fa fa-times-circle shared-icon-0"></i></button></div><div id="fw_id_33" class="" role="separator"></div><div id="fw_id_34" class="shared-listtile-0   " role="listitem"><p id="fw_id_35" class="shared-text-0">Banana 🍌</p><button id="fw_id_36" class="shared-iconbutton-0" onclick="handleClick('remove_banana')"><i id="fw_id_36_child_stub" class="fa fa-times-circle shared-icon-0"></i></button></div><div id="fw_id_38" class="" role="separator"></div><div id="fw_id_39" class="shared-listtile-0   " role="listitem"><p id="fw_id_40" class="shared-text-0">Cherry 🍒</p><button id="fw_id_41" class="shared-iconbutton-0" onclick="handleClick('remove_cherry')"><i id="fw_id_41_child_stub" class="fa fa-times-circle shared-icon-0"></i></button></div><div id="fw_id_43" class="" role="separator"></div></div></div></div>
     </div>
 </body>
 </html>
