@@ -91,6 +91,9 @@ from .widgets import (
     BottomSheet,
     SnackBar,
 
+    # --- Path / Painters ---
+    ClipPath,
+    
     # Add any other core widgets you want easily accessible...
 )
 

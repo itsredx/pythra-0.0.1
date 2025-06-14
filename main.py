@@ -1,6 +1,7 @@
 # main.py
 
 import sys
+import time
 import random
 import string
 from PySide6.QtCore import QTimer, QCoreApplication # Use QCoreApplication for timer loop if needed
@@ -8,9 +9,9 @@ from PySide6.QtCore import QTimer, QCoreApplication # Use QCoreApplication for t
 # Framework Imports
 from pythra import (
     Framework, State, StatefulWidget, Key, Widget, Icon,
-    Container, Column, Row, Text, ElevatedButton, Spacer, IconButton,
-    Colors, EdgeInsets, MainAxisAlignment, CrossAxisAlignment,
-    ButtonStyle, # Assuming ButtonStyle is compatible
+    Container, Column, Row, Text, ElevatedButton, Spacer, IconButton, SizedBox,
+    Colors, EdgeInsets, MainAxisAlignment, CrossAxisAlignment, AssetImage, FloatingActionButton,
+    ButtonStyle, BoxDecoration, BorderRadius, # Assuming ButtonStyle is compatible
     ListTile, Divider, __all__ # Example usage
 )
 
@@ -96,9 +97,12 @@ class TestAppState(State):
                     title=Text(item['name']),
                     # Add a button within the list item for removal
                     trailing=IconButton( # Requires IconButton widget
-                         icon=Icon(icon_name='times-circle'), # Requires Icon widget
+                         icon=Icon('plus', color=Colors.error), # Requires Icon widget
                          onPressed=lambda item_id=item['id']: self.remove_item_by_id(item_id), # Pass ID
-                         onPressedName=f"remove_{item['id']}" # Unique name
+                         onPressedName=f"remove_{item['id']}", # Unique name,
+                         style=ButtonStyle(
+                            backgroundColor=Colors.green,
+                         )
                     ),
                     selected=(self.counter % len(self.items) == self.items.index(item)) if self.items else False # Example selection
                 )
@@ -106,8 +110,13 @@ class TestAppState(State):
             list_item_widgets.append(Divider(key=Key(f"div_{item['id']}"))) # Divider with key
 
         return Container(
+            decoration= BoxDecoration(
+                color= Colors.blue,
+                borderRadius=BorderRadius.circular(20.0),
+            ),
             key=Key("root_container"),
-            padding=EdgeInsets.all(10),
+            padding=EdgeInsets.all(50),
+            color= Colors.lightblue,
             child=Column(
                 key=Key("main_column"),
                 crossAxisAlignment=CrossAxisAlignment.START, # Align items left
@@ -121,16 +130,26 @@ class TestAppState(State):
                             ElevatedButton(
                                 key=Key("inc_button"),
                                 child=Text("Increment", key=Key("inc_button_txt")),
-                                onPressed=self.increment
+                                onPressed=self.increment,
+                                style=ButtonStyle(
+                                    backgroundColor=Colors.green,
+                                    foregroundColor=Colors.ash,
+                                    shape=BorderRadius.circular(6.0),
+                                ),
                             ),
                             ElevatedButton(
                                 key=Key("dec_button"),
                                 child=Text("Decrement", key=Key("dec_button_txt")),
-                                onPressed=self.decrement
+                                onPressed=self.decrement,
+                                style=ButtonStyle(
+                                    backgroundColor=Colors.coral,
+                                    foregroundColor=Colors.ash,
+                                    shape=BorderRadius.circular(6.0),
+                                ),
                             )
                         ]
                     ),
-                    Container(height=10), # SizedBox equivalent
+                    SizedBox(height=40), # SizedBox equivalent
 
                     # Item List Control Row
                     Row(
@@ -141,33 +160,58 @@ class TestAppState(State):
                                    key=Key("add_button"),
                                    child=Text("Add Item", key=Key("add_button_txt")),
                                    onPressed=self.add_item,
+                                   style=ButtonStyle(
+                            backgroundColor=Colors.hotpink,
+                            foregroundColor=Colors.ash,
+                                    shape=BorderRadius.circular(6.0),
+                         ),
                               ),
                               ElevatedButton(
                                    key=Key("swap_button"),
                                    child=Text("Swap First Two", key=Key("swap_button_txt")),
                                    onPressed=self.swap_items,
+                                   style=ButtonStyle(
+                            backgroundColor=Colors.hotpink,
+                            foregroundColor=Colors.ash,
+                                    shape=BorderRadius.circular(6.0),
+                         ),
                               ),
                               ElevatedButton(
                                    key=Key("remove_last_button"),
                                    child=Text("Remove Last", key=Key("remove_last_button_txt")),
                                    onPressed=self.remove_last_item,
+                                   style=ButtonStyle(
+                            backgroundColor=Colors.hotpink,
+                            foregroundColor=Colors.ash,
+                                    shape=BorderRadius.circular(6.0),
+                         ),
                               ),
                               ElevatedButton(
                                    key=Key("remove_first_button"),
                                    child=Text("Remove First", key=Key("remove_first_button_txt")),
                                    onPressed=self.remove_first_item,
+                                   style=ButtonStyle(
+                            backgroundColor=Colors.hotpink,
+                            foregroundColor=Colors.ash,
+                                    shape=BorderRadius.circular(6.0),
+                         ),
                               ),
                          ]
                     ),
-                    Container(height=10),
+                    Container(height=40),
 
                      # Conditional Widget Button
                      ElevatedButton(
                           key=Key("toggle_button"),
                           child=Text("Toggle Extra Text", key=Key("toggle_button_txt")),
                           onPressed=self.toggle_extra,
+                          style=ButtonStyle(
+                            backgroundColor=Colors.khaki,
+                            foregroundColor=Colors.ash,
+                            shape=BorderRadius.circular(6.0),
+                         ),
                      ),
-                     Container(height=10),
+                     Container(height=40),
 
                      # Conditional Widget
                      Container(
@@ -179,13 +223,14 @@ class TestAppState(State):
                     Container(height=20),
                     Divider(key=Key("list_divider")),
                     Text("Item List:", key=Key("list_header")),
-                    Container(height=10),
+                    Container(height=40),
 
                     # Column for the List Items
                     Column(
                          key=Key("item_list_column"),
                          children=list_item_widgets if list_item_widgets else [Text("No items.", key=Key("empty_list"))]
-                    )
+                    ),
+                    FloatingActionButton(),
                 ]
             )
         )
@@ -219,6 +264,8 @@ class Application:
         if not self.state_instance:
             print("Error: State instance not available for scheduling tests.")
             return
+
+        
 
         print("\n>>> Scheduling Test Sequence <<<")
         delays = [2000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000, 15000]

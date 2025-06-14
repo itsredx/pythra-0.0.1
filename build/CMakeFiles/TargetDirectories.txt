@@ -1,0 +1,4 @@
+C:/Users/SMILETECH COMPUTERS/Documents/pythra_0.0.2_new_state/build/CMakeFiles/framework.dir
+C:/Users/SMILETECH COMPUTERS/Documents/pythra_0.0.2_new_state/build/CMakeFiles/app.dir
+C:/Users/SMILETECH COMPUTERS/Documents/pythra_0.0.2_new_state/build/CMakeFiles/edit_cache.dir
+C:/Users/SMILETECH COMPUTERS/Documents/pythra_0.0.2_new_state/build/CMakeFiles/rebuild_cache.dir

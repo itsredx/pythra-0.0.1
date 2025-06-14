@@ -1,10 +1,11 @@
 # pythra/core.py
+
 import os
 import time
 import json
 import html
 import weakref
-from typing import Optional, Set, List, Dict, TYPE_CHECKING
+from typing import Optional, Set, List, Dict, TYPE_CHECKING, Callable, Any
 
 # PySide imports for main thread execution
 from PySide6.QtCore import QTimer
@@ -12,24 +13,25 @@ from PySide6.QtCore import QTimer
 # Framework imports
 from .config import Config
 from .server import AssetServer
-from .api import Api # Assuming Api class remains similar for callbacks
-from .window import webwidget # Assuming webwidget provides create_window, start
+from .api import Api
+from .window import webwidget
 
 # New/Refactored Imports
-from .base import Widget, Key # Import refactored base Widget and Key
-from .state import State, StatefulWidget # Import refactored State/StatefulWidget
-from .reconciler import Reconciler, Patch # Import the Reconciler engine
-from .widgets import * # Import specific widgets for CSS generation lookup
+from .base import Widget, Key
+from .state import State, StatefulWidget
+# The Reconciler now exports its Result class, which is a key part of the API
+from .reconciler import Reconciler, Patch, ReconciliationResult
+from .widgets import * # Import all widgets for class lookups if needed
 
 
 # Type Hinting for circular dependencies
 if TYPE_CHECKING:
-    from .state import State # Already imported above, but good practice
+    from .state import State
 
 class Framework:
     """
     Manages the application window, widget tree, state updates,
-    and reconciliation process for rendering HTML/CSS. (Updated Docstring)
+    and the reconciliation data flow for rendering the UI.
     """
     _instance = None
     config = Config()
@@ -46,938 +48,305 @@ class Framework:
             raise Exception("This class is a singleton!")
         Framework._instance = self
 
-        # Core Components
-        self.api = webwidget.Api() # For JS callbacks
-        self.reconciler = Reconciler() # Manages diffing and element mapping
+        self.api = webwidget.Api()
+        self.reconciler = Reconciler()
         self.root_widget: Optional[Widget] = None
         self.window = None
-        self.id = 'main_window_id' # Define a consistent ID for the window context
+        self.id = 'main_window_id'
 
         # State Management / Reconciliation Control
         self._reconciliation_requested: bool = False
         self._pending_state_updates: Set[State] = set()
 
-        # File Paths & Asset Server
+        # Asset Management
         self.html_file_path = os.path.abspath('web/index.html')
-        self.css_file_path = os.path.abspath('web/styles.css') # Path for *base* CSS if any
+        self.css_file_path = os.path.abspath('web/styles.css')
         self.asset_server = AssetServer(directory='assets', port=self.config.get('assets_server_port'))
         self.asset_server.start()
-        os.makedirs('web', exist_ok=True) # Ensure web directory exists
+        os.makedirs('web', exist_ok=True)
 
-        # --- Link Framework to Widget Classes ---
         Widget.set_framework(self)
         StatefulWidget.set_framework(self)
-
-        # --- Deprecated / Removed ---
-        # self.id_manager = IDManager() # IDs handled by Reconciler
-        # self.widget_registry = {} # Reconciler map is primary source of truth for rendered state
-        # self.registry = WidgetRegistry() # ^ Same as above
-
-        print("Framework Initialized with Reconciler.")
-
-    # --- Widget Registry Methods (Keep or Remove?) ---
-    # Decide if you still need a separate registry from the Reconciler's map.
-    # If kept, ensure it's updated appropriately during reconciliation (add/remove).
-    # For now, commenting out as Reconciler map is central to rendering.
-    # def register_widget(...)
-    # def get_widget(...)
-    # def delete_widget(...)
-    # ... etc ...
+        print("Framework Initialized with new Reconciler architecture.")
 
     def set_root(self, widget: Widget):
-        """Sets the root widget and performs the initial render."""
+        """Sets the root widget for the application."""
         self.root_widget = widget
-        # Scaffold component access (keep if useful shortcuts)
-        if isinstance(widget, Scaffold): # Assuming Scaffold is still used
-            self.drawer = widget.drawer
-            self.end_drawer = widget.endDrawer
-            self.bottom_sheet = widget.bottomSheet
-            self.snack_bar = widget.snackBar
-            # self.body = widget.body # Body is usually built by state
-        else:
-            pass
-
-        print("\n>>> Framework: Performing Initial Render via Reconciliation <<<")
-        # Initial render now happens within the run() method after window setup
-        # self._perform_initial_reconciliation() # Moved to run()
 
     def run(self, title: str, width: int = 800, height: int = 600, frameless: bool = False):
         """
-        Builds initial UI, writes necessary files, creates the window, and starts the app.
+        Builds the initial UI, writes necessary files, creates the window, and starts the app.
         """
         if not self.root_widget:
             raise ValueError("Root widget not set. Use set_root() before run().")
 
-        # 1. Build the initial widget tree fully
+        print("\n>>> Framework: Performing Initial Render <<<")
+
+        # 1. Build the initial widget tree from the root widget.
         initial_tree = self._build_widget_tree(self.root_widget)
 
-        # 2. Perform initial reconciliation (populates map, assigns HTML IDs)
-        #    *** CALL reconcile_subtree INSTEAD OF reconcile ***
-        print("  Performing initial reconciliation...")
-        self.reconciler.reconcile_subtree(
-            current_subtree_root=initial_tree,
-            parent_html_id='root-container', # Target the main container div in index.html
-            context_key='main' # Use the 'main' context for the root
+        # 2. Perform initial reconciliation. The previous map is empty.
+        result = self.reconciler.reconcile(
+            previous_map={}, new_widget_root=initial_tree, parent_html_id='root-container'
         )
-        print("  Initial reconciliation complete.")
 
+        # 3. Update framework state from the initial result.
+        self.reconciler.context_maps['main'] = result.new_rendered_map
+        for cb_id, cb_func in result.registered_callbacks.items():
+            self.api.register_callback(cb_id, cb_func)
 
-        # 3. Generate initial HTML structure string using the populated map
-        #    Make sure _generate_initial_html uses the 'main' context map
-        print("  Generating initial HTML...")
-        initial_html_content = self._generate_initial_html(initial_tree, context_key='main') # Pass context key
-        print("  Initial HTML generated.")
+        # 4. Generate initial HTML from the map created by the reconciler.
+        root_key = initial_tree.get_unique_id() if initial_tree else None
+        initial_html_content = self._generate_html_from_map(root_key, result.new_rendered_map)
+        
+        # 5. Generate initial CSS from the details collected by the reconciler.
+        initial_css_rules = self._generate_css_from_details(result.active_css_details)
 
-
-        # 4. Generate initial CSS rules based on the tree
-        #    Make sure _collect... and _generate... use the reconciler's active_css_details
-        print("  Generating initial CSS...")
-        active_classes = self._collect_active_css_classes(initial_tree)
-        initial_css_rules = self._generate_css_for_active_classes(active_classes) # Uses reconciler.active_css_details
-        print("  Initial CSS generated.")
-
-
-        # 5. Write initial HTML and Base CSS files
-        #    Ensure _write_initial_files includes <div id="root-container"></div>
-        #    and <style id="dynamic-styles">...</style> with initial rules
-        print("  Writing initial files...")
+        # 6. Write files and create the application window.
         self._write_initial_files(title, initial_html_content, initial_css_rules)
-        print("  Initial files written.")
-
-
-        # 6. Create the PySide Window
-        print("  Creating application window...")
+        
         self.window = webwidget.create_window(
-            title,
-            self.id, # Use the consistent window ID
-            html_file=self.html_file_path,
-            js_api=self.api,
-            width=width,
-            height=height,
-            frameless=frameless
+            title, self.id, self.html_file_path, self.api, width, height, frameless
         )
-        print("  Window created.")
-
-
-        # 7. Start the application event loop
+        
+        # 7. Start the application event loop.
         print("Framework: Starting application event loop...")
-        webwidget.start(window=self.window, debug=bool(config.get("Debug", False)))
+        webwidget.start(window=self.window, debug=bool(self.config.get("Debug", False)))
 
-    # --- State Update / Reconciliation ---
+    # --- State Update and Reconciliation Cycle ---
 
     def request_reconciliation(self, state_instance: State):
         """Called by State.setState to schedule a UI update."""
         self._pending_state_updates.add(state_instance)
-        self._reconciliation_requested = False
         
-        print("Pending updates: ", self._pending_state_updates)
         if not self._reconciliation_requested:
             self._reconciliation_requested = True
-            
-            print("Framework: Reconciliation scheduled.")
-            #self._process_reconciliation()
-            QTimer.singleShot(0, lambda: self._process_reconciliation())
-
-    def _build_widget_tree(self, widget: Optional[Widget]) -> Optional[Widget]:
-        """
-        Recursively builds the widget tree for the current state,
-        calling build() on StatefulWidget instances.
-
-        NOTE: This version mutates the children list of existing widget instances.
-              A more robust implementation might construct a new tree to ensure
-              immutability, but this adds complexity.
-        """
-        # print(f"  Building node: {widget}") # Debugging can be verbose
-        if widget is None:
-            return None
-
-        # If it's a StatefulWidget, replace it with the result of its build() method
-        if isinstance(widget, StatefulWidget):
-            state = widget.get_state()
-            # print(f"    Building StatefulWidget: {widget.key} -> State: {state}")
-            if not state:
-                print(f"Error: State not found for StatefulWidget {widget.key}")
-                return None # Or return an ErrorWidget
-            try:
-                built_child = state.build()
-                # Recursively build whatever the state returned
-                return self._build_widget_tree(built_child)
-            except Exception as e:
-                import traceback
-                print(f"Error building state for {widget.key or widget.__class__.__name__}: {e}")
-                traceback.print_exc() # Print full traceback
-                return None # Or return an ErrorWidget
-        else:
-            # For regular widgets, recursively build their children
-            if hasattr(widget, 'get_children'):
-                new_children = []
-                try:
-                    current_children = widget.get_children()
-                    if current_children: # Check if children list exists and is iterable
-                         # print(f"    Building children for {widget.key or widget.__class__.__name__}: {current_children}")
-                         for child in current_children:
-                              built_child = self._build_widget_tree(child)
-                              # Only add non-None children to the new list
-                              if built_child is not None:
-                                   new_children.append(built_child)
-                    # Replace the widget's children list with the newly built list
-                    # This MUTATES the widget instance.
-                    widget._children = new_children
-                except Exception as e:
-                     import traceback
-                     print(f"Error processing children for {widget.key or widget.__class__.__name__}: {e}")
-                     traceback.print_exc()
-                     widget._children = [] # Reset children on error?
-
-            # Return the (potentially mutated) original widget instance
-            return widget
-
-    # framework/core.py (Inside Framework class)
-
-    # --- Add a new helper method for recursive registration ---
-    def _register_widget_callbacks(self, widget: Optional[Widget]):
-        """Recursively traverses the built tree and registers callbacks."""
-        if widget is None:
-            return
-
-        widget_type_name = type(widget).__name__
-
-        # Check for standard button onPressed
-        if widget_type_name in ['TextButton', 'ElevatedButton', 'IconButton', 'FloatingActionButton', 'SnackBarAction']:
-            callback_func = getattr(widget, 'onPressed', None)
-            callback_id = getattr(widget, 'onPressed_id', None) # Use the ID stored on the instance
-            if callback_func and callback_id:
-                # Check if already registered? Api could handle duplicates.
-                # print(f"  Framework registering: '{callback_id}'") # Debug
-                self.api.register_callback(callback_id, callback_func)
-            # elif callback_id: # Debugging if function is missing
-            #     print(f"Warning: Found callback ID '{callback_id}' but no function on widget {widget.key}")
-
-        # Check for ListTile onTap
-        elif widget_type_name == 'ListTile':
-            callback_func = getattr(widget, 'onTap', None)
-            callback_id = getattr(widget, 'onTapName', None)
-            if callback_func and callback_id:
-                # print(f"  Framework registering: '{callback_id}'") # Debug
-                self.api.register_callback(callback_id, callback_func)
-
-        # Add checks for other widgets with specific callback props (e.g., onSubmitted for Input)
-
-        # --- Recurse for Children ---
-        # Important: Traverse the *actual* children in the current tree structure
-        if hasattr(widget, 'get_children'):
-            for child in widget.get_children():
-                self._register_widget_callbacks(child)
+            QTimer.singleShot(0, self._process_reconciliation)
 
     def _process_reconciliation(self):
-        """Performs reconciliation for main tree AND active dialog."""
+        """Performs a full reconciliation cycle for all active UI contexts."""
         self._reconciliation_requested = False
         if not self.window:
-             print("Error: Window not available for reconciliation.")
-             return
+            print("Error: Window not available for reconciliation.")
+            return
 
         print("\n--- Framework: Processing Reconciliation Cycle ---")
         start_time = time.time()
 
-        # 1. Build the main widget tree
-        build_start = time.time()
+        # 1. Build the main widget tree based on the current application state.
         main_tree = self._build_widget_tree(self.root_widget)
-        print(f"  Main Tree Build time: {time.time() - build_start:.4f}s")
+        
+        # 2. Reconcile the main tree against the 'root-container'.
+        old_main_map = self.reconciler.get_map_for_context('main')
+        main_result = self.reconciler.reconcile(old_main_map, main_tree, 'root-container')
+        
+        # 3. Handle Declarative Overlays (Dialogs, SnackBars, etc.)
+        # This assumes your build() method places overlay widgets on the Scaffold.
+        scaffold_instance = main_tree # Assuming root is Scaffold, or find it
+        
+        # Reconcile Dialog
+        dialog_widget = getattr(scaffold_instance, 'dialog', None) if scaffold_instance else None
+        old_dialog_map = self.reconciler.get_map_for_context('dialog')
+        dialog_result = self.reconciler.reconcile(old_dialog_map, dialog_widget, 'body') 
+    
+        # Reconcile SnackBar
+        snackbar_widget = getattr(scaffold_instance, 'snackBar', None) if scaffold_instance else None
+        old_snackbar_map = self.reconciler.get_map_for_context('snackbar')
+        snackbar_result = self.reconciler.reconcile(old_snackbar_map, snackbar_widget, 'body')
 
-        # --- NEW: Step 1.5 - Register Callbacks ---
-        callback_reg_start = time.time()
-        print("  Registering callbacks...")
-        self._register_widget_callbacks(main_tree)
-        active_dialog = self._active_dialog_instance
-        if active_dialog:
-            self._register_widget_callbacks(active_dialog) # Register dialog callbacks too
-        print(f"  Callback Registration time: {time.time() - callback_reg_start:.4f}s")
-        # --- END NEW STEP ---
+        # (Add more for BottomSheet, etc. as needed)
 
-        # --- Using Option A: Reconcile Separately ---
+        # 4. Combine results from all reconciliation contexts.
+        all_patches = main_result.patches + dialog_result.patches + snackbar_result.patches
+        all_css_details = {**main_result.active_css_details, **dialog_result.active_css_details, **snackbar_result.active_css_details}
+        all_callbacks = {**main_result.registered_callbacks, **dialog_result.registered_callbacks, **snackbar_result.registered_callbacks}
 
-        # 2a. Reconcile the main tree
-        reconcile_main_start = time.time()
-        # *** CORRECTED CALL: Removed previous_map_subset_key ***
-        main_patches = self.reconciler.reconcile_subtree(
-             current_subtree_root=main_tree,
-             parent_html_id='root-container', # Target main content area
-             context_key='main' # Identify subset of map
-        )
-        print(f"  Main Tree Reconcile time: {time.time() - reconcile_main_start:.4f}s")
+        # 5. Update the framework's state maps and register callbacks.
+        self.reconciler.context_maps['main'] = main_result.new_rendered_map
+        self.reconciler.context_maps['dialog'] = dialog_result.new_rendered_map
+        self.reconciler.context_maps['snackbar'] = snackbar_result.new_rendered_map
+        
+        for cb_id, cb_func in all_callbacks.items():
+            self.api.register_callback(cb_id, cb_func)
 
-        # 2b. Reconcile the active dialog (if any) or handle removal
-        dialog_patches = []
-        dialog_context_key = 'dialog' # Example context key
-        if self._active_dialog_instance:
-             reconcile_dialog_start = time.time()
-             # *** CORRECTED CALL: Removed previous_map_subset_key ***
-             dialog_patches = self.reconciler.reconcile_subtree(
-                  current_subtree_root=self._active_dialog_instance,
-                  parent_html_id='body', # Append directly to body or overlay div
-                  context_key=dialog_context_key # Use separate map key
-             )
-             print(f"  Dialog Reconcile time: {time.time() - reconcile_dialog_start:.4f}s")
-        elif self.reconciler.get_map_for_context(dialog_context_key): # Check if dialog *was* previously rendered
-             print(f"  Reconciling Dialog context with None to generate removal patches.")
-             # *** CORRECTED CALL: Removed previous_map_subset_key ***
-             dialog_patches = self.reconciler.reconcile_subtree(
-                  current_subtree_root=None, # Signal removal
-                  parent_html_id='body',
-                  context_key=dialog_context_key
-             )
-
-        # Combine patches
-        all_patches = main_patches + dialog_patches
-
-        # 3. Generate CSS updates
-        css_start = time.time()
-        active_classes = set()
-        active_classes.update(self._collect_active_css_classes(main_tree))
-        if self._active_dialog_instance:
-             active_classes.update(self._collect_active_css_classes(self._active_dialog_instance))
-        css_rules = self._generate_css_for_active_classes(active_classes)
+        # 6. Generate payloads from the combined results.
+        css_rules = self._generate_css_from_details(all_css_details)
         css_update_script = self._generate_css_update_script(css_rules)
-        print(f"  CSS Gen time: {time.time() - css_start:.4f}s")
-
-        # 4. Generate DOM patch script
-        patch_script_start = time.time()
         dom_patch_script = self._generate_dom_patch_script(all_patches)
-        print(f"  Patch Script Gen time: {time.time() - patch_script_start:.4f}s")
 
-        # 5. Execute JS
-        combined_script = css_update_script + "\n" + dom_patch_script
-        if combined_script.strip():
-            js_start = time.time()
-            # *** CORRECTED len() call ***
+        # 7. Execute JS to apply updates to the UI.
+        combined_script = (css_update_script + "\n" + dom_patch_script).strip()
+        if combined_script:
             print(f"Framework: Executing {len(all_patches)} DOM patches and CSS update.")
             self.window.evaluate_js(self.id, combined_script)
-            print(f"  JS Execution time: {time.time() - js_start:.4f}s")
         else:
             print("Framework: No DOM or CSS changes detected.")
 
         self._pending_state_updates.clear()
-        # print("Pending updates cleared: ", self._pending_state_updates) # Debugging clear
         print(f"--- Framework: Reconciliation Complete (Total: {time.time() - start_time:.4f}s) ---")
 
-    # --- CSS Generation / Collection Helpers ---
+    # --- Widget Tree Building ---
+    def _build_widget_tree(self, widget: Optional[Widget]) -> Optional[Widget]:
+        """
+        Recursively builds the widget tree, calling build() on StatefulWidget instances.
+        (This function's logic remains the same and is correct for a declarative model).
+        """
+        if widget is None: return None
 
-    def _collect_active_css_classes(self, widget_tree: Optional[Widget]) -> Set[str]:
-        """Recursively scans the tree for required CSS classes."""
-        active_classes = set()
-        if not widget_tree:
-            return active_classes
+        if isinstance(widget, StatefulWidget):
+            state = widget.get_state()
+            if not state: return None
+            try:
+                built_child = state.build()
+                return self._build_widget_tree(built_child)
+            except Exception as e:
+                import traceback
+                print(f"ERROR building state for {widget.key or widget.__class__.__name__}: {e}")
+                traceback.print_exc()
+                return None
+        else:
+            if hasattr(widget, 'get_children'):
+                new_children = []
+                for child in widget.get_children():
+                    built_child = self._build_widget_tree(child)
+                    if built_child:
+                        new_children.append(built_child)
+                widget._children = new_children
+            return widget
 
-        queue = [widget_tree]
-        visited_widgets = set() # Avoid infinite loops with recursive structures if any
+    # --- HTML and CSS Generation ---
 
-        while queue:
-            current_widget = queue.pop(0)
-            # Use object ID for visited check as widgets might be recreated but equal
-            if id(current_widget) in visited_widgets:
-                continue
-            visited_widgets.add(id(current_widget))
+    def _generate_html_from_map(self, root_key: Optional[Union[Key, str]], rendered_map: Dict) -> str:
+        """Generates the full HTML string by recursively traversing the flat rendered_map."""
+        if not root_key or root_key not in rendered_map: return ""
 
-            # Check if the widget instance has the method
-            if hasattr(current_widget, 'get_required_css_classes'):
-                try:
-                     classes = current_widget.get_required_css_classes()
-                     if classes: # Ensure it returned something iterable
-                          active_classes.update(classes)
-                except Exception as e:
-                     print(f"Error collecting CSS classes from {current_widget}: {e}")
+        node_data = rendered_map[root_key]
+        html_id = node_data['html_id']
+        props = node_data['props']
+        widget_instance = node_data['widget_instance']
 
+        stub = self.reconciler._generate_html_stub(widget_instance, html_id, props)
 
-            # Add children to the queue
-            if hasattr(current_widget, 'get_children'):
-                children = current_widget.get_children()
-                if children: # Check if children is not None or empty
-                     queue.extend(children)
+        children_html = "".join(
+            self._generate_html_from_map(child_key, rendered_map)
+            for child_key in node_data.get('children_keys', [])
+        )
 
-        # print(f"Collected active classes: {active_classes}") # Debug
-        return active_classes
+        if ">" in stub and "</" in stub:
+            tag = self.reconciler._get_widget_render_tag(widget_instance)
+            closing_tag = f"</{tag}>"
+            if stub.endswith(closing_tag):
+                content_part = stub[:-len(closing_tag)]
+                return f"{content_part}{children_html}{closing_tag}"
+        
+        return stub
 
-    # framework/core.py (Update within Framework class)
-
-    def _generate_css_for_active_classes(self, active_classes: Set[str]) -> str:
-        """Generates CSS rule strings using details collected by the Reconciler."""
+    def _generate_css_from_details(self, css_details: Dict[str, Tuple[Callable, Any]]) -> str:
+        """Generates CSS rules directly from the details collected by the Reconciler."""
         all_rules = []
-        generated_count = 0
+        for css_class, (generator_func, style_key) in css_details.items():
+            try:
+                rule = generator_func(style_key, css_class)
+                if rule: all_rules.append(rule)
+            except Exception as e:
+                import traceback
+                print(f"ERROR generating CSS for class '{css_class}': {e}")
+                traceback.print_exc()
+        
+        print(f"Generated CSS for {len(all_rules)} active shared classes.")
+        return "\n".join(all_rules)
 
-        # --- NEW: Use details collected by reconciler ---
-        # active_classes argument might not even be needed if reconciler holds all info
-        # css_details_map = self.reconciler.active_css_details
-
-        print(f"  Attempting to generate CSS. Reconciler's active_css_details keys: {list(self.reconciler.active_css_details.keys())}")
-        print(f"  Active classes passed to function: {active_classes}")
-
-        # Iterate through the details collected during the latest reconcile cycle
-        # Use active_classes set to ensure we only process classes relevant to current trees
-        for css_class_name in active_classes:
-            if css_class_name in self.reconciler.active_css_details:
-                generator_func, style_key = self.reconciler.active_css_details[css_class_name]
-                try:
-                     rule = generator_func(style_key, css_class_name)
-                     if rule and "Error generating" not in rule: # Basic check
-                          all_rules.append(rule)
-                          generated_count += 1
-                except Exception as e:
-                     print(f"Error calling generate_css_rule for {css_class_name}: {e}")
-            else: # Debugging
-                print(f"Warning: CSS class '{css_class_name}' was collected but no details found in reconciler map.")
-
-
-        # --- Remove manual list and loop ---
-        # widget_classes_with_shared_styles = [...] # REMOVED
-        # class_to_details = {} # REMOVED
-        # for widget_cls in widget_classes_with_shared_styles: # REMOVED
-             # ... loop logic removed ...
-
-
-        print(f"Generated CSS for {generated_count} active shared classes (using reconciler map).")
-        # TODO: Still need to consider instance-specific CSS if any (e.g., foreground decorations)
-        return "\n".join(all_rules)    
-
-    """def _generate_css_for_active_classes(self, active_classes: Set[str]) -> str:
-        '''Generates CSS rule strings for the given active class names.'''
-        all_rules = []
-        # TODO: This mapping needs to be robust. How to efficiently find the
-        # generator and style_key for any given class name?
-        # Option 1: Iterate through known widget types' shared_styles (less efficient).
-        # Option 2: Reconciler could store this mapping when it processes nodes.
-        # Option 3: A global registry mapping class_name -> (generator_func, style_key).
-
-        # --- Using Option 1 for now (less efficient but simpler) ---
-        widget_classes_with_shared_styles = [
-            Container, 
-            Text, 
-            Column, 
-            Row,
-            TextButton,
-            ElevatedButton,
-            FloatingActionButton,
-            IconButton, 
-            Icon] # Add all relevant widgets
-
-        class_to_details = {}
-        for widget_cls in widget_classes_with_shared_styles:
-             if hasattr(widget_cls, 'shared_styles') and isinstance(widget_cls.shared_styles, dict):
-                  for style_key, css_class_name in widget_cls.shared_styles.items():
-                       if css_class_name in active_classes:
-                            # Store generator func and key
-                            if hasattr(widget_cls, 'generate_css_rule'):
-                                 class_to_details[css_class_name] = (widget_cls.generate_css_rule, style_key)
-                            #else: # Debugging
-                            #    print(f"Warning: {widget_cls.__name__} has shared_styles but no static generate_css_rule method.")
-
-        generated_count = 0
-        for css_class_name in active_classes:
-            if css_class_name in class_to_details:
-                generator_func, style_key = class_to_details[css_class_name]
-                try:
-                     rule = generator_func(style_key, css_class_name)
-                     if rule and "Error generating" not in rule: # Basic check
-                          all_rules.append(rule)
-                          generated_count += 1
-                except Exception as e:
-                     print(f"Error calling generate_css_rule for {css_class_name}: {e}")
-            # else: # Debugging
-            #     print(f"Warning: No generator found for active class: {css_class_name}")
-
-        print(f"Generated CSS for {generated_count} active shared classes.")
-        # TODO: Add generation for non-shared/instance-specific classes if needed
-        return "\n".join(all_rules)"""
-
+    # --- Script Generation and File Writing ---
 
     def _generate_css_update_script(self, css_rules: str) -> str:
         """Generates JS to update the <style id="dynamic-styles"> tag."""
-        # Escape backticks, backslashes, newlines for JS template literal/string
-        # Use JSON dumps for robust escaping, then slice quotes
-        import json
         escaped_css = json.dumps(css_rules)[1:-1]
-
         return f'''
             var styleSheet = document.getElementById('dynamic-styles');
-            if (!styleSheet) {{
-                styleSheet = document.createElement('style');
-                styleSheet.id = 'dynamic-styles';
-                document.head.appendChild(styleSheet);
-                console.log('Created dynamic stylesheet.');
-            }}
             if (styleSheet.textContent !== `{escaped_css}`) {{
                  styleSheet.textContent = `{escaped_css}`;
-                 // console.log('Updated dynamic stylesheet content.');
-            }} else {{
-                 // console.log('Dynamic stylesheet content unchanged.');
             }}
         '''
 
-
-
-    
-
-    # --- DOM Patch Script Generation ---
     def _generate_dom_patch_script(self, patches: List[Patch]) -> str:
         """Converts the list of Patch objects from the reconciler into executable JavaScript."""
         js_commands = []
-        # --- CORRECTED LOOP ---
-        for patch_obj in patches: # Iterate through Patch objects
-            action = patch_obj.action
-            target_id = patch_obj.html_id
-            data = patch_obj.data
-            # --- END CORRECTION ---
-
+        for patch in patches:
+            action, target_id, data = patch.action, patch.html_id, patch.data
             command_js = ""
             if action == 'INSERT':
-                parent_id = data.get('parent_html_id', 'root-container')
-                html_stub = data.get('html', '<!-- Error: Missing HTML -->')
-                props = data.get('props', {}) # Get props for initial styling
-                # layout_override = props.get('layout_override') # Already in props if set by reconciler
-
-                # Robust escaping for embedding in JS template literal for innerHTML
-                # 1. Escape backticks `
-                # 2. Escape ${ (dollar curly)
-                # 3. JSON dumps handles other JS string special chars (quotes, newlines, backslashes)
-                js_safe_html_stub = html_stub.replace('`', '\\`').replace('${', '\\${')
-                # No, json.dumps is better as it handles more things
-                # Let's use json.dumps and then ensure it's safe for template literal
-
-                # For template literals, only backticks (`), backslashes (\), and ${} need escaping.
-                # json.dumps will handle \ and other chars for regular strings.
-                # If we put json.dumps output directly into backticks, it should be fine.
-                escaped_html_for_template_literal = json.dumps(html_stub)[1:-1]
-                # The above line handles newlines (\n), quotes ("), backslashes (\\).
-                # It does NOT handle backticks (`) or ${} within the string itself.
-                # If your HTML stub could contain these, they need additional specific escaping:
-                final_escaped_html = escaped_html_for_template_literal.replace('`', '\\`').replace('${', '\\${')
-
-                before_id_js = f"document.getElementById('{data.get('before_id')}')" if data.get('before_id') else 'null'
-                #print("ESCAPED HTML", escaped_html.replace('\\', ''))
-
+                parent_id, html_stub, props, before_id = data['parent_html_id'], data['html'], data['props'], data['before_id']
+                final_escaped_html = json.dumps(html_stub)[1:-1].replace('`', '\\`').replace('${', '\\${')
+                before_id_js = f"document.getElementById('{before_id}')" if before_id else 'null'
                 command_js = f'''
                     var parentEl = document.getElementById('{parent_id}');
                     if (parentEl) {{
                         var tempContainer = document.createElement('div');
                         tempContainer.innerHTML = `{final_escaped_html}`;
-                        var insertedEl = tempContainer.firstChild; 
-
-
+                        var insertedEl = tempContainer.firstChild;
                         if (insertedEl) {{
-                            var beforeNode = {before_id_js};
-                            parentEl.insertBefore(insertedEl, beforeNode);
-                            // Apply initial props (including layout overrides) after insertion
-                            // Pass target_id (which is insertedEl.id) to _generate_prop_update_js
+                            parentEl.insertBefore(insertedEl, {before_id_js});
                             {self._generate_prop_update_js(target_id, props, is_insert=True)}
-                            // console.log('INSERTED {target_id} into {parent_id}' + ({f"' before {data.get('before_id')}'" if data.get('before_id') else "''"}));
-                        }} else {{
-                             //console.log('Stub: {final_escaped_html});
-                             console.log('INSERTED : ' , insertedEl);
-                             console.warn(`Could not parse HTML stub for {target_id} or stub was empty. Stub: {json.dumps(html_stub)}`);
                         }}
-                    }} else {{
-                        console.warn('Parent element {parent_id} not found for INSERT of {target_id}');
                     }}
                 '''
             elif action == 'REMOVE':
-                command_js = f'''
-                    var elToRemove = document.getElementById('{target_id}');
-                    if (elToRemove) {{
-                        elToRemove.remove();
-                        // console.log('REMOVED {target_id}');
-                    }} else {{
-                        // console.warn('Element {target_id} not found for REMOVE');
-                    }}
-                '''
+                command_js = f'var el = document.getElementById("{target_id}"); if(el) el.remove();'
             elif action == 'UPDATE':
-                props = data.get('props', {}) # Changed props (includes layout_override if any)
-                # layout_override = data.get('layout_override') # Already included in props by reconciler
-
-                prop_update_js = self._generate_prop_update_js(target_id, props) # No need to pass layout_override separately
+                prop_update_js = self._generate_prop_update_js(target_id, data['props'])
                 if prop_update_js:
-                    command_js = f'''
-                        var elToUpdate = document.getElementById('{target_id}');
-                        if (elToUpdate) {{
-                            // console.log('UPDATING {target_id} with props: {list(props.keys())}');
-                            {prop_update_js}
-                        }} else {{
-                            // console.warn('Element {target_id} not found for UPDATE');
-                        }}
-                    '''
+                    command_js = f'var elToUpdate = document.getElementById("{target_id}"); if (elToUpdate) {{ {prop_update_js} }}'
             elif action == 'MOVE':
-                parent_id = data.get('parent_html_id')
-                before_id = data.get('before_id')
+                parent_id, before_id = data['parent_html_id'], data['before_id']
                 before_id_js = f"document.getElementById('{before_id}')" if before_id else 'null'
                 command_js = f'''
-                    var elToMove = document.getElementById('{target_id}');
-                    var parentEl = document.getElementById('{parent_id}');
-                    if (elToMove && parentEl) {{
-                        var beforeNode = {before_id_js};
-                        parentEl.insertBefore(elToMove, beforeNode);
-                        // console.log('MOVED {target_id} into {parent_id}' + ({f"' before {before_id}'" if before_id else "' to end'"}));
-                    }} else {{
-                        console.warn('Element or parent not found for MOVE: el={target_id}, parent={parent_id}, before_id={before_id}');
-                    }}
+                    var el = document.getElementById('{target_id}');
+                    var p = document.getElementById('{parent_id}');
+                    if (el && p) p.insertBefore(el, {before_id_js});
                 '''
 
             if command_js:
-                js_commands.append(f"try {{\n{command_js}\n}} catch (e) {{ console.error('Error applying patch {action} {target_id}:', e, e.stack); }}")
+                js_commands.append(f"try {{ {command_js} }} catch (e) {{ console.error('Error applying patch {action} {target_id}:', e); }}")
 
         return "\n".join(js_commands)
 
-    # Ensure _generate_prop_update_js correctly handles 'layout_override' if it's nested in props
-    # ... (rest of the Framework class) ...
-    def _generate_prop_update_js(self,
-                                 target_id: str,
-                                 props: Dict,
-                                 is_insert: bool = False, # Flag if called during insertion
-                                 layout_override: Optional[Dict] = None
-                                 ) -> str:
-        """
-        Generates specific JS commands for updating element properties AND
-        applying layout override styles.
-
-        Args:
-            target_id: The HTML ID of the element to update ('elToUpdate' or 'insertedEl' in JS).
-            props: The dictionary of changed properties OR initial properties on insert.
-            is_insert: True if generating for initial insertion, False for update.
-            layout_override: Dictionary of layout instructions from a parent widget (Padding, Align, etc.).
-        """
+    def _generate_prop_update_js(self, target_id: str, props: Dict, is_insert: bool = False) -> str:
+        """Generates specific JS commands for updating element properties."""
+        # This function was already well-designed to handle props, but now it's simpler
+        # because it no longer receives a separate `layout_override`. That logic is now
+        # handled by the widgets themselves rendering styled `div`s.
         js_prop_updates = []
-        style_updates = {} # Group style changes
-        element_var = 'insertedEl' if is_insert else 'elToUpdate' # JS variable name
+        style_updates = {}
+        element_var = 'insertedEl' if is_insert else 'elToUpdate'
 
-        # --- 1. Apply Layout Overrides FIRST (Padding, Align, Flex, Position etc.) ---
-        if layout_override:
-            override_type = layout_override.get('render_type')
-            # print(f"    Applying layout override: {override_type} to {target_id}") # Debug
-            if override_type == 'padding':
-                padding_data = layout_override.get('padding')
-                if padding_data and 'top' in padding_data: # Check if it looks like EdgeInsets dict
-                    css_val = f"{padding_data['top']}px {padding_data['right']}px {padding_data['bottom']}px {padding_data['left']}px"
-                    style_updates['padding'] = css_val
-            elif override_type == 'align' or override_type == 'center':
-                alignment_data = layout_override.get('alignment')
-                style_updates['display'] = 'flex' # Align needs flex parent
-                style_updates['justifyContent'] = alignment_data.get('justify_content', 'center') # Default center
-                style_updates['alignItems'] = alignment_data.get('align_items', 'center') # Default center
-                style_updates['width'] = '100%' # Align usually fills parent
-                style_updates['height'] = '100%'
-            elif override_type == 'flex' or override_type == 'spacer': # Spacer uses flex
-                style_updates['flexGrow'] = layout_override.get('flex_grow', 0)
-                style_updates['flexShrink'] = layout_override.get('flex_shrink', 1 if override_type == 'flex' else 0) # Spacer shouldn't shrink
-                style_updates['flexBasis'] = layout_override.get('flex_basis', 'auto')
-                style_updates['minWidth'] = 0 # Prevent blowout
-                style_updates['minHeight'] = 0
-            elif override_type == 'positioned':
-                style_updates['position'] = 'absolute'
-                for edge in ['top', 'right', 'bottom', 'left', 'width', 'height']:
-                    val = layout_override.get(edge)
-                    if val is not None:
-                         # Append 'px' if number, otherwise use string value
-                         css_val = f"{val}px" if isinstance(val, (int, float)) else val
-                         style_updates[edge] = css_val
-                    # else: # Remove style if prop is gone? Maybe needed for updates.
-                    #     js_prop_updates.append(f"{element_var}.style.removeProperty('{edge}');")
-            elif override_type == 'aspect_ratio':
-                ratio = layout_override.get('aspectRatio')
-                if ratio and ratio > 0:
-                    # Apply to wrapper, child needs absolute positioning
-                    padding_bottom = (1 / ratio) * 100
-                    style_updates['position'] = 'relative'
-                    style_updates['width'] = '100%' # Base width
-                    style_updates['height'] = '0'
-                    style_updates['paddingBottom'] = f'{padding_bottom}%'
-                    style_updates['overflow'] = 'hidden'
-                    # Child styles applied separately? Or signal patch generator?
-                    # Signal that child needs absolute positioning styles
-                    js_prop_updates.append(f"{element_var}.dataset.aspectRatioChild = 'true';") # Use data attribute as signal
-            elif override_type == 'fitted_box':
-                # Apply container styles for alignment/clipping
-                style_updates['display'] = 'flex'
-                style_updates['width'] = '100%'
-                style_updates['height'] = '100%'
-                alignment_data = layout_override.get('alignment')
-                style_updates['justifyContent'] = alignment_data.get('justify_content', 'center')
-                style_updates['alignItems'] = alignment_data.get('align_items', 'center')
-                clip = layout_override.get('clipBehavior')
-                if clip and clip != ClipBehavior.NONE: style_updates['overflow'] = 'hidden'
-                # Signal child needs fit styles
-                js_prop_updates.append(f"{element_var}.dataset.fittedBoxChild = 'true';")
-                js_prop_updates.append(f"{element_var}.dataset.fitMode = '{layout_override.get('fit', 'contain')}';")
-            elif override_type == 'fractionally_sized':
-                # Apply container styles for alignment
-                style_updates['display'] = 'flex'
-                style_updates['width'] = '100%'
-                style_updates['height'] = '100%'
-                alignment_data = layout_override.get('alignment')
-                style_updates['justifyContent'] = alignment_data.get('justify_content', 'center')
-                style_updates['alignItems'] = alignment_data.get('align_items', 'center')
-                 # Signal child needs fractional sizing
-                js_prop_updates.append(f"{element_var}.dataset.fractionalChild = 'true';")
-                if layout_override.get('widthFactor') is not None:
-                     js_prop_updates.append(f"{element_var}.dataset.widthFactor = '{layout_override['widthFactor']}';")
-                if layout_override.get('heightFactor') is not None:
-                     js_prop_updates.append(f"{element_var}.dataset.heightFactor = '{layout_override['heightFactor']}';")
-
-        # --- 2. Apply Standard Widget Prop Changes (or initial props) ---
         for key, value in props.items():
-            # Skip layout override structure itself
-            if key == 'layout_override': continue
-            # Skip render type helper prop
-            if key == 'render_type': continue
-
-            if key == 'data' and isinstance(value, (str, int, float)): # Text content
-                escaped_value = json.dumps(str(value))[1:-1]
-                js_prop_updates.append(f"{element_var}.textContent = '{escaped_value}';")
-            elif key == 'css_class' and isinstance(value, str):
-                escaped_value = json.dumps(value)[1:-1]
-                js_prop_updates.append(f"{element_var}.className = '{escaped_value}';")
-            elif key == 'src' and isinstance(value, str): # Image src
-                 escaped_value = json.dumps(value)[1:-1]
-                 js_prop_updates.append(f"{element_var}.setAttribute('src', '{escaped_value}');")
-            elif key == 'icon_name' and isinstance(value, str) and props.get('render_type') != 'img': # Icon font class
-                 # Assumes FontAwesome structure, adjust if needed
-                 base_fa_class = "fa"
-                 icon_name_class = f"fa-{value}"
-                 # Get existing classes, remove old fa-, add new ones
-                 current_classes = props.get('css_class','') # Need original full class list?
-                 # This needs refinement - should set className based on *all* classes
-                 js_prop_updates.append(f"// TODO: Update Icon class for {target_id} to {icon_name_class}")
-                 # Example (better done via className update):
-                 # js_prop_updates.append(f"{element_var}.classList.remove(...old fa classes...);")
-                 # js_prop_updates.append(f"{element_var}.classList.add('{base_fa_class}', '{icon_name_class}');")
-            elif key == 'tooltip' and isinstance(value, str):
-                 escaped_value = json.dumps(value)[1:-1]
-                 js_prop_updates.append(f"{element_var}.setAttribute('title', '{escaped_value}');")
-            elif key == 'semanticChildCount' and isinstance(value, int):
-                 js_prop_updates.append(f"{element_var}.setAttribute('aria-setsize', '{value}');")
-                 if not is_insert: # Only set role on insert if needed
-                      js_prop_updates.append(f"{element_var}.setAttribute('role', 'grid');") # Assuming for GridView
-
-            # Direct Style updates (use sparingly, prefer classes)
-            elif key == 'color': style_updates['color'] = value # Text color
+            if key == 'data': js_prop_updates.append(f"{element_var}.textContent = {json.dumps(str(value))};")
+            elif key == 'css_class': js_prop_updates.append(f"{element_var}.className = {json.dumps(value)};")
+            elif key == 'src': js_prop_updates.append(f"{element_var}.src = {json.dumps(value)};")
+            elif key == 'tooltip': js_prop_updates.append(f"{element_var}.title = {json.dumps(value)};")
+            
+            # Direct style props (use sparingly, prefer shared CSS classes)
+            elif key == 'color': style_updates['color'] = value
             elif key == 'backgroundColor': style_updates['backgroundColor'] = value
-            elif key == 'width' and value is not None: # Placeholder/SizedBox width
-                 style_updates['width'] = f"{value}px" if isinstance(value, (int, float)) else value
-            elif key == 'height' and value is not None: # Placeholder/SizedBox height
-                 style_updates['height'] = f"{value}px" if isinstance(value, (int, float)) else value
-            # Add other direct prop-to-style/attribute mappings...
-
-        # --- 3. Apply collected style updates ---
+            elif key == 'width' and value is not None: style_updates['width'] = f"{value}px" if isinstance(value, (int, float)) else value
+            elif key == 'height' and value is not None: style_updates['height'] = f"{value}px" if isinstance(value, (int, float)) else value
+        
         if style_updates:
-             for style_prop, style_value in style_updates.items():
-                  # Convert camelCase JS prop to kebab-case CSS prop
-                  css_prop = ''.join(['-' + c.lower() if c.isupper() else c for c in style_prop]).lstrip('-')
-                  if style_value is not None:
-                       escaped_style_value = json.dumps(str(style_value))[1:-1]
-                       js_prop_updates.append(f"{element_var}.style.setProperty('{css_prop}', '{escaped_style_value}');")
-                  else:
-                       js_prop_updates.append(f"{element_var}.style.removeProperty('{css_prop}');")
-
-        # --- 4. Apply styles based on data attributes (for layout children) ---
-        # These apply styles to the *child* element based on data attributes set by the *parent* layout override
-        js_prop_updates.append(f'''
-           if ({element_var}.dataset.aspectRatioChild === 'true') {{
-               {element_var}.style.position = 'absolute';
-               {element_var}.style.top = '0'; {element_var}.style.left = '0';
-               {element_var}.style.width = '100%'; {element_var}.style.height = '100%';
-           }}
-           if ({element_var}.dataset.fittedBoxChild === 'true') {{
-               let fitMode = {element_var}.dataset.fitMode || 'contain';
-               {element_var}.style.maxWidth = '100%'; {element_var}.style.maxHeight = '100%';
-               if ({element_var}.tagName === 'IMG' || {element_var}.tagName === 'VIDEO') {{
-                   {element_var}.style.objectFit = fitMode;
-               }} else if (fitMode === 'fill') {{
-                    {element_var}.style.width = '100%'; {element_var}.style.height = '100%';
-               }}
-               // Add more complex transform/scaling for other fits if needed
-           }}
-           if ({element_var}.dataset.fractionalChild === 'true') {{
-               {element_var}.style.width = {element_var}.dataset.widthFactor ? ({element_var}.dataset.widthFactor * 100) + '%' : 'auto';
-               {element_var}.style.height = {element_var}.dataset.heightFactor ? ({element_var}.dataset.heightFactor * 100) + '%' : 'auto';
-           }}
-        ''')
-
+             for prop, val in style_updates.items():
+                  css_prop = ''.join(['-' + c.lower() if c.isupper() else c for c in prop]).lstrip('-')
+                  js_prop_updates.append(f"{element_var}.style.{prop} = {json.dumps(val)};")
 
         return "\n".join(js_prop_updates)
 
-    
-    # --- Initial File Generation ---
-    def _write_initial_files(self, title, html_content: str, css_rules: str):
-         """Writes the initial HTML file and potentially a base CSS file."""
+    def _write_initial_files(self, title: str, html_content: str, initial_css_rules: str):
          base_css = """
-         /* Base styles - fonts, resets, body */
-         body { margin: 0; font-family: sans-serif; background-color: #f0f0f0; }
-         * { box-sizing: border-box; }
-         /* Add other base rules */
-         """
-         try:
-              # Write base CSS (optional, could be empty if dynamic handles all)
-              with open(self.css_file_path, 'w', encoding='utf-8') as c:
-                   c.write(base_css)
-              print(f"Base styles written to {self.css_file_path}")
-
-              # Write HTML file including dynamic style tag and root container
-              with open(self.html_file_path, 'w', encoding='utf-8') as f:
-                    f.write(f"""<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title}</title>
-    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v={int(time.time())}">
-    <style id="dynamic-styles">{css_rules}</style> 
-    {self._get_js_includes()}
-</head>
-<body>
-    <div id="root-container">
-        {html_content} 
-    </div>
-</body>
-</html>""")
-              print(f"Initial HTML written to {self.html_file_path}")
-              print(f"Initial HTML content:  {html_content}")
-         except IOError as e:
-              print(f"Error writing initial files: {e}")
-
-
-    # --- Need to ensure _generate_initial_html uses the context map ---
-    # framework/core.py (Inside Framework class)
-
-    def _generate_initial_html(self, widget_node: Optional[Widget], context_key: str = 'main') -> str:
-        if not widget_node: return ""
-        # import html # Already imported at module level
-
-        context_map = self.reconciler.get_map_for_context(context_key)
-        node_data = context_map.get(widget_node.get_unique_id())
-
-        if not node_data:
-            print(f"CRITICAL WARNING: No data found in reconciler map ('{context_key}') for initial HTML generation of {widget_node}")
-            return f"<!-- Error: Widget data for {widget_node.get_unique_id()} not found in {context_key} -->"
-
-        html_id = node_data['html_id']
-        props = node_data['props'] # These include layout_override if already applied by reconciler
-
-        # --- Handle Layout Widget Passthrough for initial HTML ---
-        actual_widget_to_render = widget_node
-        # This props will be for the actual_widget_to_render
-        current_props_for_stub = props
-        current_html_id_for_stub = html_id
-
-        widget_type_name = type(widget_node).__name__
-        layout_widget_types = ['Padding', 'Align', 'Center', 'Expanded', 'Spacer', 'Positioned', 'AspectRatio', 'FittedBox', 'FractionallySizedBox']
-
-        if widget_type_name in layout_widget_types:
-            if widget_type_name == 'Placeholder' and props.get('has_child'):
-                child_candidate = widget_node.get_children()[0] if widget_node.get_children() else None
-                if child_candidate:
-                    actual_widget_to_render = child_candidate
-                    child_node_data = context_map.get(actual_widget_to_render.get_unique_id())
-                    if not child_node_data: return f"<!-- Error: Placeholder child data for {actual_widget_to_render.get_unique_id()} -->"
-                    current_html_id_for_stub = child_node_data['html_id']
-                    current_props_for_stub = child_node_data['props'].copy()
-                    current_props_for_stub['layout_override'] = widget_node.render_props() # Parent layout is override
-                # else: actual_widget_to_render remains the Placeholder, renders box
-            elif widget_type_name != 'Placeholder':
-                child_candidate = widget_node.get_children()[0] if widget_node.get_children() else None
-                if child_candidate:
-                    actual_widget_to_render = child_candidate
-                    child_node_data = context_map.get(actual_widget_to_render.get_unique_id())
-                    if not child_node_data: return f"<!-- Error: Layout child data for {actual_widget_to_render.get_unique_id()} -->"
-                    current_html_id_for_stub = child_node_data['html_id']
-                    current_props_for_stub = child_node_data['props'].copy()
-                    current_props_for_stub['layout_override'] = widget_node.render_props()
-                else: return "" # Layout widget with no child renders nothing
-        if not actual_widget_to_render: return ""
-
-        # --- Generate HTML for the actual_widget_to_render ---
-        # Get the basic stub (tag, id, class, simple content, attrs like onclick)
-        # _generate_html_stub for initial render needs the map to get child props if pre-rendering
-        element_stub_html = self.reconciler._generate_html_stub(actual_widget_to_render, current_html_id_for_stub, current_props_for_stub)
-
-
-        # --- Recursively generate children HTML for container types ---
-        children_html_str = ""
-        # List of widget types whose stubs do NOT inherently include their children
-        # and thus need children to be recursively generated here.
-        container_types_needing_recursive_children = [
-            'Container', 'Column', 'Row', 'Flex', 'Wrap', 'Stack', 'AppBar',
-            'ListTile', # Its stub is now simple, children (slots) are added recursively
-            'Dialog', 'BottomSheet', 'SnackBar', # These also manage children via slots
-            'Padding', 'Align', 'Center', 'Expanded', 'Positioned',
-            'AspectRatio', 'FittedBox', 'FractionallySizedBox',
-            'Placeholder' if current_props_for_stub.get('has_child') else None, # If placeholder HAS a child
-        ]
-        # Remove None from the list if Placeholder condition was false
-        container_types_needing_recursive_children = [t for t in container_types_needing_recursive_children if t]
-
-
-        if type(actual_widget_to_render).__name__ in container_types_needing_recursive_children:
-            children_html_str = "".join(
-                self._generate_initial_html(child, context_key)
-                for child in actual_widget_to_render.get_children()
-            )
-
-        # --- Combine ---
-        # If the stub is self-closing (e.g., <img>), return it.
-        # Otherwise, inject children_html_str into it.
-        tag_for_actual_render = self.reconciler._get_widget_render_tag(actual_widget_to_render)
-        if tag_for_actual_render in ['img', 'hr', 'br', 'input']: # Common self-closing
-            return element_stub_html
-
-        # For container tags, find where to inject children
-        # This assumes stub is like "<tag attrs>content_from_stub</tag>"
-        try:
-            opening_tag, rest_of_stub = element_stub_html.split('>', 1)
-            opening_tag += '>' # Re-add the '>'
-            
-            # The content part of the stub (e.g., for Text) should be preserved if children_html is empty
-            # If children_html exists, it replaces the stub's direct content.
-            # But if the stub was like <button><p>Child Text</p></button>, children_html should be empty here.
-            
-            # This logic is for simple containers that have NO direct content in their stub
-            # but get children from the recursive calls.
-            expected_closing_tag = f"</{tag_for_actual_render}>"
-            if element_stub_html.endswith(expected_closing_tag):
-                 # If the stub was like <div id="x"></div> (empty content)
-                 if rest_of_stub == expected_closing_tag:
-                      return f"{opening_tag}{children_html_str}{expected_closing_tag}"
-                 else: # Stub had some content, e.g. <p>Text</p> or <button><p>Label</p></button>
-                      # If children_html_str is also present, it means actual_widget_to_render
-                      # is a container AND its stub also generated content (e.g. a button's child).
-                      # This shouldn't happen if the lists above are correct.
-                      if children_html_str:
-                           print(f"Warning: Initial HTML for {actual_widget_to_render} - stub had content AND recursive children were generated. Using stub content + recursive children.")
-                           # This is complex; ideally one or the other.
-                           # For now, let's assume stub content is for the element itself, children are separate.
-                           # We need to find the *end* of the direct content in the stub.
-                           stub_content_part = rest_of_stub[:-len(expected_closing_tag)]
-                           return f"{opening_tag}{stub_content_part}{children_html_str}{expected_closing_tag}"
-                      else:
-                           return element_stub_html # Stub was self-contained
-            else: # Malformed stub or unexpected structure
-                 return element_stub_html + children_html_str # Fallback
-        except ValueError: # split failed, likely self-closing already handled or malformed
-            return element_stub_html + children_html_str
-
-
-    # --- Initial File Generation ---
-    def _write_initial_files(self, title: str, html_content: str, initial_css_rules: str): # Added title type hint
-         """Writes the initial HTML and CSS needed to start the app."""
-         base_css = """
-         /* Base styles */
          body { margin: 0; font-family: sans-serif; background-color: #f0f0f0; overflow: hidden;}
          * { box-sizing: border-box; }
          #root-container { height: 100vh; width: 100vw; overflow: hidden; position: relative;}
          """
          try:
-              # Write base CSS with UTF-8 encoding
-              with open(self.css_file_path, 'w', encoding='utf-8') as c: # <<< ADD encoding='utf-8'
-                   c.write(base_css)
-              print(f"Base styles written to {self.css_file_path}")
-
-              # Write HTML file with UTF-8 encoding
-              with open(self.html_file_path, 'w', encoding='utf-8') as f: # <<< ADD encoding='utf-8'
+              with open(self.css_file_path, 'w', encoding='utf-8') as c: c.write(base_css)
+              with open(self.html_file_path, 'w', encoding='utf-8') as f:
                     f.write(f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -989,424 +358,26 @@ class Framework:
     {self._get_js_includes()}
 </head>
 <body>
-    <div id="root-container">
-        {html_content}
-    </div>
+    <svg id="global-svg-defs" width="0" height="0" style="position:absolute;pointer-events:none;visibility:hidden;"><defs></defs></svg>
+    <div id="root-container">{html_content}</div>
+    <div id="overlay-container"></div>
 </body>
 </html>""")
-              print(f"Initial HTML written to {self.html_file_path}")
-              print(f"Initial HTML: {html_content}") # Be careful printing large HTML to console
          except IOError as e:
               print(f"Error writing initial files: {e}")
-         except Exception as e_gen: # Catch other potential errors during write
-             print(f"Generic error writing initial files: {e_gen}")
-             import traceback
-             traceback.print_exc()
-
 
     def _get_js_includes(self):
-         """Generates standard script includes for QWebChannel etc."""
-         # Make sure files exist or paths are correct
-         return f"""
-              <script src="qwebchannel.js"></script>
-              <script>
-                   document.addEventListener('DOMContentLoaded', function() {{
-                       if (typeof qt !== 'undefined' && qt.webChannelTransport) {{
-                           new QWebChannel(qt.webChannelTransport, function (channel) {{
-                               window.pywebview = channel.objects.pywebview;
-                               console.log("PyWebChannel connected: window.pywebview is ready.");
-                               // Optionally dispatch a custom event when ready
-                               // document.dispatchEvent(new Event('pywebviewready'));
-                           }});
-                       }} else {{
-                           console.error("qt.webChannelTransport not found. QWebChannel cannot connect.");
-                           // Fallback or error handling
-                       }}
-                   }});
-
-                   // Basic handleClick for callbacks
-                   function handleClick(callbackName) {{
-                       console.log("handleClick called for:", callbackName);
-                       if (window.pywebview) {{
-                           // Use on_pressed_str for no-argument callbacks
-                           window.pywebview.on_pressed_str(callbackName, function(result) {{
-                               console.log(`Callback ${{callbackName}} result: `, result);
-                           }});
-                           // Add on_pressed if you need arguments later
-                       }} else {{
-                           console.error("window.pywebview not ready for callback:", callbackName);
-                       }}
-                   }}
-              </script>
-              {self._get_main_js()} 
-         """
-
-    def _get_main_js(self):
-        """Reads content from web/main.js if it exists."""
-        main_js_path = os.path.abspath('web/main.js')
-        try:
-             if os.path.exists(main_js_path):
-                  with open(main_js_path, 'r') as f:
-                       return f"<script>{f.read()}</script>"
-        except IOError as e:
-             print(f"Error reading web/main.js: {e}")
-        return "<!-- web/main.js not found or error reading -->"
-
-
-    # --- Utility / Direct Manipulation Methods ---
-    # Keep methods like hide_snack_bar that perform direct JS execution
-
-    def trigger_drawer_toggle(self, side: str):
-        """Executes the JavaScript function to toggle a drawer."""
-        if self.window and hasattr(self.window, 'evaluate_js'):
-            js_command = f"toggleDrawer('{side}');"
-            print(f"Framework executing JS: {js_command}")
-            self.window.evaluate_js(self.id, js_command)
-        else:
-            print(f"Cannot toggle drawer '{side}': Window not available.")
-
-    def trigger_bottom_sheet_toggle(self, html_id: str, show: bool, is_modal: bool = True, on_dismiss_name: str = ''):
-        """Executes the JavaScript function to toggle a bottom sheet."""
-        if self.window and hasattr(self.window, 'evaluate_js'):
-            # Pass necessary arguments to the JS function
-            # Ensure strings are properly quoted for JS if needed, but evaluate_js often handles types
-            js_command = f"toggleBottomSheet('{html_id}', {str(show).lower()}, {str(is_modal).lower()}, 'scaffold-scrim', '{on_dismiss_name}');"
-            print(f"Framework executing JS: {js_command}")
-            self.window.evaluate_js(self.id, js_command)
-        else:
-            print(f"Cannot toggle bottom sheet '{html_id}': Window not available.")
-
-# --- SnackBar State ---
-    # Store the *current* active SnackBar instance and its timer
-    _active_snackbar_instance: Optional[SnackBar] = None
-    _active_snackbar_timer: Optional[QTimer] = None
-    _active_snackbar_html_id: Optional[str] = None
-
-    def show_snackbar(self,
-                      content: Union[str, Widget],
-                      action_label: Optional[str] = None,
-                      action_onPressed: Optional[Callable] = None,
-                      action_onPressedName: Optional[str] = None,
-                      duration: int = 4000, # Default duration ms
-                      key: Optional[Key] = None, # Optional key for the SnackBar itself
-                      **snackbar_props: Any # Pass other SnackBar props like backgroundColor etc.
-                     ):
+        """Generates standard script includes for QWebChannel and event handling."""
+        return f"""
+        <script src="qwebchannel.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {{
+                new QWebChannel(qt.webChannelTransport, (channel) => {{
+                    window.pywebview = channel.objects.pywebview;
+                    console.log("PyWebChannel connected.");
+                }});
+            }});
+            function handleClick(name) {{ if(window.pywebview) window.pywebview.on_pressed_str(name, ()=>{{}}); }}
+            function handleItemTap(name, index) {{ if(window.pywebview) window.pywebview.on_item_tap(name, index, ()=>{{}}); }}
+        </script>
         """
-        Displays a SnackBar. Replaces the current one if already showing.
-        Triggers reconciliation to render/update the SnackBar widget slot.
-        """
-        print(f"Framework: show_snackbar requested. Content: {content}")
-
-        # --- Cancel Existing Timer ---
-        if self._active_snackbar_timer and self._active_snackbar_timer.isActive():
-            print("  Cancelling previous snackbar timer.")
-            self._active_snackbar_timer.stop()
-            self._active_snackbar_timer = None # Clear timer reference
-
-        # --- Prepare Widgets ---
-        content_widget: Widget
-        if isinstance(content, Widget):
-            content_widget = content
-        elif isinstance(content, str):
-            # Default wrap string content in a Text widget
-            content_widget = Text(content, key=Key("snackbar_content_text")) # Add a key
-        else:
-            print("Error: SnackBar content must be a Widget instance or a string.")
-            return
-
-        action_widget: Optional[SnackBarAction] = None
-        if action_label and action_onPressed:
-            onPressedName = action_onPressedName if action_onPressedName else (action_onPressed.__name__ if action_onPressed else None)
-            action_widget = SnackBarAction(
-                 label=Text(action_label, key=Key("snackbar_action_label")), # Wrap label
-                 onPressed=action_onPressed,
-                 onPressedName=onPressedName,
-                 key=Key("snackbar_action") # Add key
-                 # Pass textColor etc. via snackbar_props if needed
-            )
-
-            print(f"  Registering SnackBar action callback: '{actual_action_name}'")
-            self.api.register_callback(action_onPressedName, onPressedName)
-
-        # --- Create/Update SnackBar Instance ---
-        # If you want snackbars to be entirely managed by state's build,
-        # this logic changes. This assumes Scaffold has a dedicated snackbar slot.
-        snackbar_key = key or Key("default_snackbar") # Ensure a key for reconciliation
-        self._active_snackbar_instance = SnackBar(
-            content=content_widget,
-            action=action_widget,
-            duration=duration,
-            key=snackbar_key,
-            **snackbar_props # Pass through other styling props
-        )
-
-        # Assign it to the root widget's slot (assuming Scaffold)
-        if self.root_widget and hasattr(self.root_widget, 'snackBar'):
-            # This assignment tells the next build cycle to include this snackbar
-            print("  Assigning new SnackBar instance to root widget slot.")
-            self.root_widget.snackBar = self._active_snackbar_instance
-        else:
-             print("Warning: Cannot assign SnackBar, root widget or snackBar slot not found.")
-             # If no slot, reconciler won't automatically render it unless handled differently
-             # For now, we proceed assuming the slot exists and build/reconciliation handles it.
-
-        # --- Trigger Reconciliation ---
-        # This will cause the Framework to rebuild the tree, including the new SnackBar.
-        # The reconciler will then generate INSERT or UPDATE patches.
-        print("  Requesting reconciliation to render/update SnackBar.")
-        self.request_reconciliation(None) # Pass None or a dummy state if needed
-
-        # --- Schedule Show & Hide ---
-        # We need the HTML ID, which is only known *after* reconciliation.
-        # Schedule these actions slightly delayed, assuming reconciliation completes quickly.
-        # A better approach might involve getting the ID *back* from the reconciler/patching phase.
-        QTimer.singleShot(50, lambda: self._schedule_snackbar_show_after_reconcile(snackbar_key, duration)) # 50ms delay
-
-    def _schedule_snackbar_show_after_reconcile(self, snackbar_key: Key, duration: int):
-        """Called after a short delay to allow reconciliation to assign an HTML ID."""
-        if not self.reconciler or not self._active_snackbar_instance or self._active_snackbar_instance.key != snackbar_key:
-            print("  SnackBar changed or reconciler missing before showing.")
-            return # SnackBar instance changed before we could show it
-
-        # Find the HTML ID assigned by the reconciler
-        node_data = self.reconciler.rendered_elements_map.get(snackbar_key)
-        if node_data and 'html_id' in node_data:
-            self._active_snackbar_html_id = node_data['html_id']
-            print(f"  Found SnackBar HTML ID: {self._active_snackbar_html_id}. Triggering JS show.")
-            self._trigger_snackbar_toggle_js(self._active_snackbar_html_id, True)
-
-            # Schedule hide timer *after* finding ID and showing
-            self._active_snackbar_timer = QTimer()
-            self._active_snackbar_timer.setSingleShot(True)
-            # Use lambda to capture the specific html_id at this moment
-            current_html_id = self._active_snackbar_html_id
-            self._active_snackbar_timer.timeout.connect(lambda: self.hide_snackbar(current_html_id))
-            self._active_snackbar_timer.start(duration)
-            print(f"  Scheduled hide for SnackBar {current_html_id} in {duration}ms.")
-        else:
-            print(f"Error: Could not find rendered HTML ID for SnackBar key {snackbar_key} after reconciliation.")
-            # SnackBar might not have rendered correctly. Clear state?
-            self._active_snackbar_instance = None
-
-
-    def hide_snackbar(self, snackbar_html_id: Optional[str] = None):
-        """
-        Hides the specified SnackBar (or the currently active one if ID is None)
-        and cleans up internal state.
-        """
-        target_html_id = snackbar_html_id or self._active_snackbar_html_id
-
-        if not target_html_id:
-            print("hide_snackbar: No target HTML ID provided or active.")
-            return
-
-        print(f"Framework: hide_snackbar requested for ID: {target_html_id}")
-
-        # --- Stop Timer ---
-        if self._active_snackbar_timer and self._active_snackbar_timer.isActive():
-            self._active_snackbar_timer.stop()
-            print("  Stopped active snackbar timer.")
-        self._active_snackbar_timer = None
-
-        # --- Trigger JS Hide ---
-        self._trigger_snackbar_toggle_js(target_html_id, False)
-
-        # --- Clean Up State ---
-        # If hiding the *currently tracked* active snackbar, clear references
-        if target_html_id == self._active_snackbar_html_id:
-            print("  Clearing active snackbar instance.")
-            self._active_snackbar_instance = None
-            self._active_snackbar_html_id = None
-            # Optionally, remove from scaffold slot immediately or wait for next reconcile?
-            # Let's remove immediately to prevent flicker if reconcile is slow.
-            if self.root_widget and hasattr(self.root_widget, 'snackBar'):
-                 self.root_widget.snackBar = None
-                 # Optionally trigger reconcile *again* to remove from DOM map?
-                 # self.request_reconciliation(None) # Might be excessive
-
-    def _trigger_snackbar_toggle_js(self, html_id: str, show: bool):
-        """Internal helper to execute the toggleSnackBar JS function."""
-        if self.window and hasattr(self.window, 'evaluate_js'):
-            js_command = f"toggleSnackBar('{html_id}', {str(show).lower()});"
-            # print(f"  Framework executing JS: {js_command}") # Debug
-            self.window.evaluate_js(self.id, js_command)
-        else:
-            print(f"Cannot toggle snackbar '{html_id}': Window not available.")
-
-
-
-    # --- Dialog State ---
-    _active_dialog_instance: Optional[Dialog] = None
-    _active_dialog_html_id: Optional[str] = None
-    _is_dialog_showing: bool = False # Track visibility state
-
-    def show_dialog(self,
-                    dialog_widget: Dialog, # Pass the configured Dialog instance
-                    onDismissed: Optional[Callable] = None, # Optional dismiss callback
-                    onDismissedName: Optional[str] = None # Name for the dismiss callback
-                   ):
-        """
-        Displays the provided Dialog widget instance as an in-page overlay.
-        Triggers reconciliation to render the dialog if not already present.
-        """
-        if not isinstance(dialog_widget, Dialog):
-            print("Error: show_dialog requires a Dialog widget instance.")
-            return
-        if self._is_dialog_showing and self._active_dialog_instance and dialog_widget.key == self._active_dialog_instance.key:
-             print(f"Dialog with key {dialog_widget.key} is already showing.")
-             return # Avoid showing the same dialog instance twice
-
-        print(f"Framework: show_dialog requested. Key: {dialog_widget.key}")
-
-        # --- Register Dismiss Callback (if any) ---
-        # Note: Dismissal often triggered by action buttons inside the dialog content
-        # This specific callback is mainly for *external* dismissal (e.g., scrim click)
-        actual_dismiss_name = onDismissedName if onDismissedName else getattr(onDismissed, '__name__', None)
-        if onDismissed and actual_dismiss_name:
-             print(f"  Registering Dialog dismiss callback: '{actual_dismiss_name}'")
-             self.api.register_callback(actual_dismiss_name, onDismissed)
-        elif onDismissed:
-             print("Warning: Dialog onDismissed provided without a usable name for JS.")
-             actual_dismiss_name = '' # Ensure it's a string
-
-        # --- Store Instance and Trigger Render ---
-        # Store the instance. Reconciliation will handle adding it to the DOM.
-        self._active_dialog_instance = dialog_widget
-        self._is_dialog_showing = False # Mark as not yet visible via JS
-
-        # Trigger reconciliation. The _process_reconciliation method needs to
-        # know how to find and render the _active_dialog_instance separately
-        # from the main root_widget tree, likely appending it to document.body.
-        print("  Requesting reconciliation to render/update Dialog.")
-        self.request_reconciliation(None) # Trigger update cycle
-
-        # --- Schedule Show Animation ---
-        # Wait briefly for reconciliation to render the element and assign ID
-        QTimer.singleShot(50, lambda: self._schedule_dialog_show_after_reconcile(dialog_widget.key, actual_dismiss_name or ''))
-
-    def _schedule_dialog_show_after_reconcile(self, dialog_key: Optional[Key], dismiss_callback_name: str):
-        """Called after reconciliation to trigger the JS show animation."""
-        if not self.reconciler or not self._active_dialog_instance or self._active_dialog_instance.key != dialog_key:
-            print("  Dialog changed or reconciler missing before showing.")
-            self._is_dialog_showing = False # Ensure state is correct
-            return # Dialog instance changed
-
-        # Find the HTML ID assigned by the reconciler
-        node_data = self.reconciler.rendered_elements_map.get(dialog_key)
-        if node_data and 'html_id' in node_data:
-            self._active_dialog_html_id = node_data['html_id']
-            print(f"  Found Dialog HTML ID: {self._active_dialog_html_id}. Triggering JS show.")
-            # Get modal property from the widget instance
-            is_modal = getattr(self._active_dialog_instance, 'isModal', True)
-            self._trigger_dialog_toggle_js(
-                self._active_dialog_html_id,
-                show=True,
-                is_modal=is_modal,
-                on_dismiss_name=dismiss_callback_name
-            )
-            self._is_dialog_showing = True # Mark as visible
-        else:
-            print(f"Error: Could not find rendered HTML ID for Dialog key {dialog_key} after reconciliation.")
-            self._active_dialog_instance = None # Clear if render failed
-            self._is_dialog_showing = False
-
-
-    def hide_dialog(self, dialog_key: Optional[Key] = None):
-        """
-        Hides the currently active dialog (or one specified by key).
-        Triggers JS hide animation and requests reconciliation to remove the element.
-        """
-        target_key = dialog_key or getattr(self._active_dialog_instance, 'key', None)
-        target_html_id = self._active_dialog_html_id
-
-        if not self._is_dialog_showing or not target_key or not target_html_id:
-            print(f"hide_dialog: No active dialog or target key/ID mismatch (Target key: {target_key}).")
-            return
-
-        print(f"Framework: hide_dialog requested for Key: {target_key}, ID: {target_html_id}")
-
-        # --- Trigger JS Hide ---
-        is_modal = getattr(self._active_dialog_instance, 'isModal', True)
-        self._trigger_dialog_toggle_js(target_html_id, False, is_modal)
-        self._is_dialog_showing = False # Mark as hidden
-
-        # --- Clean Up Instance and Request Removal ---
-        # Clear the active instance *after* triggering hide animation
-        print("  Clearing active dialog instance reference.")
-        self._active_dialog_instance = None
-        self._active_dialog_html_id = None
-
-        # Trigger reconciliation to *remove* the dialog element from the DOM map and tree
-        # The reconciler logic needs to see _active_dialog_instance is None now.
-        print("  Requesting reconciliation to remove Dialog element.")
-        self.request_reconciliation(None)
-
-
-    def _trigger_dialog_toggle_js(self, html_id: str, show: bool, is_modal: bool = True, on_dismiss_name: str = ''):
-        """Internal helper to execute the toggleDialog JS function."""
-        if self.window and hasattr(self.window, 'evaluate_js'):
-            # Arguments: dialogId, show, isModal, scrimClass, onDismissedName
-            js_command = f"toggleDialog('{html_id}', {str(show).lower()}, {str(is_modal).lower()}, 'dialog-scrim', '{on_dismiss_name}');"
-            print(f"  Framework executing JS: {js_command}")
-            self.window.evaluate_js(self.id, js_command)
-        else:
-            print(f"Cannot toggle dialog '{html_id}': Window not available.")
-
-
-
-    # Ensure request_reconciliation and _process_reconciliation exist
-    # ... (implementation from previous answers) ...
-
-    def hide_snack_bar(self, widget_id=''):
-        """Hides the snack bar using direct JS execution."""
-        if not widget_id:
-            print("hide_snack_bar called with empty widget_id")
-            return
-        if self.window and hasattr(self.window, 'evaluate_js'):
-            script = f"""
-                var snackbarElement = document.getElementById('{widget_id}');
-                if (snackbarElement) {{
-                    snackbarElement.style.display = 'none';
-                    // console.log('Snackbar {widget_id} hidden via JS.');
-                }} else {{
-                    // console.warn('Snackbar element {widget_id} not found in DOM to hide.');
-                }}
-            """
-            self.window.evaluate_js(self.id, script)
-        else:
-            print(f"Window or evaluate_js not available for hiding snackbar {widget_id}")
-
-    # --- Collect Callbacks (If Using handleClick) ---
-    def _collect_and_register_callbacks(self, widget: Optional[Widget]):
-         """ Recursively find 'onPressed' props and register them with the API."""
-         if widget is None:
-              return
-
-         if hasattr(widget, 'render_props'):
-             props = widget.render_props()
-             if 'onPressed' in props and props['onPressed']:
-                  callback_name = props['onPressed']
-                  # Assume the State object has the actual method matching the name
-                  state_obj = self._find_owning_state(widget) # Need helper to find state
-                  if state_obj and hasattr(state_obj, callback_name):
-                       callback_method = getattr(state_obj, callback_name)
-                       self.api.register_callback(callback_name, callback_method)
-                       # print(f"Registered callback: {callback_name}")
-                  # else: # Debug
-                  #     print(f"Warning: Could not find state or method for callback '{callback_name}'")
-
-         if hasattr(widget, 'get_children'):
-              for child in widget.get_children():
-                   self._collect_and_register_callbacks(child)
-
-    def _find_owning_state(self, widget: Widget) -> Optional[State]:
-         """ Helper to trace up the widget hierarchy to find the managing State.
-             NOTE: This relies on parent pointers or framework tracking, which
-             were removed/changed. Re-implement if needed, or pass state down.
-             Placeholder implementation - THIS WON'T WORK without parent links.
-         """
-         # This logic needs revision based on how state/widget relationships are tracked.
-         # If State always belongs to the immediate StatefulWidget parent, it's easier.
-         # For now, return None as this needs more context.
-         print("Warning: _find_owning_state needs implementation based on hierarchy tracking.")
-         return None

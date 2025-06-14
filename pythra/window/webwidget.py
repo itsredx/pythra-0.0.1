@@ -93,7 +93,7 @@ class DebugWindow(QWebEngineView):
         self.resize(800, 600)
 
 class WebWindow(QWidget):
-    def __init__(self, title, window_id="main_window", html_file=None, js_api=None, width=800, height=600, window_state="normal", frameless=False, on_top=True):
+    def __init__(self, title, window_id="main_window", html_file=None, js_api=None, width=800, height=600, window_state="normal", frameless=False, on_top=False):
         super().__init__()
         self.setWindowTitle(title)
         self.setGeometry(100, 100, width, height)
@@ -130,10 +130,12 @@ class WebWindow(QWidget):
         if html_file:
             self.webview.setUrl(QUrl.fromLocalFile(html_file))
             #print(js_api.callbacks)
+            print('⚡ HTML loaded:')
         else:
             print('HTML not loaded: ',html_file)
 
         self.layout.addWidget(self.webview)  # Webview occupies the entire space
+        print('⚡ WEBVIEW loaded:')
 
         # Setup QWebChannel
         self.channel = QWebChannel()

@@ -1,0 +1,91 @@
+{
+	"kind" : "toolchains",
+	"toolchains" : 
+	[
+		{
+			"compiler" : 
+			{
+				"id" : "GNU",
+				"implicit" : 
+				{
+					"includeDirectories" : 
+					[
+						"C:/Users/SMILETECH COMPUTERS/gcc/lib/gcc/x86_64-w64-mingw32/14.1.0/include",
+						"C:/Users/SMILETECH COMPUTERS/gcc/lib/gcc/x86_64-w64-mingw32/14.1.0/include-fixed",
+						"C:/Users/SMILETECH COMPUTERS/gcc/x86_64-w64-mingw32/include"
+					],
+					"linkDirectories" : [],
+					"linkFrameworkDirectories" : [],
+					"linkLibraries" : []
+				},
+				"path" : "C:/Users/SMILETECH COMPUTERS/gcc/bin/gcc.exe",
+				"version" : "14.1.0"
+			},
+			"language" : "C",
+			"sourceFileExtensions" : 
+			[
+				"c",
+				"m"
+			]
+		},
+		{
+			"compiler" : 
+			{
+				"id" : "GNU",
+				"implicit" : 
+				{
+					"includeDirectories" : 
+					[
+						"C:/Users/SMILETECH COMPUTERS/gcc/include/c++/14.1.0",
+						"C:/Users/SMILETECH COMPUTERS/gcc/include/c++/14.1.0/x86_64-w64-mingw32",
+						"C:/Users/SMILETECH COMPUTERS/gcc/include/c++/14.1.0/backward",
+						"C:/Users/SMILETECH COMPUTERS/gcc/lib/gcc/x86_64-w64-mingw32/14.1.0/include",
+						"C:/Users/SMILETECH COMPUTERS/gcc/lib/gcc/x86_64-w64-mingw32/14.1.0/include-fixed",
+						"C:/Users/SMILETECH COMPUTERS/gcc/x86_64-w64-mingw32/include"
+					],
+					"linkDirectories" : [],
+					"linkFrameworkDirectories" : [],
+					"linkLibraries" : []
+				},
+				"path" : "C:/Users/SMILETECH COMPUTERS/gcc/bin/g++.exe",
+				"version" : "14.1.0"
+			},
+			"language" : "CXX",
+			"sourceFileExtensions" : 
+			[
+				"C",
+				"M",
+				"c++",
+				"cc",
+				"cpp",
+				"cxx",
+				"mm",
+				"mpp",
+				"CPP",
+				"ixx",
+				"cppm",
+				"ccm",
+				"cxxm",
+				"c++m"
+			]
+		},
+		{
+			"compiler" : 
+			{
+				"implicit" : {},
+				"path" : "C:/Users/SMILETECH COMPUTERS/gcc/bin/windres.exe"
+			},
+			"language" : "RC",
+			"sourceFileExtensions" : 
+			[
+				"rc",
+				"RC"
+			]
+		}
+	],
+	"version" : 
+	{
+		"major" : 1,
+		"minor" : 0
+	}
+}
