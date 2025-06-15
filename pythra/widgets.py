@@ -10,8 +10,14 @@ import weakref
 from typing import Any, Dict, List, Optional, Set, Tuple, Union, Callable
 
 
-from .painting import PathClipper, Size # Adjust import
-from .drawing import Path
+from .drawing import (
+    PathCommandWidget, 
+    MoveTo, 
+    LineTo,
+    ClosePath,
+    ArcTo,
+) # Import the new command widgets
+#from .drawing import Path
 
 config = Config()
 assets_dir = config.get('assets_dir', 'assets')
@@ -4076,41 +4082,25 @@ class Align(Widget):
 # --- AspectRatio Refactored ---
 class AspectRatio(Widget):
     """
-    A widget that attempts to size its child to a specific aspect ratio.
-    Uses the padding-bottom CSS trick for maintaining ratio.
-    Compatible with the reconciliation rendering system.
+    A widget that sizes its child to a specific aspect ratio.
+    This is a rendering widget that creates a div with the `aspect-ratio` CSS property.
     """
-    # AspectRatio styling is instance-specific based on the ratio value.
-    # No shared styles needed.
-
     def __init__(self,
-                 aspectRatio: float, # The ratio (width / height) is required
+                 aspectRatio: float,
                  key: Optional[Key] = None,
                  child: Optional[Widget] = None):
 
         if aspectRatio <= 0:
              raise ValueError("aspectRatio must be positive")
-
         super().__init__(key=key, children=[child] if child else [])
-        self.child = child
         self.aspectRatio = aspectRatio
 
     def render_props(self) -> Dict[str, Any]:
-        """Return aspect ratio for direct styling by Reconciler."""
-        props = {
-            'render_type': 'aspect_ratio', # Help reconciler identify
-            'aspectRatio': self.aspectRatio,
-            # Children diffing handled separately
-        }
-        return props
+        """Pass the aspect ratio for direct styling by the Reconciler."""
+        return {'aspectRatio': self.aspectRatio}
 
     def get_required_css_classes(self) -> Set[str]:
-        """AspectRatio doesn't use shared CSS classes."""
         return set()
-
-    # No generate_css_rule needed
-
-    # Removed instance methods: to_html()
 
 # --- FittedBox Refactored ---
 class FittedBox(Widget):
@@ -4667,38 +4657,70 @@ class Dialog(Widget):
 
 
 
+# pythra/widgets.py
+
+from typing import List, Optional, Union
+
+# ... (other imports)
+
 class ClipPath(Widget):
     """
-    A widget that clips its child using a path defined by a CustomClipper.
+    A widget that renders a container of a specific size and clips its child
+    using a declaratively defined path.
     """
-    # ClipPath styling is determined by the clipper and child dimensions,
-    # not usually a shared CSS class for the ClipPath widget itself.
-
     def __init__(self,
                  key: Optional[Key] = None,
                  child: Optional[Widget] = None,
-                 clipper: Optional['PathClipper'] = None, # Instance of user's PathClipper
-                 clipBehavior: str = ClipBehavior.ANTI_ALIAS # Default from styles.py
-                ):
-        super().__init__(key=key, children=[child] if child else [])
-        self.child = child
-        self.clipper = clipper
-        self.clipBehavior = clipBehavior # Affects CSS 'clip-rule' or 'overflow' on child
+                 path_commands: List[PathCommandWidget] = None,
+                 width: Optional[Union[str, int, float]] = 'max-content',
+                 height: Optional[Union[str, int, float]] = 'max-content'):
+        
+        if not child: 
+            raise ValueError("ClipPath widget requires a child.")
+        
+        # ClipPath is now a container, so its child is a true child.
+        super().__init__(key=key, children=[child])
+        
+        self.path_commands = path_commands or []
+        self.width = width
+        self.height = height
+
+    def _get_clip_path_string(self) -> str:
+        """
+        Internal helper to build the final CSS clip-path value.
+        It intelligently handles different command types.
+        """
+        if not self.path_commands:
+            return 'none'
+        
+        # Build the full command string from all path command widgets.
+        # This assumes to_svg_command returns a full string for PolygonClipper
+        # and a path segment for others.
+        full_path_string = " ".join([
+            cmd.to_svg_command({}) for cmd in self.path_commands
+        ])
+
+        # Check if a command already generated a full CSS function (like polygon())
+        if full_path_string.strip().startswith(('polygon', 'circle', 'inset', 'ellipse')):
+            return full_path_string
+        else:
+            # Otherwise, wrap the SVG path data in the path() function.
+            return f"path('{full_path_string}')"
 
     def render_props(self) -> Dict[str, Any]:
-        """Return properties for the Reconciler."""
-        props = {
-            'render_type': 'clip_path', # Signal to Reconciler
-            'has_child': bool(self.child),
-            'clipper': self.clipper, # Pass the clipper instance
-            'clipBehavior': self.clipBehavior,
-            # The unique ID for the SVG <clipPath> element will be generated by reconciler
+        """
+        Passes its own layout and clipping properties to the Reconciler.
+        """
+        # Format width and height with 'px' if they are numbers
+        width_css = f"{self.width}px" if isinstance(self.width, (int, float)) else self.width
+        height_css = f"{self.height}px" if isinstance(self.height, (int, float)) else self.height
+
+        return {
+            'width': width_css,
+            'height': height_css,
+            'clip_path_string': self._get_clip_path_string(),
         }
-        return {k: v for k, v in props.items() if v is not None}
 
     def get_required_css_classes(self) -> Set[str]:
-        """ClipPath itself usually doesn't have a shared CSS class."""
+        # ClipPath now applies styles directly, no shared class needed.
         return set()
-
-    # No generate_css_rule needed for ClipPath container itself.
-    # Styling is applied to the child.

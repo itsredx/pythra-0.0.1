@@ -37,6 +37,18 @@ from .styles import (
     ButtonStyle,
 )
 
+from .drawing import (
+    PathCommandWidget, 
+    MoveTo, 
+    LineTo,
+    ClosePath,
+    ArcTo,
+    QuadraticCurveTo,
+    create_rounded_polygon_path,
+    RoundedPolygon,
+    PolygonClipper,
+)
+
 # --- Widget Implementations ---
 # Expose common widgets directly. Users can import less common ones
 # specifically from framework.widgets if needed.

@@ -286,6 +286,9 @@ class Framework:
                         var insertedEl = tempContainer.firstChild;
                         if (insertedEl) {{
                             parentEl.insertBefore(insertedEl, {before_id_js});
+                            // --- THIS IS THE FIX ---
+                            // Remove the backticks (`) around the function call.
+                            // This ensures the generated JS is executed, not treated as a string.
                             {self._generate_prop_update_js(target_id, props, is_insert=True)}
                         }}
                     }}
@@ -303,6 +306,22 @@ class Framework:
                     var el = document.getElementById('{target_id}');
                     var p = document.getElementById('{parent_id}');
                     if (el && p) p.insertBefore(el, {before_id_js});
+                '''
+            elif action == 'SVG_INSERT':
+                parent_id = data.get('parent_html_id') # e.g., 'svg-defs'
+                html_stub = data.get('html')
+                final_escaped_html = json.dumps(html_stub)[1:-1]
+                
+                command_js = f'''
+                    var svgDefs = document.getElementById('{parent_id}');
+                    if (svgDefs) {{
+                        // Don't add if it already exists
+                        if (!document.getElementById('{target_id}')) {{
+                            svgDefs.insertAdjacentHTML('beforeend', `{final_escaped_html}`);
+                        }}
+                    }} else {{
+                        console.warn('SVG defs container #{parent_id} not found for INSERT of {target_id}');
+                    }}
                 '''
 
             if command_js:
@@ -330,11 +349,27 @@ class Framework:
             elif key == 'backgroundColor': style_updates['backgroundColor'] = value
             elif key == 'width' and value is not None: style_updates['width'] = f"{value}px" if isinstance(value, (int, float)) else value
             elif key == 'height' and value is not None: style_updates['height'] = f"{value}px" if isinstance(value, (int, float)) else value
+
+            elif key == 'aspectRatio': style_updates['aspect-ratio'] = value # <-- ADD THIS LINE
+            elif key == 'clip_path_string': style_updates['clip-path'] = value
         
+         # --- NEW: Apply _style_override from the widget instance ---
+        # We need the widget instance to get the override
+        # This assumes the reconciler includes it in the patch data (we'll ensure this next)
+        widget_instance = props.get('widget_instance') 
+        if widget_instance and hasattr(widget_instance, '_style_override'):
+            for style_key, style_value in widget_instance._style_override.items():
+                style_updates[style_key] = style_value
+                print("Style Value Init: ", style_value)
+        # --- End of New Block ---
+
         if style_updates:
-             for prop, val in style_updates.items():
-                  css_prop = ''.join(['-' + c.lower() if c.isupper() else c for c in prop]).lstrip('-')
-                  js_prop_updates.append(f"{element_var}.style.{prop} = {json.dumps(val)};")
+            for prop, val in style_updates.items():
+                    # This converts a key like 'clipPath' or 'backgroundColor' to 'clip-path' or 'background-color'
+                    css_prop_kebab = ''.join(['-' + c.lower() if c.isupper() else c for c in prop]).lstrip('-')
+                    # --- THIS IS THE FIX ---
+                    # Use setProperty, which correctly handles hyphenated names.
+                    js_prop_updates.append(f"{element_var}.style.setProperty('{css_prop_kebab}', {json.dumps(val)});")
 
         return "\n".join(js_prop_updates)
 

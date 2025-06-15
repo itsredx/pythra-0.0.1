@@ -1,215 +1,290 @@
-# main.py (or a separate custom_clippers.py)
-import math # Add this at the top of the file with MyStarClipper
+# main.py
+
 import sys
-import math # For MyStarClipper
+import time
+import random
+import string
 from PySide6.QtCore import QTimer, QCoreApplication
-from typing import List, Tuple, Union, Any, Optional
 
-
-# Framework Imports
+# --- Framework Imports ---
+# Make sure to import ClipPath and the clipper base classes
 from pythra import (
-    Framework, State, StatefulWidget, Key, Widget, Column,
-    Container, Text, ElevatedButton, ClipPath, # Add ClipPath
-    Colors, EdgeInsets, MainAxisAlignment, Center, CrossAxisAlignment
+    Framework,
+    State,
+    StatefulWidget,
+    Key,
+    Widget,
+    Icon,
+    Container,
+    Column,
+    Row,
+    Text,
+    ElevatedButton,
+    Spacer,
+    IconButton,
+    SizedBox,
+    Colors,
+    EdgeInsets,
+    MainAxisAlignment,
+    CrossAxisAlignment,
+    AssetImage,
+    FloatingActionButton,
+    ButtonStyle,
+    BoxDecoration,
+    BorderRadius,
+    ListTile,
+    Divider,
+    Alignment,
+    ClipPath,
+    PathCommandWidget,
+    MoveTo,
+    LineTo,
+    ClosePath,
+    ArcTo,
+    QuadraticCurveTo,
+    create_rounded_polygon_path,
+    RoundedPolygon,
+    AspectRatio,
+    PolygonClipper,  # <-- ADD THESE IMPORTS
 )
-# Import custom clippers and Path (adjust path if in separate file)
-from pythra.drawing import Path, PathClipper, Size # Or wherever Path types are
-
-class MyOvalClipper(PathClipper):
-    def __init__(self, key: Optional[Key] = None): # Clippers can have keys if their state matters
-        super().__init__()
-        self.key = key
-
-    def getClip(self, size: Size) -> Path:
-        """Creates an oval path that fits within the given size."""
-        width, height = size
-        path = Path()
-        # Path.addOval expects left, top, width, height
-        path.addOval(0, 0, width, height)
-        return path
-
-    def shouldReclip(self, oldClipper: 'MyOvalClipper') -> bool:
-        # Reclip if the clipper instance itself changes (e.g., different key or type)
-        # If MyOvalClipper had properties (e.g., corner_radius), compare them here.
-        return self != oldClipper # Default comparison
-
-    def __eq__(self, other): # For shouldReclip and use in style_key for widget if needed
-        return isinstance(other, MyOvalClipper) and self.key == other.key
-
-    def __hash__(self):
-        return hash((self.__class__, self.key))
-
-    def to_tuple(self): # For make_hashable if clipper instance is part of a style_key
-        return (self.__class__, self.key)
+import math  # For the StarClipper
 
 
-class MyStarClipper(PathClipper):
-    def __init__(self, points=5, inner_radius_factor=0.4, key: Optional[Key] = None):
-        super().__init__()
-        self.points = points
-        self.inner_radius_factor = inner_radius_factor
-        self.key = key
-
-    def getClip(self, size: Size) -> Path:
-        path = Path()
-        width, height = size
-        centerX = width / 2
-        centerY = height / 2
-        outerRadius = min(width, height) / 2
-        innerRadius = outerRadius * self.inner_radius_factor
-
-        # Angle for each of the "outer" points of the star
-        angle_step = (2 * math.pi) / self.points
-        # Angle for the "inner" points, offset from outer
-        inner_angle_offset = angle_step / 2
-        
-        start_angle = -math.pi / 2 # Start at the top point
-
-        for i in range(self.points):
-            # Outer point
-            outer_x = centerX + outerRadius * math.cos(start_angle + i * angle_step)
-            outer_y = centerY + outerRadius * math.sin(start_angle + i * angle_step)
-            if i == 0:
-                path.moveTo(outer_x, outer_y)
-            else:
-                path.lineTo(outer_x, outer_y)
-
-            # Inner point
-            inner_x = centerX + innerRadius * math.cos(start_angle + i * angle_step + inner_angle_offset)
-            inner_y = centerY + innerRadius * math.sin(start_angle + i * angle_step + inner_angle_offset)
-            path.lineTo(inner_x, inner_y)
-            
-        path.close()
-        return path
-
-    def shouldReclip(self, oldClipper: 'MyStarClipper') -> bool:
-        return self != oldClipper or \
-               self.points != oldClipper.points or \
-               self.inner_radius_factor != oldClipper.inner_radius_factor
-
-    def __eq__(self, other):
-        return isinstance(other, MyStarClipper) and \
-               self.points == other.points and \
-               self.inner_radius_factor == other.inner_radius_factor and \
-               self.key == other.key
-
-    def __hash__(self):
-        return hash((self.__class__, self.points, self.inner_radius_factor, self.key))
-
-    def to_tuple(self):
-        return (self.__class__, self.points, self.inner_radius_factor, self.key)
-
-
-
-# --- Test State ---
-class ClipPathTestState(State):
+# --- Application State ---
+class TestAppState(State):
     def __init__(self):
         super().__init__()
-        self.use_star_clipper = False
-        self.star_points = 5
-        self.clipper_instance = MyOvalClipper(key=Key("oval_clipper"))
-        print("ClipPathTestState Initialized")
+        self.counter = 0
+        self.items = [
+            {"id": "apple", "name": "Apple 🍎"},
+            {"id": "banana", "name": "Banana 🍌"},
+            {"id": "cherry", "name": "Cherry 🍒"},
+        ]
+        self.show_extra = False
+        print("TestAppState Initialized")
 
-    def toggle_clipper(self):
-        print("ACTION: Toggle Clipper")
-        self.use_star_clipper = not self.use_star_clipper
-        if self.use_star_clipper:
-            self.clipper_instance = MyStarClipper(points=self.star_points, key=Key(f"star_{self.star_points}"))
-        else:
-            self.clipper_instance = MyOvalClipper(key=Key("oval_clipper"))
+    # --- Actions (increment, add_item, etc. remain the same) ---
+    def increment(self):
+        print("ACTION: Increment Counter")
+        self.counter += 1
         self.setState()
 
-    def change_star_points(self):
-        print("ACTION: Change Star Points")
-        if self.use_star_clipper: # Only change if star is active
-            self.star_points = 7 if self.star_points == 5 else 5
-            self.clipper_instance = MyStarClipper(points=self.star_points, key=Key(f"star_{self.star_points}"))
+    def decrement(self):
+        print("ACTION: Decrement Counter")
+        self.counter -= 1
+        self.setState()
+
+    def add_item(self):
+        print("ACTION: Add Item")
+        new_id = "".join(random.choices(string.ascii_lowercase, k=4))
+        new_name = f"New {new_id.capitalize()} ✨"
+        self.items.append({"id": new_id, "name": new_name})
+        self.setState()
+
+    def remove_last_item(self):
+        print("ACTION: Remove Last Item")
+        if self.items:
+            self.items.pop()
             self.setState()
-        else:
-            print("  Star clipper not active, toggle first.")
 
+    def remove_first_item(self):
+        print("ACTION: Remove First Item")
+        if self.items:
+            self.items.pop(0)
+            self.setState()
 
+    def swap_items(self):
+        print("ACTION: Swap First Two Items")
+        if len(self.items) >= 2:
+            self.items[0], self.items[1] = self.items[1], self.items[0]
+            self.setState()
+
+    def toggle_extra(self):
+        print("ACTION: Toggle Extra Text")
+        self.show_extra = not self.show_extra
+        self.setState()
+
+    def remove_item_by_id(self, item_id_to_remove):
+        print(f"ACTION: Removing item by ID '{item_id_to_remove}'")
+        self.items = [item for item in self.items if item["id"] != item_id_to_remove]
+        self.setState()
+
+    # --- Build Method ---
     def build(self) -> Widget:
-        print(f"\n--- Building ClipPathTest UI (UseStar: {self.use_star_clipper}, StarPoints: {self.star_points}) ---")
-
-        clipped_content = Container(
-            key=Key("clipped_container"),
-            width=200, # Fixed size for predictable clipping
-            height=150,
-            color=Colors.secondaryContainer,
-            child=Center( # Assuming Center is refactored
-                child=Text(
-                    "Clipped!" if not self.use_star_clipper else f"{self.star_points}-Point Star!",
-                    key=Key("clipped_text"),
-                    style={'fontSize': 20, 'color': Colors.onSecondaryContainer} # Basic style
-                )
-            )
+        print(
+            f"\n--- Building TestApp UI (Counter: {self.counter}, Items: {len(self.items)}, ShowExtra: {self.show_extra}) ---"
         )
+
+        list_item_widgets = [
+            ListTile(
+                key=Key(item["id"]),
+                title=Text(item["name"]),
+                trailing=IconButton(
+                    icon=Icon(icon_name="times-circle", color=Colors.error),
+                    onPressed=lambda item_id=item["id"]: self.remove_item_by_id(
+                        item_id
+                    ),
+                    onPressedName=f"remove_{item['id']}",
+                ),
+                selected=(
+                    (self.counter % len(self.items) == self.items.index(item))
+                    if self.items
+                    else False
+                ),
+            )
+            for item in self.items
+        ]
 
         return Container(
-            key=Key("main_app_container"),
+            key=Key("root_container"),
             padding=EdgeInsets.all(20),
-            child=Column( # Assuming Column is refactored
-                key=Key("main_layout_column"),
-                mainAxisAlignment=MainAxisAlignment.START,
-                crossAxisAlignment=CrossAxisAlignment.CENTER,
+            child=Column(
+                key=Key("main_column"),
                 children=[
-                    Text("ClipPath Test", key=Key("header_text"), style={'fontSize': 24}),
-                    Container(height=20), # Spacer
-
-                    ClipPath(
-                        key=Key("my_clip_path"),
-                        clipper=self.clipper_instance, # Pass the current clipper
-                        child=clipped_content
+                    # ... (Counter Row and Item List Control Row remain the same) ...
+                    Row(
+                        key=Key("counter_row"),
+                        mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
+                        children=[
+                            Text(f"Counter: {self.counter}", key=Key("counter_text")),
+                            ElevatedButton(
+                                key=Key("inc_button"),
+                                child=Text("Increment"),
+                                onPressed=self.increment,
+                            ),
+                            ElevatedButton(
+                                key=Key("dec_button"),
+                                child=Text("Decrement"),
+                                onPressed=self.decrement,
+                            ),
+                        ],
                     ),
-                    Container(height=20),
-
-                    ElevatedButton(
-                        key=Key("toggle_clipper_btn"),
-                        child=Text("Toggle Clipper (Oval/Star)"),
-                        onPressed=self.toggle_clipper,
-                        onPressedName="toggle_clipper_callback"
+                    SizedBox(height=20),
+                    Row(
+                        key=Key("control_row"),
+                        mainAxisAlignment=MainAxisAlignment.SPACE_AROUND,
+                        children=[
+                            ElevatedButton(child=Text("Add"), onPressed=self.add_item),
+                            ElevatedButton(
+                                child=Text("Swap"), onPressed=self.swap_items
+                            ),
+                            ElevatedButton(
+                                child=Text("Rem Last"), onPressed=self.remove_last_item
+                            ),
+                            ElevatedButton(
+                                child=Text("Rem First"),
+                                onPressed=self.remove_first_item,
+                            ),
+                        ],
                     ),
-                    Container(height=10),
+                    SizedBox(height=20),
+                    # --- ClipPath Test Section ---
+                    Text("ClipPath Test:", key=Key("clippath_header")),
+                    SizedBox(height=10),
+                    Container(
+                        key=Key("clippath_container_wrapper"),
+                        decoration=BoxDecoration(
+                            color=Colors.lightblue,
+                            borderRadius=BorderRadius.circular(8),
+                        ),
+                        alignment=Alignment.center(),
+                        padding=EdgeInsets.all(16.0),
+                        width="50%",
+                        # height="200px",
+                        child=ClipPath(
+                            key=Key("responsive_star_clip"),
+                            width="50%",
+                            child=AspectRatio(
+                                key=Key("square_box"),
+                                aspectRatio=1.0,
+                                child=Container(
+                                    key=Key("declarative_clipped_box"),
+                                    decoration=BoxDecoration(color=Colors.lightgreen),
+                                    width="100%",
+                                    height="100%",
+                                ),
+                            ),
+                            # --- Use the new responsive PolygonClipper ---
+                            path_commands=[
+                                PolygonClipper(
+                                    points=[
+                                        # These are now percentages (0-100)
+                                        (50, 0),
+                                        (61, 35),
+                                        (98, 35),
+                                        (68, 57),
+                                        (79, 91),
+                                        (50, 70),
+                                        (21, 91),
+                                        (32, 57),
+                                        (2, 35),
+                                        (39, 35),
+                                    ],
+                                )
+                            ],
+                        ),
+                    ),
+                    SizedBox(height=20),
+                    # --- End ClipPath Test Section ---
                     ElevatedButton(
-                        key=Key("change_star_btn"),
-                        child=Text("Change Star Points (5/7)"),
-                        onPressed=self.change_star_points,
-                        onPressedName="change_star_points_callback"
-                    )
-                ]
-            )
+                        child=Text("Toggle Extra Text"), onPressed=self.toggle_extra
+                    ),
+                    SizedBox(height=10),
+                    Container(
+                        key=Key("conditional_container"),
+                        child=(
+                            Text("This text appears/disappears!", key=Key("extra_text"))
+                            if self.show_extra
+                            else None
+                        ),
+                    ),
+                    SizedBox(height=20),
+                    Divider(key=Key("list_divider")),
+                    Text("Item List:", key=Key("list_header")),
+                    SizedBox(height=10),
+                    Column(key=Key("item_list_column"), children=list_item_widgets),
+                ],
+            ),
         )
 
-# --- App Definition ---
-class ClipApp(StatefulWidget):
-    def createState(self) -> ClipPathTestState:
-        return ClipPathTestState()
 
-# --- Application Runner ---
+# --- App Definition & Runner (remain the same) ---
+class TestApp(StatefulWidget):
+    def createState(self) -> TestAppState:
+        return TestAppState()
+
+
 class Application:
     def __init__(self):
-        self.framework = Framework()
-        self.my_app = ClipApp(key=Key("clip_test_app"))
-        self.state_instance: Optional[ClipPathTestState] = None
+        self.framework = Framework.instance()
+        self.my_app = TestApp(key=Key("test_app_root"))
+        self.state_instance: Optional[TestAppState] = None
 
     def schedule_tests(self):
-        if not self.state_instance: return
-
-        print("\n>>> Scheduling ClipPath Test Sequence <<<")
-        QTimer.singleShot(2000, lambda: print("\n--- Initial State (Oval Clip) ---"))
-        QTimer.singleShot(4000, self.state_instance.toggle_clipper) # Oval -> Star (5 points)
-        QTimer.singleShot(7000, self.state_instance.change_star_points) # Star (5 points) -> Star (7 points)
-        QTimer.singleShot(10000, self.state_instance.toggle_clipper) # Star (7 points) -> Oval
-        QTimer.singleShot(12000, lambda: print("\n>>> ClipPath Test Sequence Complete <<<"))
+        # ... (same test scheduling logic) ...
+        pass  # Let's run manually for this test
 
     def run(self):
         self.framework.set_root(self.my_app)
-        if isinstance(self.my_app, StatefulWidget): self.state_instance = self.my_app.get_state()
-        QTimer.singleShot(0, self.schedule_tests)
-        self.framework.run(title='ClipPath Test')
+        if isinstance(self.my_app, StatefulWidget):
+            self.state_instance = self.my_app.get_state()
+        self.framework.run(title="Framework Reconciliation Test")
 
-# --- Main Execution ---
+
+"""[
+                                MoveTo(x=75, y=0),
+                                LineTo(x=92, y=52),
+                                LineTo(x=150, y=52),
+                                LineTo(x=101, y=85),
+                                LineTo(x=121, y=140),
+                                LineTo(x=75, y=105),
+                                LineTo(x=29, y=140),
+                                LineTo(x=49, y=85),
+                                LineTo(x=0, y=52),
+                                LineTo(x=58, y=52),
+                                ClosePath(),
+                            ],"""
+
 if __name__ == "__main__":
     app_runner = Application()
     app_runner.run()
