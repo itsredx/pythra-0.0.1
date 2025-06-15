@@ -43,7 +43,6 @@ from pythra import (
     ArcTo,
     QuadraticCurveTo,
     create_rounded_polygon_path,
-    RoundedPolygon,
     AspectRatio,
     PolygonClipper,  # <-- ADD THESE IMPORTS
 )
@@ -205,10 +204,8 @@ class TestAppState(State):
                                 ),
                             ),
                             # --- Use the new responsive PolygonClipper ---
-                            path_commands=[
-                                PolygonClipper(
+                            path_commands=[PolygonClipper(
                                     points=[
-                                        # These are now percentages (0-100)
                                         (50, 0),
                                         (61, 35),
                                         (98, 35),
@@ -220,8 +217,8 @@ class TestAppState(State):
                                         (2, 35),
                                         (39, 35),
                                     ],
-                                )
-                            ],
+                                )]
+                            
                         ),
                     ),
                     SizedBox(height=20),
