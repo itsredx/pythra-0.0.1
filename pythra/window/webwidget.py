@@ -184,7 +184,7 @@ class WebWindow(QWidget):
 
 
 # Create Window Function
-def create_window(title: str, window_id: str, html_file: str = None, js_api: Api = None, width: int = 800, height: int = 600, window_state: str = "normal", frameless: bool = False):
+def create_window(title: str, window_id: str, html_file: str = None, js_api: Api = None, width: int = 800, height: int = 600, window_state: str = "normal", frameless: bool = True):
     window = WebWindow(title, window_id=window_id, html_file=html_file, js_api=js_api, width=width, height=height, window_state=window_state, frameless=frameless)
     window.show_window()
     return window

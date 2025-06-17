@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Framework Reconciliation Test</title>
+    <title>Pythra Test...</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1749976640">
+    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1750131643">
     <style id="dynamic-styles">.shared-container-3 { box-sizing: border-box; padding: 20px; }
 .shared-column-0 { display: flex; flex-direction: column; justify-content: flex-start; align-items: center; flex-grow: 1; flex-basis: 0; direction: ltr; }
 .shared-row-0 { display: flex; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; direction: ltr; }
@@ -23,8 +23,8 @@
 .shared-elevatedbutton-0.disabled { background-color: rgba(0, 0, 0, 0.12); color: rgba(0, 0, 0, 0.38); box-shadow: none; cursor: default; pointer-events: none; }
 
 .shared-row-1 { display: flex; flex-direction: row; justify-content: space-around; align-items: center; width: 100%; direction: ltr; }
-.shared-container-1 { box-sizing: border-box; background-color: lightblue; border-radius: 8px; padding: 16.0px; width: 50%; display: flex; justify-content: center; align-items: center; }
-.shared-container-0 { box-sizing: border-box; background-color: lightgreen; width: 100%; height: 100%; }
+.shared-container-1 { box-sizing: border-box; background-color: lightblue; border-radius: 8px; padding: 16.0px; width: 70%; height: 50vh; display: flex; justify-content: center; align-items: center; }
+.shared-container-0 { box-sizing: border-box; background-color: red; width: 100%; height: 100%; }
 .shared-container-2 { box-sizing: border-box; }
 
                 .shared-listtile-0 { /* Base styles */ }
@@ -70,8 +70,38 @@
         
 </head>
 <body>
-    <svg id="global-svg-defs" width="0" height="0" style="position:absolute;pointer-events:none;visibility:hidden;"><defs></defs></svg>
-    <div id="root-container"><div id="fw_id_1" class="shared-container-3"><div id="fw_id_2" class="shared-column-0"><div id="fw_id_3" class="shared-row-0"><p id="fw_id_4" class="shared-text-0">Counter: 0</p><button id="fw_id_5" class="shared-elevatedbutton-0" onclick="handleClick('increment')"><p id="fw_id_6" class="shared-text-0">Increment</p></button><button id="fw_id_7" class="shared-elevatedbutton-0" onclick="handleClick('decrement')"><p id="fw_id_8" class="shared-text-0">Decrement</p></button></div><div id="fw_id_9" class="" style="height: 20px"></div><div id="fw_id_10" class="shared-row-1"><button id="fw_id_11" class="shared-elevatedbutton-0" onclick="handleClick('add_item')"><p id="fw_id_12" class="shared-text-0">Add</p></button><button id="fw_id_13" class="shared-elevatedbutton-0" onclick="handleClick('swap_items')"><p id="fw_id_14" class="shared-text-0">Swap</p></button><button id="fw_id_15" class="shared-elevatedbutton-0" onclick="handleClick('remove_last_item')"><p id="fw_id_16" class="shared-text-0">Rem Last</p></button><button id="fw_id_17" class="shared-elevatedbutton-0" onclick="handleClick('remove_first_item')"><p id="fw_id_18" class="shared-text-0">Rem First</p></button></div><div id="fw_id_19" class="" style="height: 20px"></div><p id="fw_id_20" class="shared-text-0">ClipPath Test:</p><div id="fw_id_21" class="" style="height: 10px"></div><div id="fw_id_22" class="shared-container-1"><div id="fw_id_23" class="" style="width: 50%; height: max-content; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)"><div id="fw_id_24" class="" style="aspect-ratio: 1.0"><div id="fw_id_25" class="shared-container-0"></div></div></div></div><div id="fw_id_26" class="" style="height: 20px"></div><button id="fw_id_27" class="shared-elevatedbutton-0" onclick="handleClick('toggle_extra')"><p id="fw_id_28" class="shared-text-0">Toggle Extra Text</p></button><div id="fw_id_29" class="" style="height: 10px"></div><div id="fw_id_30" class="shared-container-2"></div><div id="fw_id_31" class="" style="height: 20px"></div><div id="fw_id_32" class="" style="height: 1.0px; background-color: #CAC4D0; margin: 0.5px 0"></div><p id="fw_id_33" class="shared-text-0">Item List:</p><div id="fw_id_34" class="" style="height: 10px"></div><div id="fw_id_35" class="shared-column-0"><div id="fw_id_36" class="shared-listtile-0 selected "><p id="fw_id_37" class="shared-text-0">Apple 🍎</p><button id="fw_id_38" class="shared-iconbutton-0 " onclick="handleClick('remove_apple')"><i id="fw_id_39" class="shared-icon-0"></i></button></div><div id="fw_id_40" class="shared-listtile-0  "><p id="fw_id_41" class="shared-text-0">Banana 🍌</p><button id="fw_id_42" class="shared-iconbutton-0 " onclick="handleClick('remove_banana')"><i id="fw_id_43" class="shared-icon-0"></i></button></div><div id="fw_id_44" class="shared-listtile-0  "><p id="fw_id_45" class="shared-text-0">Cherry 🍒</p><button id="fw_id_46" class="shared-iconbutton-0 " onclick="handleClick('remove_cherry')"><i id="fw_id_47" class="shared-icon-0"></i></button></div></div></div></div></div>
+    <div id="root-container"><div id="fw_id_1" class="shared-container-3"><div id="fw_id_2" class="shared-column-0"><div id="fw_id_3" class="shared-row-0"><p id="fw_id_4" class="shared-text-0">Counter: 0</p><button id="fw_id_5" class="shared-elevatedbutton-0" onclick="handleClick('increment')"><p id="fw_id_6" class="shared-text-0">Increment</p></button><button id="fw_id_7" class="shared-elevatedbutton-0" onclick="handleClick('decrement')"><p id="fw_id_8" class="shared-text-0">Decrement</p></button></div><div id="fw_id_9" class="" style="height: 20px"></div><div id="fw_id_10" class="shared-row-1"><button id="fw_id_11" class="shared-elevatedbutton-0" onclick="handleClick('add_item')"><p id="fw_id_12" class="shared-text-0">Add</p></button><button id="fw_id_13" class="shared-elevatedbutton-0" onclick="handleClick('swap_items')"><p id="fw_id_14" class="shared-text-0">Swap</p></button><button id="fw_id_15" class="shared-elevatedbutton-0" onclick="handleClick('remove_last_item')"><p id="fw_id_16" class="shared-text-0">Rem Last</p></button><button id="fw_id_17" class="shared-elevatedbutton-0" onclick="handleClick('remove_first_item')"><p id="fw_id_18" class="shared-text-0">Rem First</p></button></div><div id="fw_id_19" class="" style="height: 20px"></div><p id="fw_id_20" class="shared-text-0">ClipPath Test:</p><div id="fw_id_21" class="" style="height: 10px"></div><div id="fw_id_22" class="shared-container-1"><div id="fw_id_23" class="" style="width: 50%; height: max-content; aspect-ratio: 1.0"><div id="fw_id_24" class="shared-container-0"></div></div></div><div id="fw_id_25" class="" style="height: 20px"></div><button id="fw_id_26" class="shared-elevatedbutton-0" onclick="handleClick('toggle_extra')"><p id="fw_id_27" class="shared-text-0">Toggle Extra Text</p></button><div id="fw_id_28" class="" style="height: 10px"></div><div id="fw_id_29" class="shared-container-2"></div><div id="fw_id_30" class="" style="height: 20px"></div><div id="fw_id_31" class="" style="height: 1.0px; background-color: #CAC4D0; margin: 0.5px 0"></div><p id="fw_id_32" class="shared-text-0">Item List:</p><div id="fw_id_33" class="" style="height: 10px"></div><div id="fw_id_34" class="shared-column-0"><div id="fw_id_35" class="shared-listtile-0 selected "><p id="fw_id_36" class="shared-text-0">Apple 🍎</p><button id="fw_id_37" class="shared-iconbutton-0 " onclick="handleClick('remove_apple')"><i id="fw_id_38" class="shared-icon-0"></i></button></div><div id="fw_id_39" class="shared-listtile-0  "><p id="fw_id_40" class="shared-text-0">Banana 🍌</p><button id="fw_id_41" class="shared-iconbutton-0 " onclick="handleClick('remove_banana')"><i id="fw_id_42" class="shared-icon-0"></i></button></div><div id="fw_id_43" class="shared-listtile-0  "><p id="fw_id_44" class="shared-text-0">Cherry 🍒</p><button id="fw_id_45" class="shared-iconbutton-0 " onclick="handleClick('remove_cherry')"><i id="fw_id_46" class="shared-icon-0"></i></button></div></div></div></div></div>
     <div id="overlay-container"></div>
+    <!-- NEW: Inject the initializer script at the end of the body -->
+
+        <script type="module">
+            import { generateRoundedPath } from './js/pathGenerator.js';
+            import { ResponsiveClipPath } from './js/clipPathUtils.js';
+
+            document.addEventListener('DOMContentLoaded', () => {
+                window._pythra_instances = window._pythra_instances || {};
+                try {
+                    
+                    // Step 0: Convert Python's array-of-arrays to JS's array-of-objects
+                    const pointsForGenerator_fw_id_23 = [[50, 0], [61, 35], [98, 35], [68, 57], [79, 91], [50, 70], [21, 91], [32, 57], [2, 35], [39, 35]].map(p => ({x: p[0], y: p[1]}));
+                    
+                    // Step 1: Call generateRoundedPath with the points and radius
+                    const initialPathString_fw_id_23 = generateRoundedPath(pointsForGenerator_fw_id_23, 8.0);
+                    
+                    // Step 2: Feed the generated path into ResponsiveClipPath
+                    window._pythra_instances['fw_id_23'] = new ResponsiveClipPath(
+                        'fw_id_23', 
+                        initialPathString_fw_id_23, 
+                        100, 
+                        100, 
+                        { uniformArc: true, decimalPlaces: 2 }
+                    );
+                
+                } catch (e) {
+                    console.error("Error running Pythra initializers:", e);
+                }
+            });
+        </script>
+        
 </body>
 </html>

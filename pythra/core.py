@@ -3,6 +3,7 @@
 import os
 import time
 import json
+import math 
 import html
 import weakref
 from typing import Optional, Set, List, Dict, TYPE_CHECKING, Callable, Any
@@ -61,7 +62,7 @@ class Framework:
         # Asset Management
         self.html_file_path = os.path.abspath('web/index.html')
         self.css_file_path = os.path.abspath('web/styles.css')
-        self.asset_server = AssetServer(directory='assets', port=self.config.get('assets_server_port'))
+        self.asset_server = AssetServer(directory=self.config.get('assets_dir'), port=self.config.get('assets_server_port'))
         self.asset_server.start()
         os.makedirs('web', exist_ok=True)
 
@@ -73,7 +74,7 @@ class Framework:
         """Sets the root widget for the application."""
         self.root_widget = widget
 
-    def run(self, title: str, width: int = 800, height: int = 600, frameless: bool = False):
+    def run(self, title: str = config.get('app_name'), width: int = config.get('win_width'), height: int = config.get('win_height'), frameless: bool = config.get('frameless')):
         """
         Builds the initial UI, writes necessary files, creates the window, and starts the app.
         """
@@ -102,11 +103,14 @@ class Framework:
         # 5. Generate initial CSS from the details collected by the reconciler.
         initial_css_rules = self._generate_css_from_details(result.active_css_details)
 
+        # --- NEW: Generate the initial JS script ---
+        initial_js_script = self._generate_initial_js_script(result.js_initializers)
+
         # 6. Write files and create the application window.
-        self._write_initial_files(title, initial_html_content, initial_css_rules)
+        self._write_initial_files(title, initial_html_content, initial_css_rules, initial_js_script)
         
         self.window = webwidget.create_window(
-            title, self.id, self.html_file_path, self.api, width, height, frameless
+            title, self.id, self.html_file_path, self.api, width, height, frameless=frameless
         )
         
         # 7. Start the application event loop.
@@ -268,6 +272,51 @@ class Framework:
             }}
         '''
 
+
+
+    def _build_path_from_commands(self, commands_data: List[Dict]) -> str:
+        """
+        Builds an SVG path data string from serialized command data.
+        This is the Python-side logic that mirrors your JS path generators.
+        """
+        path_parts = []
+        for cmd_data in commands_data:
+            cmd_type = cmd_data.get('type')
+            if cmd_type == 'RoundedPolygon':
+                # This is a simplified version of your JS logic for Python
+                # It uses Quadratic Curves for rounding.
+                vertices = cmd_data.get('verts', [])
+                radius = cmd_data.get('radius', 0)
+                if not vertices or radius <= 0: continue
+                
+                num_vertices = len(vertices)
+                for i in range(num_vertices):
+                    p1 = vertices[i]; p0 = vertices[i-1]; p2 = vertices[(i+1)%num_vertices]
+                    v1 = (p0[0]-p1[0], p0[1]-p1[1]); v2 = (p2[0]-p1[0], p2[1]-p1[1])
+                    len_v1 = math.sqrt(v1[0]**2+v1[1]**2); len_v2 = math.sqrt(v2[0]**2+v2[1]**2)
+                    if len_v1 == 0 or len_v2 == 0: continue
+                    
+                    clamped_radius = min(radius, len_v1/2, len_v2/2)
+                    arc_start_x = p1[0] + (v1[0]/len_v1)*clamped_radius
+                    arc_start_y = p1[1] + (v1[1]/len_v1)*clamped_radius
+                    arc_end_x = p1[0] + (v2[0]/len_v2)*clamped_radius
+                    arc_end_y = p1[1] + (v2[1]/len_v2)*clamped_radius
+                    
+                    if i == 0: path_parts.append(f"M {arc_start_x} {arc_start_y}")
+                    else: path_parts.append(f"L {arc_start_x} {arc_start_y}")
+                    path_parts.append(f"Q {p1[0]} {p1[1]} {arc_end_x} {arc_end_y}")
+                path_parts.append("Z")
+
+            elif cmd_type == 'MoveTo':
+                path_parts.append(f"M {cmd_data['x']} {cmd_data['y']}")
+            elif cmd_type == 'LineTo':
+                path_parts.append(f"L {cmd_data['x']} {cmd_data['y']}")
+            elif cmd_type == 'ClosePath':
+                path_parts.append("Z")
+            # ... add other command types as needed ...
+            
+        return " ".join(path_parts)
+
     def _generate_dom_patch_script(self, patches: List[Patch]) -> str:
         """Converts the list of Patch objects from the reconciler into executable JavaScript."""
         js_commands = []
@@ -293,6 +342,24 @@ class Framework:
                         }}
                     }}
                 '''
+                props = data.get('props', {})
+                if 'responsive_clip_path' in props:
+                    clip_data = props['responsive_clip_path']
+                    # We need to build the initial path string in Python
+                    initial_path_string = self._build_path_from_commands(clip_data['commands'])
+                    ref_w, ref_h = clip_data['viewBox'][2], clip_data['viewBox'][3]
+                    
+                    # Store the instance on a global object for cleanup
+                    command_js += f'''
+                        window._pythra_instances = window._pythra_instances || {{}};
+                        window._pythra_instances['{target_id}'] = new ResponsiveClipPath(
+                            '{target_id}', 
+                            '{initial_path_string}', 
+                            {ref_w}, 
+                            {ref_h}, 
+                            {{ uniformArc: true, decimalPlaces: 2 }}
+                        );
+                    '''
             elif action == 'REMOVE':
                 command_js = f'var el = document.getElementById("{target_id}"); if(el) el.remove();'
             elif action == 'UPDATE':
@@ -373,7 +440,66 @@ class Framework:
 
         return "\n".join(js_prop_updates)
 
-    def _write_initial_files(self, title: str, html_content: str, initial_css_rules: str):
+
+
+
+    def _generate_initial_js_script(self, initializers: List[Dict]) -> str:
+        """Generates a script tag to run initializations after the DOM loads."""
+        if not initializers:
+            return ""
+
+        js_commands = []
+        for init in initializers:
+            if init['type'] == 'ResponsiveClipPath':
+                target_id = init['target_id']
+                clip_data = init['data']
+                
+                # Serialize the Python data into JSON strings for JS
+                points_json = json.dumps(clip_data['points'])
+                radius_json = json.dumps(clip_data['radius'])
+                ref_w_json = json.dumps(clip_data['viewBox'][0])
+                ref_h_json = json.dumps(clip_data['viewBox'][1])
+
+                # This JS code performs the exact two-step process you described.
+                js_commands.append(f"""
+                    // Step 0: Convert Python's array-of-arrays to JS's array-of-objects
+                    const pointsForGenerator_{target_id} = {points_json}.map(p => ({{x: p[0], y: p[1]}}));
+                    
+                    // Step 1: Call generateRoundedPath with the points and radius
+                    const initialPathString_{target_id} = generateRoundedPath(pointsForGenerator_{target_id}, {radius_json});
+                    
+                    // Step 2: Feed the generated path into ResponsiveClipPath
+                    window._pythra_instances['{target_id}'] = new ResponsiveClipPath(
+                        '{target_id}', 
+                        initialPathString_{target_id}, 
+                        {ref_w_json}, 
+                        {ref_h_json}, 
+                        {{ uniformArc: true, decimalPlaces: 2 }}
+                    );
+                """)
+
+        # Wrap all commands in a DOMContentLoaded listener.
+        # We now import BOTH of your utility modules.
+        full_script = f"""
+        <script type="module">
+            import {{ generateRoundedPath }} from './js/pathGenerator.js';
+            import {{ ResponsiveClipPath }} from './js/clipPathUtils.js';
+
+            document.addEventListener('DOMContentLoaded', () => {{
+                window._pythra_instances = window._pythra_instances || {{}};
+                try {{
+                    {'\\n'.join(js_commands)}
+                }} catch (e) {{
+                    console.error("Error running Pythra initializers:", e);
+                }}
+            }});
+        </script>
+        """
+        return full_script
+
+
+
+    def _write_initial_files(self, title: str, html_content: str, initial_css_rules: str, initial_js: str):
          base_css = """
          body { margin: 0; font-family: sans-serif; background-color: #f0f0f0; overflow: hidden;}
          * { box-sizing: border-box; }
@@ -393,9 +519,10 @@ class Framework:
     {self._get_js_includes()}
 </head>
 <body>
-    <svg id="global-svg-defs" width="0" height="0" style="position:absolute;pointer-events:none;visibility:hidden;"><defs></defs></svg>
     <div id="root-container">{html_content}</div>
     <div id="overlay-container"></div>
+    <!-- NEW: Inject the initializer script at the end of the body -->
+{initial_js}
 </body>
 </html>""")
          except IOError as e:

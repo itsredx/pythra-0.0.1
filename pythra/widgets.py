@@ -4657,70 +4657,57 @@ class Dialog(Widget):
 
 
 
-# pythra/widgets.py
 
-from typing import List, Optional, Union
 
-# ... (other imports)
+# The RoundedPolygon class can be removed from here, as its logic is now in JS.
 
 class ClipPath(Widget):
     """
-    A widget that renders a container of a specific size and clips its child
-    using a declaratively defined path.
+    A widget that renders a container and clips its child using a path.
+    The path is defined by a list of points and an optional corner radius,
+    and is made fully responsive by a client-side engine.
     """
     def __init__(self,
                  key: Optional[Key] = None,
                  child: Optional[Widget] = None,
-                 path_commands: List[PathCommandWidget] = None,
+                 points: List[Tuple[float, float]] = None,
+                 radius: float = 0,
+                 viewBox: Tuple[float, float] = (100, 100),
                  width: Optional[Union[str, int, float]] = 'max-content',
-                 height: Optional[Union[str, int, float]] = 'max-content'):
+                 height: Optional[Union[str, int, float]] = 'max-content',
+                 aspectRatio: Optional[float] = None): # <-- NEW PARAMETER
         
-        if not child: 
-            raise ValueError("ClipPath widget requires a child.")
-        
-        # ClipPath is now a container, so its child is a true child.
+        if not child: raise ValueError("ClipPath widget requires a child.")
         super().__init__(key=key, children=[child])
         
-        self.path_commands = path_commands or []
+        self.points = points or []
+        self.radius = radius
+        # viewBox now only needs width and height of the blueprint
+        self.viewBox = viewBox
         self.width = width
         self.height = height
-
-    def _get_clip_path_string(self) -> str:
-        """
-        Internal helper to build the final CSS clip-path value.
-        It intelligently handles different command types.
-        """
-        if not self.path_commands:
-            return 'none'
-        
-        # Build the full command string from all path command widgets.
-        # This assumes to_svg_command returns a full string for PolygonClipper
-        # and a path segment for others.
-        full_path_string = " ".join([
-            cmd.to_svg_command({}) for cmd in self.path_commands
-        ])
-
-        # Check if a command already generated a full CSS function (like polygon())
-        if full_path_string.strip().startswith(('polygon', 'circle', 'inset', 'ellipse')):
-            return full_path_string
-        else:
-            # Otherwise, wrap the SVG path data in the path() function.
-            return f"path('{full_path_string}')"
+        self.aspectRatio = aspectRatio # <-- STORE IT
 
     def render_props(self) -> Dict[str, Any]:
         """
-        Passes its own layout and clipping properties to the Reconciler.
+        Passes its layout properties and the raw data needed for
+        responsive clipping to the Reconciler.
         """
-        # Format width and height with 'px' if they are numbers
         width_css = f"{self.width}px" if isinstance(self.width, (int, float)) else self.width
         height_css = f"{self.height}px" if isinstance(self.height, (int, float)) else self.height
-
+        
+        # The Python side's only job is to serialize the raw data.
         return {
             'width': width_css,
             'height': height_css,
-            'clip_path_string': self._get_clip_path_string(),
+            'aspectRatio': self.aspectRatio, # <-- PASS IT TO PROPS
+            'responsive_clip_path': {
+                'viewBox': self.viewBox,
+                'points': self.points,
+                'radius': self.radius,
+            }
         }
 
     def get_required_css_classes(self) -> Set[str]:
-        # ClipPath now applies styles directly, no shared class needed.
+        # Styles are applied dynamically via JS, no shared class needed.
         return set()

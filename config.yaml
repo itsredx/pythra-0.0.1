@@ -6,6 +6,14 @@ font_dir: "fonts"
 
 Debug: True
 
+frameless: False
+
+win_height: 600
+
+win_width: 800
+
+app_name: "Pythra Test..."
+
 
 dependencies: 
   "yaml"

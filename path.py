@@ -44,7 +44,8 @@ from pythra import (
     QuadraticCurveTo,
     create_rounded_polygon_path,
     AspectRatio,
-    PolygonClipper,  # <-- ADD THESE IMPORTS
+    PolygonClipper,
+    RoundedPolygon,  # <-- ADD THESE IMPORTS
 )
 import math  # For the StarClipper
 
@@ -188,37 +189,34 @@ class TestAppState(State):
                         ),
                         alignment=Alignment.center(),
                         padding=EdgeInsets.all(16.0),
-                        width="50%",
-                        # height="200px",
+                        width="70%",
+                        height="50vh",
                         child=ClipPath(
                             key=Key("responsive_star_clip"),
                             width="50%",
-                            child=AspectRatio(
-                                key=Key("square_box"),
-                                aspectRatio=1.0,
-                                child=Container(
-                                    key=Key("declarative_clipped_box"),
-                                    decoration=BoxDecoration(color=Colors.lightgreen),
-                                    width="100%",
-                                    height="100%",
-                                ),
+                            aspectRatio=1.0,
+                            viewBox=(
+                                100,
+                                100,
+                            ),  # Define the coordinate system of the path
+                            child=Container(
+                                width="100%",
+                                height="100%",
+                                decoration=BoxDecoration(color=Colors.red),
                             ),
-                            # --- Use the new responsive PolygonClipper ---
-                            path_commands=[PolygonClipper(
-                                    points=[
-                                        (50, 0),
-                                        (61, 35),
-                                        (98, 35),
-                                        (68, 57),
-                                        (79, 91),
-                                        (50, 70),
-                                        (21, 91),
-                                        (32, 57),
-                                        (2, 35),
-                                        (39, 35),
-                                    ],
-                                )]
-                            
+                            points=[
+                                (50, 0),
+                                (61, 35),
+                                (98, 35),
+                                (68, 57),
+                                (79, 91),
+                                (50, 70),
+                                (21, 91),
+                                (32, 57),
+                                (2, 35),
+                                (39, 35),
+                            ],
+                            radius=8.0,
                         ),
                     ),
                     SizedBox(height=20),
@@ -265,7 +263,7 @@ class Application:
         self.framework.set_root(self.my_app)
         if isinstance(self.my_app, StatefulWidget):
             self.state_instance = self.my_app.get_state()
-        self.framework.run(title="Framework Reconciliation Test")
+        self.framework.run()
 
 
 """[

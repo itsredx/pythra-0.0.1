@@ -47,6 +47,7 @@ class ReconciliationResult:
     new_rendered_map: Dict[Union[Key, str], NodeData] = field(default_factory=dict)
     active_css_details: Dict[str, Tuple[Callable, Any]] = field(default_factory=dict)
     registered_callbacks: Dict[str, Callable] = field(default_factory=dict)
+    js_initializers: List[Dict] = field(default_factory=list)
 
 
 # --- The Reconciler Class ---
@@ -136,6 +137,15 @@ class Reconciler:
         new_props = new_widget.render_props()
         self._collect_details(new_widget, new_props, result)
         key = new_widget.get_unique_id()
+        # --- NEW: Check for responsive clip path and add to initializers ---
+        if 'responsive_clip_path' in new_props:
+            initializer_data = {
+                'type': 'ResponsiveClipPath',
+                'target_id': html_id,
+                'data': new_props['responsive_clip_path']
+            }
+            result.js_initializers.append(initializer_data)
+        # --- END NEW ---
         result.new_rendered_map[key] = {
             'html_id': html_id, 'widget_type': type(new_widget).__name__, 'key': new_widget.key,
             'widget_instance': new_widget, 'props': new_props,
@@ -231,6 +241,8 @@ class Reconciler:
             if 'width' in props: inline_styles['width'] = props['width']
             if 'height' in props: inline_styles['height'] = props['height']
             if 'clip_path_string' in props: inline_styles['clip-path'] = props['clip_path_string']
+            if 'aspectRatio' in props and props['aspectRatio'] is not None: # <-- ADD THIS
+                inline_styles['aspect-ratio'] = props['aspectRatio']
         elif widget_type_name == 'SizedBox':
             if (w := props.get('width')) is not None: inline_styles['width'] = f"{w}px" if isinstance(w, (int, float)) else w
             if (h := props.get('height')) is not None: inline_styles['height'] = f"{h}px" if isinstance(h, (int, float)) else h

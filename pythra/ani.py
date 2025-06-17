@@ -3,6 +3,40 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 
 html = """
 <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cut-Out Square with Rounded Corners</title>
+  <style>
+    .box {
+      width: 200px;
+      height: 200px;
+      background: linear-gradient(45deg, #4ADEDE, #7873f5);
+      margin: 40px auto;
+      display: block;
+      /* Adjust cutSize% and radius% as needed */
+      clip-path: path('
+        M 20% 0
+        L 90% 0
+        A 10% 10% 0 0 1 100% 10%
+        L 100% 90%
+        A 10% 10% 0 0 1 90% 100%
+        L 10% 100%
+        A 10% 10% 0 0 1 0 90%
+        L 0 20%
+        L 20% 0
+        Z
+      ');
+    }
+  </style>
+</head>
+<body>
+  <div class="box"></div>
+</body>
+</html>
+"""
+"""
+<!DOCTYPE html>
 <html>
 <head>
 <style>
