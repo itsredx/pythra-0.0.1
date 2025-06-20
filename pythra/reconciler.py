@@ -107,6 +107,25 @@ class Reconciler:
             self._insert_node_recursive(new_widget, parent_html_id, result, previous_map)
             return
 
+        
+        new_key = new_widget.key
+        old_key = old_data.get('key')
+        
+        new_type_name = type(new_widget).__name__
+        old_type_name = old_data.get('widget_type')
+        
+        # Two widgets are considered the "same" if their types and keys match.
+        # - If keys are both not None, they must be equal.
+        # - If keys are both None, we assume they are the same if the types match.
+        # - If one has a key and the other doesn't, they are different.
+        keys_are_the_same = (new_key == old_key)
+        types_are_the_same = (new_type_name == old_type_name)
+
+        if not (keys_are_the_same and types_are_the_same):
+            self._insert_node_recursive(new_widget, parent_html_id, result, previous_map)
+            # The old node will be removed by the cleanup loop at the end.
+            return
+
         # --- UPDATE PATH ---
         html_id = old_data['html_id']
         new_props = new_widget.render_props()
@@ -211,12 +230,14 @@ class Reconciler:
                      result.active_css_details[css_class] = (getattr(type(widget), 'generate_css_rule'), getattr(widget, 'style_key'))
         
         callback_props = {
-            'onPressedName': 'onPressed', 'onTapName': 'onTap', 'onItemTapName': 'onItemTap'
+            'onPressedName': 'onPressed', 'onTapName': 'onTap', 'onItemTapName': 'onItemTap',
+            'onChangedName': 'onChanged',
         }
         for prop_name, func_name in callback_props.items():
             if prop_name in props and hasattr(widget, func_name):
                 if (cb_name := props[prop_name]) and (cb_func := getattr(widget, func_name)):
                     result.registered_callbacks[cb_name] = cb_func
+                    print(f"Callback registerd sucssesfully [{cb_name}] with function [{cb_func}]")
 
     def _get_widget_render_tag(self, widget: 'Widget') -> str:
         widget_type_name = type(widget).__name__
@@ -274,6 +295,9 @@ class Reconciler:
             attrs += f' src="{html.escape(props.get("src", ""), quote=True)}" alt=""'
         elif widget_type_name == 'Icon' and props.get('render_type') == 'img':
             attrs += f' src="{html.escape(props.get("custom_icon_src", ""), quote=True)}" alt=""'
+
+        if hasattr(type(widget), '_generate_html_stub'):
+            return type(widget)._generate_html_stub(widget, html_id, props)
         
         if tag in ['img', 'hr', 'br']:
             return f'<{tag} id="{html_id}" class="{classes}"{attrs}>'

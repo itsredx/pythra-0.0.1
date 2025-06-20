@@ -4,7 +4,7 @@ import os
 #os.environ["QT_QUICK_BACKEND"] = "software"
 #os.environ["QTWEBENGINE_DISABLE_GPU"] = "1"
 #os.environ["QTWEBENGINE_DISABLE_SANDBOX"] = "1"
-os.environ["QT_OPENGL"] = "software"
+# os.environ["QT_OPENGL"] = "software"
 
 from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout
 from PySide6.QtCore import Qt, QObject, Slot, QUrl
@@ -71,6 +71,22 @@ class Api(QObject):
             return f"Callback '{callback_name}' executed successfully."
         else:
             return f"Callback '{callback_name}' not found."
+
+    @Slot(str, str, result=None)
+    def on_input_changed(self, callback_name, value):
+        """
+        Slot to handle 'oninput' events from text fields.
+        Finds the registered callback by its name and executes it with the new value.
+        """
+        callback = self.callbacks.get(callback_name)
+        if callback:
+            try:
+                # The callback will be the state method (e.g., self.on_username_changed)
+                callback(value) 
+            except Exception as e:
+                print(f"Error executing input callback '{callback_name}': {e}")
+        else:
+            print(f"Warning: Input callback '{callback_name}' not found.")
 
     @Slot(str, int)
     def send_message(self, message, *args):

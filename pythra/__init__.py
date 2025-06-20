@@ -105,6 +105,8 @@ from .widgets import (
 
     # --- Path / Painters ---
     ClipPath,
+
+    TextField,
     
     # Add any other core widgets you want easily accessible...
 )

@@ -45,7 +45,8 @@ from pythra import (
     create_rounded_polygon_path,
     AspectRatio,
     PolygonClipper,
-    RoundedPolygon,  # <-- ADD THESE IMPORTS
+    RoundedPolygon,
+    TextField,  # <-- ADD THESE IMPORTS
 )
 import math  # For the StarClipper
 
@@ -55,6 +56,7 @@ class TestAppState(State):
     def __init__(self):
         super().__init__()
         self.counter = 0
+        self.username = ""
         self.items = [
             {"id": "apple", "name": "Apple 🍎"},
             {"id": "banana", "name": "Banana 🍌"},
@@ -67,6 +69,11 @@ class TestAppState(State):
     def increment(self):
         print("ACTION: Increment Counter")
         self.counter += 1
+        self.setState()
+
+    def on_username_changed(self, new_value):
+        print(f"Username changed to: {new_value}")
+        self.username = new_value
         self.setState()
 
     def decrement(self):
@@ -160,6 +167,16 @@ class TestAppState(State):
                         ],
                     ),
                     SizedBox(height=20),
+                    TextField(
+                        # The Key is CRITICAL for preserving focus!
+                        key=Key("username_field"), 
+                        label="Username",
+                        value=self.username,
+                        onChanged=self.on_username_changed
+                    ),
+                    SizedBox(height=20),
+                    Text(f"Username Test:{self.username}", key=Key("Username")),
+                    SizedBox(height=10),
                     Row(
                         key=Key("control_row"),
                         mainAxisAlignment=MainAxisAlignment.SPACE_AROUND,
