@@ -96,10 +96,8 @@ class TestAppState(State):
         print("ACTION: Swap First Two Items")
         if len(self.items) >= 2:
             self.items[0], self.items[1] = self.items[1], self.items[0]
-            print(f"  Swapped. New order: {[item['name'] for item in self.items]}")
+            print(self.items)
             self.setState()
-        else:
-            print("  Not enough items to swap.")
 
     def toggle_extra(self):
         print("ACTION: Toggle Extra Text")
@@ -113,35 +111,25 @@ class TestAppState(State):
         )
 
         # Create list item widgets using keys
-        list_item_widgets = []
-        for item in self.items:
-            list_item_widgets.append(
-                # Use ListTile for better structure
-                ListTile(
-                    key=Key(item["id"]),  # Use stable ID for key
-                    # leading=Icon(icon_name='check', size=18), # Requires Icon widget
-                    title=Text(item["name"]),
-                    # Add a button within the list item for removal
-                    trailing=IconButton(  # Requires IconButton widget
-                        icon=Icon("plus", color=Colors.error),  # Requires Icon widget
-                        onPressed=lambda item_id=item["id"]: self.remove_item_by_id(
-                            item_id
-                        ),  # Pass ID
-                        onPressedName=f"remove_{item['id']}",  # Unique name,
-                        style=ButtonStyle(
-                            backgroundColor=Colors.green,
-                        ),
+        list_item_widgets = [
+            ListTile(
+                key=Key(item["id"]),
+                title=Text(item["name"]),
+                trailing=IconButton(
+                    icon=Icon(icon_name="times-circle", color=Colors.error),
+                    onPressed=lambda item_id=item["id"]: self.remove_item_by_id(
+                        item_id
                     ),
-                    selected=(
-                        (self.counter % len(self.items) == self.items.index(item))
-                        if self.items
-                        else False
-                    ),  # Example selection
-                )
+                    onPressedName=f"remove_{item['id']}",
+                ),
+                selected=(
+                    (self.counter % len(self.items) == self.items.index(item))
+                    if self.items
+                    else False
+                ),
             )
-            list_item_widgets.append(
-                Divider(key=Key(f"div_{item['id']}"))
-            )  # Divider with key
+            for item in self.items
+        ]
 
         return Container(
             decoration=BoxDecoration(
