@@ -6,7 +6,7 @@ font_dir: "fonts"
 
 Debug: True
 
-frameless: False
+frameless: True
 
 win_height: 600
 
