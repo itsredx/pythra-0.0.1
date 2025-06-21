@@ -36,6 +36,7 @@ from pythra import (
     BorderRadius,  # Assuming ButtonStyle is compatible
     ListTile,
     Divider,
+    SingleChildScrollView,
     __all__,  # Example usage
 )
 
@@ -131,7 +132,9 @@ class TestAppState(State):
             for item in self.items
         ]
 
-        return Container(
+        return SingleChildScrollView(
+            key=Key("root_SCROLL"),
+            child=Container(
             decoration=BoxDecoration(
                 color=Colors.blue,
                 borderRadius=BorderRadius.circular(20.0),
@@ -274,7 +277,7 @@ class TestAppState(State):
                     FloatingActionButton(),
                 ],
             ),
-        )
+        ),)
 
     # Helper to remove item by ID (used by ListTile trailing button)
     def remove_item_by_id(self, item_id_to_remove):

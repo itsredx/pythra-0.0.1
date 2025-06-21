@@ -127,7 +127,7 @@ class TestAppState(State):
                 key=Key(item["id"]),
                 title=Text(item["name"]),
                 trailing=IconButton(
-                    icon=Icon(icon_name="times-circle", color=Colors.error),
+                    icon=Icon(icon_name="minus", color=Colors.error),
                     onPressed=lambda item_id=item["id"]: self.remove_item_by_id(
                         item_id
                     ),

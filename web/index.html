@@ -2,11 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>TextField Focus Test</title>
+    <title>Framework Reconciliation Test</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1750469110">
-    <style id="dynamic-styles">.shared-container-0 { box-sizing: border-box; padding: 32px; display: flex; justify-content: center; align-items: flex-start; }
-.shared-column-0 { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; flex-grow: 1; flex-basis: 0; direction: ltr; }
+    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1750500013">
+    <style id="dynamic-styles">.shared-scrollview-0 { display: flex; width: 100%; height: 100%; box-sizing: border-box; flex-direction: column; overflow-x: hidden; overflow-y: auto; }
+.shared-scrollview-0 > * { flex-shrink: 0; }
+.shared-container-4 { box-sizing: border-box; background-color: blue; border-radius: 20.0px; padding: 50px; }
+.shared-column-1 { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; flex-grow: 1; flex-basis: 0; direction: ltr; }
+.shared-container-0 { box-sizing: border-box; background-color: lightblue; border-radius: 20.0px; padding: 20px; }
+.shared-row-0 { display: flex; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; direction: ltr; }
 
             .shared-text-0 {
                 margin: 0; /* Reset default paragraph margin */
@@ -16,233 +20,75 @@
                 
             }
             
-
-        /* === Styles for shared-textfield-0 === */
-
-        .textfield-root-container.shared-textfield-0 {
-            display: flex; flex-direction: column; margin: 8px 0;
-        }
-        .textfield-root-container.shared-textfield-0 .textfield-container {
-            position: relative; padding-top: 8px;
-        }
-        .textfield-root-container.shared-textfield-0 .textfield-input {
-            width: 100%; height: 56px; padding: 24px 16px 8px 16px; font-size: 16px;
-            color: #1C1B1F; background-color: surfaceContainerHighest;
-            border: none; outline: none; border-radius: 4px 4px 0 0; box-sizing: border-box;
-            transition: background-color 0.2s;
-        }
-        .textfield-root-container.shared-textfield-0 .textfield-label {
-            position: absolute; left: 16px; top: 26px; font-size: 16px;
-            color: #49454F; pointer-events: none;
-            transform-origin: left top; transform: translateY(-50%);
-            transition: transform 0.2s, color 0.2s;
-        }
-        .textfield-root-container.shared-textfield-0 .textfield-outline {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            height: 1.0px; background-color: #79747E;
-            transition: background-color 0.2s, height 0.2s;
-        }
-        .textfield-root-container.shared-textfield-0 .textfield-helper-text {
-            padding: 4px 16px 0 16px; font-size: 12px; color: #49454F;
-            min-height: 1.2em; transition: color 0.2s;
-        }
-        .textfield-root-container.shared-textfield-0 .textfield-helper-text:empty {
-             display: none; 
-        }
-
-        /* --- FOCUSED STATE (Scoped) --- */
-        .textfield-root-container.shared-textfield-0 .textfield-input:focus ~ .textfield-label,
-        .textfield-root-container.shared-textfield-0 .textfield-input:not(:placeholder-shown) ~ .textfield-label {
-            transform: translateY(-190%) scale(0.75);
-            color: #6750A4;
-        }
-        .textfield-root-container.shared-textfield-0:focus-within .textfield-outline {
-            height: 2.0px;
-            background-color: #6750A4;
-        }
-        
-        /* --- ERROR STATE (Scoped) --- */
-        .textfield-root-container.shared-textfield-0.error .textfield-label,
-        .textfield-root-container.shared-textfield-0.error:focus-within .textfield-label {
-            color: #B3261E;
-        }
-        .textfield-root-container.shared-textfield-0.error .textfield-outline {
-            height: 2.0px;
-            background-color: #B3261E;
-        }
-        .textfield-root-container.shared-textfield-0.error .textfield-helper-text {
-            color: #B3261E;
-        }
-
-        /* --- DISABLED STATE (Scoped) --- */
-        .textfield-root-container.shared-textfield-0.disabled .textfield-input {
-            background-color: rgba(0, 0, 0, 0.06);
-            color: rgba(0, 0, 0, 0.38);
-        }
-        .textfield-root-container.shared-textfield-0.disabled .textfield-label,
-        .textfield-root-container.shared-textfield-0.disabled .textfield-helper-text {
-            color: rgba(0, 0, 0, 0.38);
-        }
-        .textfield-root-container.shared-textfield-0.disabled .textfield-outline {
-            background-color: rgba(0, 0, 0, 0.12);
-        }
-        
-
-        /* === Styles for textfield-root-container === */
-
-        .textfield-root-container.textfield-root-container {
-            display: flex; flex-direction: column; margin: 8px 0;
-        }
-        .textfield-root-container.textfield-root-container .textfield-container {
-            position: relative; padding-top: 8px;
-        }
-        .textfield-root-container.textfield-root-container .textfield-input {
-            width: 100%; height: 56px; padding: 24px 16px 8px 16px; font-size: 16px;
-            color: #1C1B1F; background-color: surfaceContainerHighest;
-            border: none; outline: none; border-radius: 4px 4px 0 0; box-sizing: border-box;
-            transition: background-color 0.2s;
-        }
-        .textfield-root-container.textfield-root-container .textfield-label {
-            position: absolute; left: 16px; top: 26px; font-size: 16px;
-            color: #49454F; pointer-events: none;
-            transform-origin: left top; transform: translateY(-50%);
-            transition: transform 0.2s, color 0.2s;
-        }
-        .textfield-root-container.textfield-root-container .textfield-outline {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            height: 1.0px; background-color: #79747E;
-            transition: background-color 0.2s, height 0.2s;
-        }
-        .textfield-root-container.textfield-root-container .textfield-helper-text {
-            padding: 4px 16px 0 16px; font-size: 12px; color: #49454F;
-            min-height: 1.2em; transition: color 0.2s;
-        }
-        .textfield-root-container.textfield-root-container .textfield-helper-text:empty {
-             display: none; 
-        }
-
-        /* --- FOCUSED STATE (Scoped) --- */
-        .textfield-root-container.textfield-root-container .textfield-input:focus ~ .textfield-label,
-        .textfield-root-container.textfield-root-container .textfield-input:not(:placeholder-shown) ~ .textfield-label {
-            transform: translateY(-190%) scale(0.75);
-            color: #6750A4;
-        }
-        .textfield-root-container.textfield-root-container:focus-within .textfield-outline {
-            height: 2.0px;
-            background-color: #6750A4;
-        }
-        
-        /* --- ERROR STATE (Scoped) --- */
-        .textfield-root-container.textfield-root-container.error .textfield-label,
-        .textfield-root-container.textfield-root-container.error:focus-within .textfield-label {
-            color: #B3261E;
-        }
-        .textfield-root-container.textfield-root-container.error .textfield-outline {
-            height: 2.0px;
-            background-color: #B3261E;
-        }
-        .textfield-root-container.textfield-root-container.error .textfield-helper-text {
-            color: #B3261E;
-        }
-
-        /* --- DISABLED STATE (Scoped) --- */
-        .textfield-root-container.textfield-root-container.disabled .textfield-input {
-            background-color: rgba(0, 0, 0, 0.06);
-            color: rgba(0, 0, 0, 0.38);
-        }
-        .textfield-root-container.textfield-root-container.disabled .textfield-label,
-        .textfield-root-container.textfield-root-container.disabled .textfield-helper-text {
-            color: rgba(0, 0, 0, 0.38);
-        }
-        .textfield-root-container.textfield-root-container.disabled .textfield-outline {
-            background-color: rgba(0, 0, 0, 0.12);
-        }
-        
-
-        /* === Styles for shared-textfield-1 === */
-
-        .textfield-root-container.shared-textfield-1 {
-            display: flex; flex-direction: column; margin: 8px 0;
-        }
-        .textfield-root-container.shared-textfield-1 .textfield-container {
-            position: relative; padding-top: 8px;
-        }
-        .textfield-root-container.shared-textfield-1 .textfield-input {
-            width: 100%; height: 56px; padding: 24px 16px 8px 16px; font-size: 16px;
-            color: #1C1B1F; background-color: transparent;
-            border: none; outline: none; border-radius: 4px 4px 0 0; box-sizing: border-box;
-            transition: background-color 0.2s;
-        }
-        .textfield-root-container.shared-textfield-1 .textfield-label {
-            position: absolute; left: 16px; top: 26px; font-size: 16px;
-            color: #49454F; pointer-events: none;
-            transform-origin: left top; transform: translateY(-50%);
-            transition: transform 0.2s, color 0.2s;
-        }
-        .textfield-root-container.shared-textfield-1 .textfield-outline {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            height: 1px; background-color: grey;
-            transition: background-color 0.2s, height 0.2s;
-        }
-        .textfield-root-container.shared-textfield-1 .textfield-helper-text {
-            padding: 4px 16px 0 16px; font-size: 12px; color: #49454F;
-            min-height: 1.2em; transition: color 0.2s;
-        }
-        .textfield-root-container.shared-textfield-1 .textfield-helper-text:empty {
-             display: none; 
-        }
-
-        /* --- FOCUSED STATE (Scoped) --- */
-        .textfield-root-container.shared-textfield-1 .textfield-input:focus ~ .textfield-label,
-        .textfield-root-container.shared-textfield-1 .textfield-input:not(:placeholder-shown) ~ .textfield-label {
-            transform: translateY(-190%) scale(0.75);
-            color: #7D5260;
-        }
-        .textfield-root-container.shared-textfield-1:focus-within .textfield-outline {
-            height: 2.0px;
-            background-color: #7D5260;
-        }
-        
-        /* --- ERROR STATE (Scoped) --- */
-        .textfield-root-container.shared-textfield-1.error .textfield-label,
-        .textfield-root-container.shared-textfield-1.error:focus-within .textfield-label {
-            color: #B3261E;
-        }
-        .textfield-root-container.shared-textfield-1.error .textfield-outline {
-            height: 2.0px;
-            background-color: #B3261E;
-        }
-        .textfield-root-container.shared-textfield-1.error .textfield-helper-text {
-            color: #B3261E;
-        }
-
-        /* --- DISABLED STATE (Scoped) --- */
-        .textfield-root-container.shared-textfield-1.disabled .textfield-input {
-            background-color: rgba(0, 0, 0, 0.06);
-            color: rgba(0, 0, 0, 0.38);
-        }
-        .textfield-root-container.shared-textfield-1.disabled .textfield-label,
-        .textfield-root-container.shared-textfield-1.disabled .textfield-helper-text {
-            color: rgba(0, 0, 0, 0.38);
-        }
-        .textfield-root-container.shared-textfield-1.disabled .textfield-outline {
-            background-color: rgba(0, 0, 0, 0.12);
-        }
-        
-.shared-elevatedbutton-0 { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; margin: 4px; border: none; border-radius: 20px; background-color: blue; color: white; cursor: pointer; text-align: center; text-decoration: none; outline: none; box-sizing: border-box; overflow: hidden; position: relative; transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s linear; -webkit-appearance: none; -moz-appearance: none; appearance: none; box-shadow: 0px 1.0px 2.0px 0px rgba(0,0,0,0.15), 0px 2.0px 4.0px 1px rgba(0,0,0,0.10); }
+.shared-elevatedbutton-0 { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; margin: 4px; border: none; border-radius: 6.0px; background-color: green; color: ash; cursor: pointer; text-align: center; text-decoration: none; outline: none; box-sizing: border-box; overflow: hidden; position: relative; transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s linear; -webkit-appearance: none; -moz-appearance: none; appearance: none; box-shadow: 0px 1.0px 2.0px 0px rgba(0,0,0,0.15), 0px 2.0px 4.0px 1px rgba(0,0,0,0.10); }
 .shared-elevatedbutton-0:hover { box-shadow: 0px 1.5px 3.0px 0px rgba(0,0,0,0.18), 0px 3.0px 6.0px 1px rgba(0,0,0,0.13); /* Add background overlay? */ }
 .shared-elevatedbutton-0:active { box-shadow: none; /* Add background overlay? */ }
 .shared-elevatedbutton-0.disabled { background-color: rgba(0, 0, 0, 0.12); color: rgba(0, 0, 0, 0.38); box-shadow: none; cursor: default; pointer-events: none; }
 
+.shared-elevatedbutton-1 { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; margin: 4px; border: none; border-radius: 6.0px; background-color: coral; color: ash; cursor: pointer; text-align: center; text-decoration: none; outline: none; box-sizing: border-box; overflow: hidden; position: relative; transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s linear; -webkit-appearance: none; -moz-appearance: none; appearance: none; box-shadow: 0px 1.0px 2.0px 0px rgba(0,0,0,0.15), 0px 2.0px 4.0px 1px rgba(0,0,0,0.10); }
+.shared-elevatedbutton-1:hover { box-shadow: 0px 1.5px 3.0px 0px rgba(0,0,0,0.18), 0px 3.0px 6.0px 1px rgba(0,0,0,0.13); /* Add background overlay? */ }
+.shared-elevatedbutton-1:active { box-shadow: none; /* Add background overlay? */ }
+.shared-elevatedbutton-1.disabled { background-color: rgba(0, 0, 0, 0.12); color: rgba(0, 0, 0, 0.38); box-shadow: none; cursor: default; pointer-events: none; }
 
-            .shared-text-1 {
-                margin: 0; /* Reset default paragraph margin */
-                padding: 0;
-                
-                
-                
+.shared-row-1 { display: flex; flex-direction: row; justify-content: space-around; align-items: center; width: 100%; direction: ltr; }
+.shared-elevatedbutton-2 { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; margin: 4px; border: none; border-radius: 6.0px; background-color: hotpink; color: ash; cursor: pointer; text-align: center; text-decoration: none; outline: none; box-sizing: border-box; overflow: hidden; position: relative; transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s linear; -webkit-appearance: none; -moz-appearance: none; appearance: none; box-shadow: 0px 1.0px 2.0px 0px rgba(0,0,0,0.15), 0px 2.0px 4.0px 1px rgba(0,0,0,0.10); }
+.shared-elevatedbutton-2:hover { box-shadow: 0px 1.5px 3.0px 0px rgba(0,0,0,0.18), 0px 3.0px 6.0px 1px rgba(0,0,0,0.13); /* Add background overlay? */ }
+.shared-elevatedbutton-2:active { box-shadow: none; /* Add background overlay? */ }
+.shared-elevatedbutton-2.disabled { background-color: rgba(0, 0, 0, 0.12); color: rgba(0, 0, 0, 0.38); box-shadow: none; cursor: default; pointer-events: none; }
+
+.shared-container-1 { box-sizing: border-box; height: 40px; }
+.shared-elevatedbutton-3 { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; margin: 4px; border: none; border-radius: 6.0px; background-color: khaki; color: ash; cursor: pointer; text-align: center; text-decoration: none; outline: none; box-sizing: border-box; overflow: hidden; position: relative; transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s linear; -webkit-appearance: none; -moz-appearance: none; appearance: none; box-shadow: 0px 1.0px 2.0px 0px rgba(0,0,0,0.15), 0px 2.0px 4.0px 1px rgba(0,0,0,0.10); }
+.shared-elevatedbutton-3:hover { box-shadow: 0px 1.5px 3.0px 0px rgba(0,0,0,0.18), 0px 3.0px 6.0px 1px rgba(0,0,0,0.13); /* Add background overlay? */ }
+.shared-elevatedbutton-3:active { box-shadow: none; /* Add background overlay? */ }
+.shared-elevatedbutton-3.disabled { background-color: rgba(0, 0, 0, 0.12); color: rgba(0, 0, 0, 0.38); box-shadow: none; cursor: default; pointer-events: none; }
+
+.shared-container-2 { box-sizing: border-box; }
+.shared-container-3 { box-sizing: border-box; height: 20px; }
+.shared-column-0 { display: flex; flex-direction: column; justify-content: flex-start; align-items: center; flex-grow: 1; flex-basis: 0; direction: ltr; }
+
+                .selected { /* Base styles */ }
+                .selected > :first-child { /* Styles for Leading */ }
+                .selected > :last-child { /* Styles for Trailing */ }
+                .selected > :nth-child(2) { /* Styles for Title */ }
+                .selected.has-subtitle > :nth-child(3) { /* Styles for Subtitle */ }
+                /* etc. */
+            
+
+                .shared-listtile-0 { /* Base styles */ }
+                .shared-listtile-0 > :first-child { /* Styles for Leading */ }
+                .shared-listtile-0 > :last-child { /* Styles for Trailing */ }
+                .shared-listtile-0 > :nth-child(2) { /* Styles for Title */ }
+                .shared-listtile-0.has-subtitle > :nth-child(3) { /* Styles for Subtitle */ }
+                /* etc. */
+            
+.shared-iconbutton-0 { display: inline-flex; align-items: center; justify-content: center; padding: 8px; margin: 0; border: none; background-color: None; color: None; cursor: pointer; outline: none; border-radius: 50%; overflow: hidden; position: relative; box-sizing: border-box; transition: background-color 0.15s linear; -webkit-appearance: none; appearance: none; width: calc(24px + 16px); height: calc(24px + 16px); }
+
+            .shared-iconbutton-0 > i, .shared-iconbutton-0 > img, .shared-iconbutton-0 > svg, .shared-iconbutton-0 > * {
+                font-size: 24px;
+                width: 24px;
+                height: 24px;
+                display: block;
+                object-fit: contain;
             }
-            </style>
+.shared-iconbutton-0:hover { background-color: rgba(0, 0, 0, 0.08); }
+.shared-iconbutton-0:active { background-color: rgba(0, 0, 0, 0.12); }
+.shared-iconbutton-0.disabled { color: rgba(0, 0, 0, 0.38); background-color: transparent; cursor: default; pointer-events: none; }
+.shared-icon-0 { width: 16px; height: 16px; display: inline-block; vertical-align: middle; line-height: 16px;  font-size: 16px; color: #B3261E; }
+.shared-fab-0 { display: inline-flex; align-items: center; justify-content: center; position: fixed; bottom: 16px; right: 16px; width: 56px; height: 56px; padding: 16px; margin: 0; border: none; border-radius: 28px; background-color: blue; color: #21005D; cursor: pointer; text-decoration: none; outline: none; box-sizing: border-box; overflow: hidden; transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1), transform 0.15s ease-out, background-color 0.15s linear; -webkit-appearance: none; moz-appearance: none; appearance: none; z-index: 1000; box-shadow: 0px 3px 5px -1px rgba(0,0,0,0.2), 0px 6px 10px 0px rgba(0,0,0,0.14), 0px 1px 18px 0px rgba(0,0,0,0.12); }
+
+            .shared-fab-0 > i, /* Font Awesome */
+            .shared-fab-0 > img, /* Custom Image */
+            .shared-fab-0 > svg, /* SVG Icon */
+            .shared-fab-0 > * { /* General direct child */
+                display: block; /* Prevent extra space */
+                width: 24px; /* M3 Standard icon size */
+                height: 24px;
+                object-fit: contain; /* For img/svg */
+                /* Color is inherited from button */
+            }
+.shared-fab-0:hover { box-shadow: 0px 3px 5px -1px rgba(0,0,0,0.2), 0px 7px 10px 1px rgba(0,0,0,0.14), 0px 2px 16px 1px rgba(0,0,0,0.12); }
+.shared-fab-0:active { transform: scale(0.98); /* Example subtle press */ }
+.shared-fab-0.disabled { background-color: rgba(0, 0, 0, 0.12); color: rgba(0, 0, 0, 0.38); box-shadow: none; cursor: default; pointer-events: none; }</style>
     
         <script src="qwebchannel.js"></script>
         <script>
@@ -263,41 +109,7 @@
         
 </head>
 <body>
-    <div id="root-container"><div id="fw_id_1" class="shared-container-0"><div id="fw_id_2" class="shared-column-0"><p id="fw_id_3" class="shared-text-0">Login Form</p><div id="fw_id_4" class="" style="height: 24px"></div>
-        <div id="fw_id_5" class="textfield-root-container shared-textfield-0  ">
-            <div class="textfield-container shared-textfield-0  ">
-                <input 
-                    id="fw_id_5_input" 
-                    class="textfield-input shared-textfield-0  " 
-                    type="text" 
-                    value="initial text"
-                    placeholder=" "
-                    oninput="handleInput('ctrl_1663424976544', this.value)"
-                    
-                >
-                <label for="fw_id_5_input" class="textfield-label shared-textfield-0  ">Username</label>
-                <div class="textfield-outline shared-textfield-0  "></div>
-            </div>
-            <div id="fw_id_5_helper" class="textfield-helper-text shared-textfield-0  "></div>
-        </div>
-        <div id="fw_id_6" class="" style="height: 16px"></div>
-        <div id="fw_id_7" class="textfield-root-container shared-textfield-1  ">
-            <div class="textfield-container shared-textfield-1  ">
-                <input 
-                    id="fw_id_7_input" 
-                    class="textfield-input shared-textfield-1  " 
-                    type="text" 
-                    value=""
-                    placeholder=" "
-                    oninput="handleInput('ctrl_1663323709008', this.value)"
-                    
-                >
-                <label for="fw_id_7_input" class="textfield-label shared-textfield-1  ">Password</label>
-                <div class="textfield-outline shared-textfield-1  "></div>
-            </div>
-            <div id="fw_id_7_helper" class="textfield-helper-text shared-textfield-1  "></div>
-        </div>
-        <div id="fw_id_8" class="" style="height: 24px"></div><button id="fw_id_9" class="shared-elevatedbutton-0" onclick="handleClick('attempt_login')"><p id="fw_id_10" class="shared-text-1">Login</p></button><div id="fw_id_11" class="" style="height: 24px"></div><p id="fw_id_12" class="shared-text-1">initial text</p></div></div></div>
+    <div id="root-container"><div id="fw_id_1" class="shared-scrollview-0"><div id="fw_id_2" class="shared-container-4"><div id="fw_id_3" class="shared-column-1"><div id="fw_id_4" class="shared-container-0"><div id="fw_id_5" class="shared-row-0"><p id="fw_id_6" class="shared-text-0">Counter: 0</p><button id="fw_id_7" class="shared-elevatedbutton-0" onclick="handleClick('increment')"><p id="fw_id_8" class="shared-text-0">Increment</p></button><button id="fw_id_9" class="shared-elevatedbutton-1" onclick="handleClick('decrement')"><p id="fw_id_10" class="shared-text-0">Decrement</p></button></div></div><div id="fw_id_11" class="" style="height: 40px"></div><div id="fw_id_12" class="shared-row-1"><button id="fw_id_13" class="shared-elevatedbutton-2" onclick="handleClick('add_item')"><p id="fw_id_14" class="shared-text-0">Add Item</p></button><button id="fw_id_15" class="shared-elevatedbutton-2" onclick="handleClick('swap_items')"><p id="fw_id_16" class="shared-text-0">Swap First Two</p></button><button id="fw_id_17" class="shared-elevatedbutton-2" onclick="handleClick('remove_last_item')"><p id="fw_id_18" class="shared-text-0">Remove Last</p></button><button id="fw_id_19" class="shared-elevatedbutton-2" onclick="handleClick('remove_first_item')"><p id="fw_id_20" class="shared-text-0">Remove First</p></button></div><div id="fw_id_21" class="shared-container-1"></div><button id="fw_id_22" class="shared-elevatedbutton-3" onclick="handleClick('toggle_extra')"><p id="fw_id_23" class="shared-text-0">Toggle Extra Text</p></button><div id="fw_id_24" class="shared-container-1"></div><div id="fw_id_25" class="shared-container-2"></div><div id="fw_id_26" class="shared-container-3"></div><div id="fw_id_27" class="" style="height: 1.0px; background-color: #CAC4D0; margin: 0.5px 0"></div><p id="fw_id_28" class="shared-text-0">Item List:</p><div id="fw_id_29" class="shared-container-1"></div><div id="fw_id_30" class="shared-column-0"><div id="fw_id_31" class="shared-listtile-0 selected "><p id="fw_id_32" class="shared-text-0">Apple 🍎</p><button id="fw_id_33" class="shared-iconbutton-0 " onclick="handleClick('remove_apple')"><i id="fw_id_34" class="shared-icon-0"></i></button></div><div id="fw_id_35" class="shared-listtile-0  "><p id="fw_id_36" class="shared-text-0">Banana 🍌</p><button id="fw_id_37" class="shared-iconbutton-0 " onclick="handleClick('remove_banana')"><i id="fw_id_38" class="shared-icon-0"></i></button></div><div id="fw_id_39" class="shared-listtile-0  "><p id="fw_id_40" class="shared-text-0">Cherry 🍒</p><button id="fw_id_41" class="shared-iconbutton-0 " onclick="handleClick('remove_cherry')"><i id="fw_id_42" class="shared-icon-0"></i></button></div></div><button id="fw_id_43" class="shared-fab-0"></button></div></div></div></div>
     <div id="overlay-container"></div>
     
 </body>

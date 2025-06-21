@@ -1039,6 +1039,129 @@ class FloatingActionButton(Widget):
             return f"/* Error generating rule for .{css_class} */"
     # Removed instance methods: to_html(), to_css(), to_js()
 
+
+
+class SingleChildScrollView(Widget):
+    """
+    A widget that makes its single child scrollable.
+
+    This is useful for content that might be larger than its container,
+    like a tall form on a small screen. It uses a shared CSS class to
+    apply the necessary overflow and direction styles.
+    """
+    shared_styles: Dict[Tuple, str] = {}
+
+    def __init__(self,
+                 child: Widget,
+                 key: Optional[Key] = None,
+                 scrollDirection: str = Axis.VERTICAL,
+                 reverse: bool = False,
+                 padding: Optional[EdgeInsets] = None,
+                 # physics property is less relevant here as it's not a list,
+                 # but we can map it to CSS overflow behavior.
+                 physics: Optional[str] = None # e.g., ScrollPhysics.NEVER_SCROLLABLE
+                 ):
+
+        super().__init__(key=key, children=[child])
+        self.child = child
+
+        # Store properties that will define the CSS
+        self.scrollDirection = scrollDirection
+        self.reverse = reverse
+        self.padding = padding
+        self.physics = physics
+
+        # --- CSS Class Management ---
+        # The style key includes all properties that affect the CSS output.
+        self.style_key = (
+            self.scrollDirection,
+            self.reverse,
+            make_hashable(self.padding),
+            self.physics,
+        )
+
+        # Use the standard pattern to get a shared CSS class
+        if self.style_key not in SingleChildScrollView.shared_styles:
+            self.css_class = f"shared-scrollview-{len(SingleChildScrollView.shared_styles)}"
+            SingleChildScrollView.shared_styles[self.style_key] = self.css_class
+        else:
+            self.css_class = SingleChildScrollView.shared_styles[self.style_key]
+
+    def render_props(self) -> Dict[str, Any]:
+        """Passes the CSS class to the reconciler."""
+        # The only prop needed for the DOM element itself is the class.
+        # The child's rendering is handled separately by the reconciler.
+        return {'css_class': self.css_class}
+
+    def get_required_css_classes(self) -> Set[str]:
+        """Returns the shared CSS class name for this instance."""
+        return {self.css_class}
+
+    @staticmethod
+    def generate_css_rule(style_key: Tuple, css_class: str) -> str:
+        """
+        Static method that generates the CSS rule for a scrollable container.
+        This is called by the Reconciler when it encounters a new style key.
+        """
+        try:
+            # 1. Unpack the style_key tuple in the correct order.
+            (scrollDirection, reverse, padding_tuple, physics) = style_key
+
+            # 2. Translate properties into CSS.
+            styles = [
+                # A scroll view must establish a flex context if it wants
+                # its child to size correctly within it.
+                "display: flex;",
+                # It should typically fill the space it's given.
+                "width: 100%;",
+                "height: 100%;",
+                "box-sizing: border-box;",
+            ]
+
+            # --- Flex Direction ---
+            # This makes the child grow correctly inside the scroll area.
+            flex_direction = 'column' if scrollDirection == Axis.VERTICAL else 'row'
+            if reverse:
+                flex_direction += '-reverse'
+            styles.append(f"flex-direction: {flex_direction};")
+
+            # --- Scrolling ---
+            # Set the overflow property based on the scroll direction.
+            if physics == ScrollPhysics.NEVER_SCROLLABLE:
+                styles.append("overflow: hidden;")
+            else:
+                if scrollDirection == Axis.VERTICAL:
+                    styles.append("overflow-x: hidden;")
+                    styles.append("overflow-y: auto;")
+                else: # HORIZONTAL
+                    styles.append("overflow-x: auto;")
+                    styles.append("overflow-y: hidden;")
+            
+            # --- Padding ---
+            # Reconstruct the EdgeInsets object from its tuple representation.
+            if padding_tuple and isinstance(padding_tuple, tuple):
+                padding_obj = EdgeInsets(*padding_tuple)
+                styles.append(f"padding: {padding_obj.to_css_value()};")
+
+            # 3. Assemble and return the final CSS rule.
+            # We also need to style the child to ensure it takes up the
+            # necessary space to trigger scrolling.
+            container_rule = f".{css_class} {{ {' '.join(styles)} }}"
+            
+            # This rule ensures the direct child of the scroll view can grow.
+            # Using `flex-shrink: 0` is important to prevent the child from
+            # being squished by the container, allowing it to overflow and
+            # thus become scrollable.
+            child_rule = f".{css_class} > * {{ flex-shrink: 0; }}"
+
+            return f"{container_rule}\n{child_rule}"
+
+        except Exception as e:
+            import traceback
+            print(f"ERROR generating CSS for SingleChildScrollView {css_class} with key {style_key}:")
+            traceback.print_exc()
+            return f"/* Error generating rule for .{css_class} */"
+
 class Column(Widget):
     """
     A widget that displays its children in a vertical array.

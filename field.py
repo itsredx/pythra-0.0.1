@@ -118,6 +118,7 @@ class MyFormState(State):
                         controller=self.password_controller,
                         decoration= password_decoration,
                         # enabled= False,
+                        obscureText= True,
                         # You would add a property to make this a password type input
                     ),
                     
