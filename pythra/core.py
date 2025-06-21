@@ -512,15 +512,25 @@ class Framework:
         # ---
 
         for key, value in props.items():
-            if key == 'value' and 'onChangedName' in props:
-                # For TextField, we target the inner <input> element directly.
-                input_element_selector = f"document.getElementById('{target_id}_input')"
-                js_prop_updates.append(f"var inputEl = {input_element_selector}; if(inputEl) inputEl.value = {json.dumps(value)};")
+            # if key == 'value' and 'onChangedName' in props:
+            #     # For TextField, we target the inner <input> element directly.
+            #     input_element_selector = f"document.getElementById('{target_id}_input')"
+            #     js_prop_updates.append(f"var inputEl = {input_element_selector}; if(inputEl) inputEl.value = {json.dumps(value)};")
 
             if key == 'data': js_prop_updates.append(f"{element_var}.textContent = {json.dumps(str(value))};")
             elif key == 'css_class': js_prop_updates.append(f"{element_var}.className = {json.dumps(value)};")
             elif key == 'src': js_prop_updates.append(f"{element_var}.src = {json.dumps(value)};")
             elif key == 'tooltip': js_prop_updates.append(f"{element_var}.title = {json.dumps(value)};")
+
+            elif key == 'value' and 'textfield-root-container' in props.get('css_class', ''):
+                # This is a value update for a TextField. Target the inner input.
+                input_id = f"{target_id}_input"
+                js_prop_updates.append(f"var inputEl = document.getElementById('{input_id}'); if (inputEl && inputEl.value !== {json.dumps(str(value))}) inputEl.value = {json.dumps(str(value))};")
+            
+            elif key == 'errorText' and 'textfield-root-container' in props.get('css_class', ''):
+                # This is an errorText update for a TextField. Target the helper div.
+                helper_id = f"{target_id}_helper"
+                js_prop_updates.append(f"var helperEl = document.getElementById('{helper_id}'); if(helperEl) helperEl.textContent = {json.dumps(str(value))};")
 
             # elif key == 'value' and 'onChangedName' in props: # Check if it's a TextField
             #         input_element = f"document.getElementById('{target_id}_input')" if not is_insert else f"{element_var}.querySelector('.textfield-input')"

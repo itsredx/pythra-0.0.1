@@ -19,6 +19,9 @@ from .base import Widget
 from .base import Key # Prefer placing Key in base.py as it's fundamental
 from .state import State, StatefulWidget
 
+from .controllers import TextEditingController
+
+
 # --- Styling Utilities and Constants ---
 # Import common styling classes and enums/constants
 from .styles import (
@@ -35,6 +38,8 @@ from .styles import (
     TextDirection, TextBaseline, VerticalDirection,
     # Button Specific
     ButtonStyle,
+    # TextField Specific
+    InputDecoration,
 )
 
 from .drawing import (

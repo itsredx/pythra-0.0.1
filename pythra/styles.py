@@ -3,6 +3,8 @@ from enum import Enum
 from typing import Optional, Union, Tuple, List, Dict, Any
 import re # For hex validation
 
+from .base import make_hashable
+
 #Colors = Color()
 
 # framework/styles.py
@@ -1638,3 +1640,152 @@ class BoxDecoration:
          shadow_tuple = tuple(self.boxShadow) if self.boxShadow else None
          return (self.color, self.border, self.borderRadius, shadow_tuple, self.transform)
 
+
+
+
+
+# class InputDecoration:
+#     """
+#     Defines the visual decoration for a TextField.
+
+#     This class encapsulates properties like labels, icons, hints, error text,
+#     and border styles, allowing for consistent and reusable text field styling
+#     that mimics Material Design's filled or outlined text fields.
+#     """
+#     def __init__(self,
+#                  label: Optional[str] = None,
+#                  hintText: Optional[str] = None,
+#                  errorText: Optional[str] = None,
+#                  # You can add prefixIcon and suffixIcon as Widget later
+                 
+#                  # --- Colors ---
+#                  fillColor: Optional[str] = None, # Background of the input
+#                  focusColor: Optional[str] = None, # Color of the border/label when focused
+                 
+#                  # --- Borders ---
+#                  # For simplicity, we can use a single border style and change its color based on state
+#                  border: Optional[BorderSide] = None,
+#                  focusedBorder: Optional[BorderSide] = None,
+#                  errorBorder: Optional[BorderSide] = None,
+                 
+#                  # --- Flags ---
+#                  filled: bool = True, # Determines if fillColor is used
+#                  ):
+#         self.label = label
+#         self.hintText = hintText
+#         self.errorText = errorText
+        
+#         self.fillColor = fillColor
+#         self.focusColor = focusColor
+        
+#         self.border = border
+#         self.focusedBorder = focusedBorder
+#         self.errorBorder = errorBorder
+        
+#         self.filled = filled
+
+#     def to_tuple(self) -> Tuple:
+#         """
+#         Creates a hashable tuple representation for use in style keys.
+#         This is crucial for the shared styling system.
+#         """
+#         # make_hashable will handle converting BorderSide to a tuple
+#         return (
+#             self.label, self.hintText, self.errorText, self.fillColor,
+#             self.focusColor, make_hashable(self.border),
+#             make_hashable(self.focusedBorder), make_hashable(self.errorBorder),
+#             self.filled
+#         )
+
+#     def __eq__(self, other):
+#         if not isinstance(other, InputDecoration):
+#             return NotImplemented
+#         return self.to_tuple() == other.to_tuple()
+
+#     def __hash__(self):
+#         return hash(self.to_tuple())
+
+
+
+# in pythra/styles.py
+
+# ... (other imports) ...
+# Make sure BorderSide is defined before this class or imported
+# from .styles import BorderSide, Colors
+
+class InputDecoration:
+    """
+    Defines the visual decoration for a TextField.
+
+    This class encapsulates properties like labels, icons, hints, error text,
+    and border styles, allowing for consistent and reusable text field styling
+    that mimics Material Design's filled or outlined text fields.
+    """
+    def __init__(self,
+                 label: Optional[str] = None,
+                 hintText: Optional[str] = None,
+                 errorText: Optional[str] = None,
+                 
+                 # --- Colors ---
+                 fillColor: Optional[str] = None,
+                 focusColor: Optional[str] = None,
+                 labelColor: Optional[str] = None, # NEW: Color for the label
+                 errorColor: Optional[str] = None, # NEW: Color for border/label/text in error state
+                 
+                 # --- Borders ---
+                 border: Optional[BorderSide] = None,
+                 focusedBorder: Optional[BorderSide] = None,
+                 errorBorder: Optional[BorderSide] = None,
+                 
+                 # --- Flags ---
+                 filled: bool = True
+                 ):
+        
+        # --- Store user-provided values ---
+        self.label = label
+        self.hintText = hintText
+        self.errorText = errorText
+        
+        self.filled = filled
+
+        # --- Set smart, M3-style defaults if values are not provided ---
+        self.fillColor = fillColor if fillColor is not None else (Colors.surfaceContainerHighest if self.filled else 'transparent')
+        self.focusColor = focusColor if focusColor is not None else Colors.primary
+        self.labelColor = labelColor if labelColor is not None else Colors.onSurfaceVariant
+        self.errorColor = errorColor if errorColor is not None else Colors.error
+
+        self.border = border if border is not None else BorderSide(
+            width=1.0, 
+            style=BorderStyle.SOLID, 
+            color=Colors.outline
+        )
+        self.focusedBorder = focusedBorder if focusedBorder is not None else BorderSide(
+            width=2.0, 
+            style=BorderStyle.SOLID, 
+            color=self.focusColor # Use the focus color for the focused border
+        )
+        self.errorBorder = errorBorder if errorBorder is not None else BorderSide(
+            width=2.0, 
+            style=BorderStyle.SOLID, 
+            color=self.errorColor # Use the error color for the error border
+        )
+
+    def to_tuple(self) -> Tuple:
+        """Creates a hashable tuple representation for use in style keys."""
+        # Note: We now hash the final, resolved values, not the initial ones.
+        return (
+            self.label, self.hintText, self.errorText, self.fillColor,
+            self.focusColor, self.labelColor, self.errorColor,
+            make_hashable(self.border),
+            make_hashable(self.focusedBorder),
+            make_hashable(self.errorBorder),
+            self.filled
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, InputDecoration):
+            return NotImplemented
+        return self.to_tuple() == other.to_tuple()
+
+    def __hash__(self):
+        return hash(self.to_tuple())
