@@ -116,7 +116,7 @@ class TestAppState(State):
         self.items = [item for item in self.items if item["id"] != item_id_to_remove]
         self.setState()
 
-    # --- Build Method ---
+    # --- Build Method ---TODO SINGLECHILDSCROL
     def build(self) -> Widget:
         print(
             f"\n--- Building TestApp UI (Counter: {self.counter}, Items: {len(self.items)}, ShowExtra: {self.show_extra}) ---"
