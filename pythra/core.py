@@ -430,13 +430,49 @@ class Framework:
                         );
                         // --- END OF FIX ---
                     '''
+                # --- FINAL, SIMPLIFIED ScrollBar LOGIC ---
+                if props.get('init_custom_scrollbar'):
+                    wrapper_id = target_id
+                    command_js += f"""
+                        import('./js/customScrollBar.js').then((module) => {{
+                        window._pythra_instances['{wrapper_id}_sb'] = new module.CustomScrollBar(
+                            '{wrapper_id}_content', '{wrapper_id}_track', '{wrapper_id}_thumb'
+                        );
+                        }});
+                    """
+
             elif action == 'REMOVE':
+                command_js = f"""
+                    if (window._pythra_instances && window._pythra_instances['{target_id}_sb']) {{
+                        window._pythra_instances['{target_id}_sb'].destroy();
+                        delete window._pythra_instances['{target_id}_sb'];
+                    }}
+                """
                 command_js = f'var el = document.getElementById("{target_id}"); if(el) el.remove();'
             elif action == 'UPDATE':
                 # Pass the element's ID to the prop updater, not the element itself
                 prop_update_js = self._generate_prop_update_js(target_id, data['props'])
                 if prop_update_js:
                     command_js = f'var elToUpdate = document.getElementById("{target_id}"); if (elToUpdate) {{ {prop_update_js} }}'
+
+                new_scrollbar_props = data.get('props', {}).get('custom_scrollbar_props')
+                old_scrollbar_props = data.get('old_props', {}).get('custom_scrollbar_props')
+
+                if new_scrollbar_props != old_scrollbar_props:
+                     command_js += f"""
+                        import('./js/customScrollBar.js').then((module) => {{
+                           window._pythra_instances = window._pythra_instances || {{}};
+                           if (window._pythra_instances['{target_id}_sb']) {{
+                               window._pythra_instances['{target_id}_sb'].destroy();
+                           }}
+                           if ({json.dumps(new_scrollbar_props)} !== null) {{ // Re-create only if new props exist
+                               window._pythra_instances['{target_id}_sb'] = new module.CustomScrollBar(
+                                   '{target_id}', 
+                                   {json.dumps(new_scrollbar_props)}
+                               );
+                           }}
+                        }});
+                     """
             elif action == 'MOVE':
                 parent_id, before_id = data['parent_html_id'], data['before_id']
                 before_id_js = f"document.getElementById('{before_id}')" if before_id else 'null'
@@ -571,9 +607,26 @@ class Framework:
             return ""
 
         js_commands = []
+        imports = set()
         # Your initializer logic for ClipPath etc. goes here if needed
         for init in initializers:
+             # --- ADD THIS BLOCK FOR SIMPLEBAR ---
+            if init['type'] == 'SimpleBar':
+                target_id = init['target_id']
+                # We can pass options from Python to the SimpleBar constructor
+                options_json = json.dumps(init.get('options', {}))
+                js_commands.append(f"""
+                    const el_{target_id} = document.getElementById('{target_id}');
+                    if (el_{target_id} && !el_{target_id}.simplebar) {{ // Check if not already initialized
+                        new SimpleBar(el_{target_id}, {options_json});
+                        console.log('SimpleBar initialized for #{target_id}');
+                    }}
+                """)
+            # --- END OF NEW BLOCK ---
+
             if init['type'] == 'ResponsiveClipPath':
+                imports.add("import { generateRoundedPath } from './js/pathGenerator.js';")
+                imports.add("import { ResponsiveClipPath } from './js/clipPathUtils.js';")
                 target_id = init['target_id']
                 clip_data = init['data']
                 
@@ -601,14 +654,27 @@ class Framework:
                     );
                 """)
 
+            # elif init['type'] == 'ScrollBar':
+            #     imports.add("import { CustomScrollBar } from './js/scrollBar.js';")
+            #     target_id = init['target_id']
+            #     scroll_bar_id = init['data']['scroll_bar_id']
+            #     scroll_thumb_id = init['data']['scroll_thumb_id']
+                
+            #     js_commands.append(f"""
+            #         window._pythra_instances['{scroll_bar_id}'] = new CustomScrollBar(
+            #             '{target_id}', 
+            #             '{scroll_bar_id}', 
+            #             '{scroll_thumb_id}'
+            #         );
+            #     """)
+
         # Wrap all commands in a DOMContentLoaded listener.
         # We now import BOTH of your utility modules.
         full_script = f"""
         <script type="module">
             // Import JS modules if needed (e.g., for ClipPath)
             // import {{ ... }} from './js/....js';
-            import {{ generateRoundedPath }} from './js/pathGenerator.js';
-            import {{ ResponsiveClipPath }} from './js/clipPathUtils.js';
+            { '\\n'.join(sorted(list(imports))) }
 
             document.addEventListener('DOMContentLoaded', () => {{
                 window._pythra_instances = window._pythra_instances || {{}};
@@ -629,6 +695,13 @@ class Framework:
          #root-container, #overlay-container { height: 100vh; width: 100vw; overflow: hidden; position: relative;}
          #overlay-container { position: absolute; top: 0; left: 0; pointer-events: none; }
          #overlay-container > * { pointer-events: auto; }
+         .custom-scrollbar::-webkit-scrollbar {
+             display: none; /* for Chrome, Safari, and Opera */
+         }
+         .custom-scrollbar {
+             -ms-overflow-style: none;  /* for IE and Edge */
+             scrollbar-width: none;  /* for Firefox */
+         }
          """
          try:
               with open(self.css_file_path, 'w', encoding='utf-8') as c: c.write(base_css)
@@ -640,12 +713,18 @@ class Framework:
     <title>{html.escape(title)}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v={int(time.time())}">
+    <!-- ADD SIMPLEBAR CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/simplebar@latest/dist/simplebar.css" />
     <style id="dynamic-styles">{initial_css_rules}</style>
     {self._get_js_includes()}
+    <script type="module" src="./js/customScrollBar.js"></script>
 </head>
 <body>
     <div id="root-container">{html_content}</div>
     <div id="overlay-container"></div>
+
+    <!-- ADD SIMPLEBAR JS -->
+    <script src="https://unpkg.com/simplebar@latest/dist/simplebar.min.js"></script>
     {initial_js}
 </body>
 </html>""")

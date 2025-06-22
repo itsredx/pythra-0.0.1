@@ -69,6 +69,8 @@ from .widgets import (
     Row,
     Column,
     SingleChildScrollView,
+    Scrollbar,
+    GlobalScrollbarStyle,
     Flex, # Generic Flex (if distinct from Row/Column usage)
     Wrap,
     Stack,
@@ -145,7 +147,7 @@ __all__ = [
     'Container', 'Padding', 'Center', 'Align', 'AspectRatio', 'FittedBox',
     'FractionallySizedBox', 'Row', 'Column', 'Flex', 'Wrap', 'Stack',
     'Positioned', 'Expanded', 'Spacer', 'SizedBox', 'ListView', 'GridView',
-    'ListTile', 'Divider', 'Placeholder','SingleChildScrollView',
+    'ListTile', 'Divider', 'Placeholder','SingleChildScrollView', 
     # Structure/Navigation
     'Scaffold', 'AppBar', 'Drawer', 'EndDrawer', 'BottomNavigationBar',
     'BottomNavigationBarItem',

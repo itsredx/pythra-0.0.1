@@ -10,11 +10,14 @@ import html
 from typing import Any, Dict, List, Optional, Tuple, Union, Callable, Literal
 from dataclasses import dataclass, field
 
+from .widgets import Scrollbar
+
 # It's good practice to import from your own project modules for type hints.
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .base import Widget, Key
     from .drawing import PathCommandWidget
+    
 
 
 # --- Key Class, IDGenerator, Data Structures (Unchanged) ---
@@ -87,8 +90,45 @@ class Reconciler:
         return result
 
     def _diff_node_recursive(self, old_node_key, new_widget, parent_html_id, result, previous_map):
-        # NO LONGER NEEDED: ClipPath is now a standard rendering widget
-        # The special case for meta-widgets has been removed.
+        
+         # --- SPECIAL CASE FOR SCROLLBAR ---
+        if isinstance(new_widget, Scrollbar):
+            # This is a container with a special structure and a single "content" child.
+            # We process the container itself, then recurse on its content, pointing it
+            # to the correct parent div inside the container's stub.
+            
+            # 1. Process the Scrollbar widget itself (as a container).
+            #    This is the standard insert/update logic.
+            old_data = previous_map.get(old_node_key)
+            new_key = new_widget.get_unique_id()
+            
+            if old_data is None or old_data.get('widget_type') != 'Scrollbar':
+                # INSERT path
+                html_id = self.id_generator.next_id()
+                new_props = new_widget.render_props()
+                stub_html = self._generate_html_stub(new_widget, html_id, new_props)
+                result.patches.append(Patch('INSERT', html_id, {'html': stub_html, 'parent_html_id': parent_html_id, 'props': new_props, 'before_id': None}))
+            else:
+                # UPDATE path
+                html_id = old_data['html_id']
+                new_props = new_widget.render_props()
+                prop_changes = self._diff_props(old_data.get('props', {}), new_props)
+                if prop_changes:
+                    result.patches.append(Patch('UPDATE', html_id, {'props': new_props}))
+            
+            # 2. Add/update the Scrollbar in the new rendered map.
+            result.new_rendered_map[new_key] = {
+                'html_id': html_id, 'widget_type': 'Scrollbar', 'key': new_widget.key,
+                'widget_instance': new_widget, 'props': new_props, 'parent_html_id': parent_html_id,
+                'children_keys': [new_widget.content.get_unique_id()] # The "child" is the content
+            }
+            self._collect_details(new_widget, new_props, result)
+            
+            # 3. CRITICAL: Recurse for the content widget, rendering it into the designated slot.
+            content_parent_id = f"{html_id}_content"
+            old_content_key = old_data.get('children_keys', [None])[0] if old_data else None
+            self._diff_node_recursive(old_content_key, new_widget.content, content_parent_id, result, previous_map)
+            return
 
         if new_widget is None: return
 
@@ -133,8 +173,8 @@ class Reconciler:
         prop_changes = self._diff_props(old_data.get('props', {}), new_props)
         
         if prop_changes:
-            # The patch data props now directly contain what's needed for JS generation
-            result.patches.append(Patch(action='UPDATE', html_id=html_id, data={'props': new_props}))
+            patch_data = {'props': new_props, 'old_props': old_data.get('props', {})} # ADD old_props
+            result.patches.append(Patch(action='UPDATE', html_id=html_id, data=patch_data))
 
         new_key = new_widget.get_unique_id()
         result.new_rendered_map[new_key] = {
@@ -149,6 +189,39 @@ class Reconciler:
     def _insert_node_recursive(self, new_widget, parent_html_id, result, previous_map, before_id=None):
         # NO LONGER NEEDED: ClipPath is now a standard rendering widget
         # The special case for meta-widgets has been removed.
+
+        # --- NEW Scrollbar logic ---
+        # if isinstance(new_widget, Scrollbar):
+        #     # The Scrollbar widget is special: it renders its own structure
+        #     # and we need to render its `content` property into a specific slot.
+        #     # So we treat it like an "update" path for the container, and a
+        #     # recursive call for its content.
+
+        #     # First, process the Scrollbar widget itself (as a container)
+        #     # We need to manually do what the normal path does.
+        #     html_id = self.id_generator.next_id() # Assume it's an insert for simplicity here
+        #     new_props = new_widget.render_props()
+        #     key = new_widget.get_unique_id()
+
+        #     # Generate the HTML stub for the Scrollbar container
+        #     stub_html = self._generate_html_stub(new_widget, html_id, new_props)
+        #     patch_data = { 'html': stub_html, 'parent_html_id': parent_html_id, 'props': new_props, 'before_id': None }
+        #     result.patches.append(Patch(action='INSERT', html_id=html_id, data=patch_data))
+            
+        #     # Add the scrollbar itself to the rendered map
+        #     result.new_rendered_map[key] = {
+        #         'html_id': html_id, 'widget_type': type(new_widget).__name__, 'key': new_widget.key,
+        #         'widget_instance': new_widget, 'props': new_props,
+        #         'parent_html_id': parent_html_id,
+        #         'children_keys': [new_widget.child.get_unique_id()] # The "child" is the content widget
+        #     }
+        #     self._collect_details(new_widget, new_props, result)
+
+        #     # Now, recurse to render the content widget into the designated slot
+        #     content_parent_id = f"{html_id}_content"
+        #     self._diff_node_recursive(None, new_widget.child, content_parent_id, result, previous_map)
+        #     return
+        # # --- END NEW ScrollBar logic ---
         
         if new_widget is None: return
 
@@ -156,6 +229,17 @@ class Reconciler:
         new_props = new_widget.render_props()
         self._collect_details(new_widget, new_props, result)
         key = new_widget.get_unique_id()
+
+        # --- ADD THIS BLOCK TO TRIGGER SIMPLEBAR INITIALIZATION ---
+        if type(new_widget).__name__ == 'Scrollbar':
+            initializer = {
+                'type': 'SimpleBar',
+                'target_id': html_id,
+                'options': new_props.get('simplebar_options', {})
+            }
+            result.js_initializers.append(initializer)
+        # --- END OF NEW BLOCK ---
+
         # --- NEW: Check for responsive clip path and add to initializers ---
         if 'responsive_clip_path' in new_props:
             initializer_data = {
@@ -254,10 +338,24 @@ class Reconciler:
 
     def _generate_html_stub(self, widget: 'Widget', html_id: str, props: Dict) -> str:
         tag, classes = self._get_widget_render_tag(widget), props.get('css_class', '')
-        attrs, inner_html = "", ""
+        
         widget_type_name = type(widget).__name__
         
         inline_styles = {}
+
+        if hasattr(type(widget), '_generate_html_stub'):
+            return type(widget)._generate_html_stub(widget, html_id, props)
+
+        # --- MODIFICATION TO HANDLE GENERIC ATTRIBUTES ---
+        attrs = ""
+        # Add attributes from a dedicated 'attributes' prop if it exists
+        if 'attributes' in props:
+            for attr_name, attr_value in props['attributes'].items():
+                attrs += f' {html.escape(attr_name)}="{html.escape(str(attr_value), quote=True)}"'
+        # --- END MODIFICATION ---
+
+        inner_html = ""
+            
         if widget_type_name == 'ClipPath':
             if 'width' in props: inline_styles['width'] = props['width']
             if 'height' in props: inline_styles['height'] = props['height']
@@ -296,8 +394,8 @@ class Reconciler:
         elif widget_type_name == 'Icon' and props.get('render_type') == 'img':
             attrs += f' src="{html.escape(props.get("custom_icon_src", ""), quote=True)}" alt=""'
 
-        if hasattr(type(widget), '_generate_html_stub'):
-            return type(widget)._generate_html_stub(widget, html_id, props)
+        # if hasattr(type(widget), '_generate_html_stub'):
+        #     return type(widget)._generate_html_stub(widget, html_id, props)
         
         if tag in ['img', 'hr', 'br']:
             return f'<{tag} id="{html_id}" class="{classes}"{attrs}>'

@@ -1162,6 +1162,217 @@ class SingleChildScrollView(Widget):
             traceback.print_exc()
             return f"/* Error generating rule for .{css_class} */"
 
+
+# In pythra/widgets.py
+
+# ... (other widgets)
+
+class GlobalScrollbarStyle(Widget):
+    """
+    A special non-rendering widget that applies a custom scrollbar style
+    to the entire application window (the body's scrollbar).
+
+    This widget should be placed once in your widget tree, typically at
+    the top level, for example, as a child of your main Scaffold or Container.
+    """
+    # Use a class-level cache to ensure the global style is only generated once
+    # per unique theme. The key here can be simple, as there's only one global
+    # scrollbar per window.
+    shared_styles: Dict[Tuple, str] = {}
+
+    def __init__(self, key: Optional[Key] = None, theme: Optional[ScrollbarTheme] = None):
+        # This widget has no children and renders nothing itself.
+        super().__init__(key=key, children=[])
+
+        self.theme = theme or ScrollbarTheme()
+
+        # Generate a unique key for the theme.
+        self.style_key = self.theme.to_tuple()
+
+        # We still use the shared_styles pattern to get a unique class name,
+        # but the CSS we generate won't use this class name. It's just for
+        # triggering the static method.
+        if self.style_key not in GlobalScrollbarStyle.shared_styles:
+            # The class name is just a placeholder to trigger the generation
+            self.css_class = f"global-scrollbar-theme-{len(GlobalScrollbarStyle.shared_styles)}"
+            GlobalScrollbarStyle.shared_styles[self.style_key] = self.css_class
+        else:
+            self.css_class = GlobalScrollbarStyle.shared_styles[self.style_key]
+
+    def render_props(self) -> Dict[str, Any]:
+        """This widget renders nothing, so it returns empty props."""
+        return {}
+
+    def get_required_css_classes(self) -> Set[str]:
+        """Tells the reconciler to generate the CSS for this style key."""
+        return {self.css_class}
+
+    @staticmethod
+    def generate_css_rule(style_key: Tuple, css_class: str) -> str:
+        """
+        Generates CSS that targets the global `::-webkit-scrollbar` pseudo-elements,
+        ignoring the provided `css_class`. This is the correct approach based on
+        the working example provided.
+        """
+        try:
+            # Unpack the theme tuple from the style key
+            (
+                scroll_width, scroll_height, thumb_color, thumb_hover_color,
+                track_color, radius, thumb_padding # thumb_padding is now unused but kept for compatibility
+            ) = style_key
+
+            # This CSS is taken directly from your working example.
+            # It targets the global scrollbar, not a specific class.
+            webkit_css = f"""
+                ::-webkit-scrollbar {{
+                    width: {scroll_width}px;
+                    height: {scroll_height}px;
+                }}
+                ::-webkit-scrollbar-track {{
+                    background: {track_color};
+                }}
+                ::-webkit-scrollbar-thumb {{
+                    background-color: {thumb_color};
+                    border-radius: {radius}px;
+                }}
+                ::-webkit-scrollbar-thumb:hover {{
+                    background-color: {thumb_hover_color};
+                }}
+            """
+            
+            # This is the equivalent for Firefox.
+            firefox_css = f"""
+                body {{
+                    scrollbar-width: thin;
+                    scrollbar-color: {thumb_color} {track_color};
+                }}
+            """
+
+            return f"{webkit_css}\n{firefox_css}"
+
+        except Exception as e:
+            import traceback
+            print(f"ERROR generating CSS for GlobalScrollbarStyle: {e}")
+            traceback.print_exc()
+            return "/* Error generating global scrollbar style */"
+
+
+# Keep the ScrollbarTheme class in pythra/styles.py, it's still useful.
+
+class Scrollbar(Widget):
+    """
+    A robust, customizable scrollbar widget powered by the SimpleBar.js library.
+    It abstracts away browser inconsistencies for a smooth, unified experience.
+    """
+    shared_styles: Dict[Tuple, str] = {}
+
+    def __init__(self,
+                 child: Widget,
+                 key: Optional[Key] = None,
+                 theme: Optional[ScrollbarTheme] = None,
+                 # Layout constraints for the scrollable area
+                 width: Optional[Any] = '100%',
+                 height: Optional[Any] = '100%',
+                 # SimpleBar specific options
+                 autoHide: bool = True
+                 ):
+
+        super().__init__(key=key, children=[child])
+
+        self.child = child
+        
+        self.theme = theme or ScrollbarTheme()
+        self.width = width
+        self.height = height
+        self.autoHide = autoHide
+
+        # The style key now just holds the theme for CSS overrides.
+        self.style_key = self.theme.to_tuple()
+
+        if self.style_key not in Scrollbar.shared_styles:
+            self.css_class = f"simplebar-themed-{len(Scrollbar.shared_styles)}"
+            Scrollbar.shared_styles[self.style_key] = self.css_class
+        else:
+            self.css_class = Scrollbar.shared_styles[self.style_key]
+
+    def render_props(self) -> Dict[str, Any]:
+        """Pass all necessary data to the reconciler."""
+        return {
+            'css_class': self.css_class,
+            # This 'attributes' dict is picked up by our modified _generate_html_stub
+            'attributes': {
+                'data-simplebar': 'true'
+            },
+            # These options are passed to the SimpleBar JS constructor
+            'simplebar_options': {
+                'autoHide': self.autoHide
+            },
+            # The container div needs its own inline styles for dimensions
+            'widget_instance': self # Pass self to apply _style_override
+        }
+    
+    # This is a new pattern to apply direct styles without a complex CSS class
+    @property
+    def _style_override(self) -> Dict:
+        """Applies direct inline styles for dimensions."""
+        styles = {}
+        if self.width:
+            styles['width'] = f"{self.width}px" if isinstance(self.width, (int, float)) else self.width
+        if self.height:
+            styles['height'] = f"{self.height}px" if isinstance(self.height, (int, float)) else self.height
+        return styles
+
+    def get_required_css_classes(self) -> Set[str]:
+        return {self.css_class}
+
+    @staticmethod
+    def generate_css_rule(style_key: Tuple, css_class: str) -> str:
+        """
+        Generates CSS that OVERRIDES SimpleBar's default styles, scoped
+        to this widget's unique class. This is how we theme it.
+        """
+        try:
+            theme_tuple = style_key
+            (
+                scroll_width, _, thumb_color, thumb_hover_color,
+                track_color, radius, _
+            ) = theme_tuple
+            
+            # These selectors target the DOM elements created by SimpleBar
+            # and apply our theme properties to them.
+            return f"""
+                /* Style the vertical track */
+                .{css_class} .simplebar-track.simplebar-vertical {{
+                    background-color: {track_color};
+                    width: {scroll_width + 2}px; /* Make track slightly wider */
+                }}
+
+                /* Style the scrollbar thumb itself */
+                .{css_class} .simplebar-scrollbar::before {{
+                    background-color: {thumb_color};
+                    border-radius: {radius}px;
+                    /* The opacity is controlled by SimpleBar, but we can force it */
+                    opacity: 1; 
+                }}
+
+                /* Style the thumb on hover */
+                .{css_class} .simplebar-track.simplebar-vertical:hover .simplebar-scrollbar::before {{
+                    background-color: {thumb_hover_color};
+                }}
+                
+                /* Set the width of the draggable scrollbar area */
+                .{css_class} .simplebar-track.simplebar-vertical .simplebar-scrollbar {{
+                    width: {scroll_width}px;
+                }}
+            """
+        except Exception as e:
+            import traceback
+            print(f"ERROR generating CSS for Themed SimpleBar {css_class}: {e}")
+            traceback.print_exc()
+            return ""
+
+
+
 class Column(Widget):
     """
     A widget that displays its children in a vertical array.

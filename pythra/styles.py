@@ -1,5 +1,6 @@
 #pythra/styles.py
 from enum import Enum
+from dataclasses import dataclass, field
 from typing import Optional, Union, Tuple, List, Dict, Any
 import re # For hex validation
 
@@ -1789,3 +1790,37 @@ class InputDecoration:
 
     def __hash__(self):
         return hash(self.to_tuple())
+
+
+# In pythra/styles.py
+
+
+
+# ... (keep all your other style classes)
+
+@dataclass
+class ScrollbarTheme:
+    """
+    Holds the styling information for a custom scrollbar.
+    Maps directly to CSS scrollbar pseudo-element properties.
+    """
+    width: int = 12  # The width of the vertical scrollbar in pixels.
+    height: int = 12 # The height of the horizontal scrollbar in pixels.
+    
+    thumbColor: Optional[str] = "#888" # Color of the draggable thumb.
+    thumbHoverColor: Optional[str] = "#555" # Color of the thumb on hover.
+    
+    trackColor: Optional[str] = "#f1f1f1" # Color of the track (the groove).
+    
+    # The radius of the corners on the thumb.
+    radius: int = 6 
+    
+    # Creates a "padding" effect around the thumb by using a transparent border.
+    thumbPadding: int = 3 
+
+    def to_tuple(self) -> Tuple:
+        """Returns a hashable tuple representation for use as a style key."""
+        return (
+            self.width, self.height, self.thumbColor, self.thumbHoverColor,
+            self.trackColor, self.radius, self.thumbPadding
+        )
