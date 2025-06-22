@@ -91,44 +91,7 @@ class Reconciler:
 
     def _diff_node_recursive(self, old_node_key, new_widget, parent_html_id, result, previous_map):
         
-         # --- SPECIAL CASE FOR SCROLLBAR ---
-        if isinstance(new_widget, Scrollbar):
-            # This is a container with a special structure and a single "content" child.
-            # We process the container itself, then recurse on its content, pointing it
-            # to the correct parent div inside the container's stub.
-            
-            # 1. Process the Scrollbar widget itself (as a container).
-            #    This is the standard insert/update logic.
-            old_data = previous_map.get(old_node_key)
-            new_key = new_widget.get_unique_id()
-            
-            if old_data is None or old_data.get('widget_type') != 'Scrollbar':
-                # INSERT path
-                html_id = self.id_generator.next_id()
-                new_props = new_widget.render_props()
-                stub_html = self._generate_html_stub(new_widget, html_id, new_props)
-                result.patches.append(Patch('INSERT', html_id, {'html': stub_html, 'parent_html_id': parent_html_id, 'props': new_props, 'before_id': None}))
-            else:
-                # UPDATE path
-                html_id = old_data['html_id']
-                new_props = new_widget.render_props()
-                prop_changes = self._diff_props(old_data.get('props', {}), new_props)
-                if prop_changes:
-                    result.patches.append(Patch('UPDATE', html_id, {'props': new_props}))
-            
-            # 2. Add/update the Scrollbar in the new rendered map.
-            result.new_rendered_map[new_key] = {
-                'html_id': html_id, 'widget_type': 'Scrollbar', 'key': new_widget.key,
-                'widget_instance': new_widget, 'props': new_props, 'parent_html_id': parent_html_id,
-                'children_keys': [new_widget.content.get_unique_id()] # The "child" is the content
-            }
-            self._collect_details(new_widget, new_props, result)
-            
-            # 3. CRITICAL: Recurse for the content widget, rendering it into the designated slot.
-            content_parent_id = f"{html_id}_content"
-            old_content_key = old_data.get('children_keys', [None])[0] if old_data else None
-            self._diff_node_recursive(old_content_key, new_widget.content, content_parent_id, result, previous_map)
-            return
+        
 
         if new_widget is None: return
 

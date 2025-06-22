@@ -1257,36 +1257,44 @@ class GlobalScrollbarStyle(Widget):
             return "/* Error generating global scrollbar style */"
 
 
-# Keep the ScrollbarTheme class in pythra/styles.py, it's still useful.
+# In pythra/widgets.py
 
 class Scrollbar(Widget):
     """
     A robust, customizable scrollbar widget powered by the SimpleBar.js library.
-    It abstracts away browser inconsistencies for a smooth, unified experience.
+    It provides a consistent, themeable scrolling experience across all browsers.
+
+    This widget renders a container div that is automatically initialized by SimpleBar.
+    It supports both initial page load and dynamic insertion via DOM patches.
     """
+    # A class-level cache to share CSS for identical themes.
     shared_styles: Dict[Tuple, str] = {}
 
     def __init__(self,
                  child: Widget,
                  key: Optional[Key] = None,
                  theme: Optional[ScrollbarTheme] = None,
-                 # Layout constraints for the scrollable area
                  width: Optional[Any] = '100%',
                  height: Optional[Any] = '100%',
-                 # SimpleBar specific options
-                 autoHide: bool = True
-                 ):
-
+                 autoHide: bool = True):
+        """
+        Args:
+            child (Widget): The content that will be scrollable.
+            key (Optional[Key]): A unique key for reconciliation.
+            theme (Optional[ScrollbarTheme]): A theme object to customize the scrollbar's appearance.
+            width (Optional[Any]): The width of the scrollable area (e.g., '100%', 300).
+            height (Optional[Any]): The height of the scrollable area (e.g., '100%', 500).
+            autoHide (bool): If true, scrollbars will hide when not in use.
+        """
         super().__init__(key=key, children=[child])
-
         self.child = child
-        
         self.theme = theme or ScrollbarTheme()
         self.width = width
         self.height = height
         self.autoHide = autoHide
 
-        # The style key now just holds the theme for CSS overrides.
+        # The style key is based *only* on the theme, not the dimensions.
+        # This allows multiple scrollbars of different sizes to share the same visual style.
         self.style_key = self.theme.to_tuple()
 
         if self.style_key not in Scrollbar.shared_styles:
@@ -1296,73 +1304,83 @@ class Scrollbar(Widget):
             self.css_class = Scrollbar.shared_styles[self.style_key]
 
     def render_props(self) -> Dict[str, Any]:
-        """Pass all necessary data to the reconciler."""
+        """
+        Provides all the necessary information for the reconciler and patch generator.
+        """
         return {
             'css_class': self.css_class,
-            # This 'attributes' dict is picked up by our modified _generate_html_stub
+            # This 'attributes' dict is used to add the 'data-simplebar' attribute
+            # which is essential for SimpleBar's automatic initialization on page load.
             'attributes': {
-                'data-simplebar': 'true'
+                'data-simplebar': 'true',
             },
-            # These options are passed to the SimpleBar JS constructor
+            # These options are passed to the 'new SimpleBar()' constructor in JavaScript.
             'simplebar_options': {
-                'autoHide': self.autoHide
+                'autoHide': self.autoHide,
             },
-            # The container div needs its own inline styles for dimensions
-            'widget_instance': self # Pass self to apply _style_override
+            # A flag to signal the patch script that this element needs JS initialization
+            # when it is dynamically inserted.
+            'init_simplebar': True,
+            # Pass the instance itself so the patcher can access _style_override.
+            'widget_instance': self,
         }
     
-    # This is a new pattern to apply direct styles without a complex CSS class
     @property
     def _style_override(self) -> Dict:
-        """Applies direct inline styles for dimensions."""
+        """
+        Applies direct inline styles for dimensions, as they are unique per instance
+        and should not be part of the shared CSS class.
+        """
         styles = {}
-        if self.width:
+        if self.width is not None:
             styles['width'] = f"{self.width}px" if isinstance(self.width, (int, float)) else self.width
-        if self.height:
+        if self.height is not None:
             styles['height'] = f"{self.height}px" if isinstance(self.height, (int, float)) else self.height
         return styles
 
     def get_required_css_classes(self) -> Set[str]:
+        """Tells the reconciler which shared CSS class this widget needs."""
         return {self.css_class}
 
     @staticmethod
     def generate_css_rule(style_key: Tuple, css_class: str) -> str:
         """
-        Generates CSS that OVERRIDES SimpleBar's default styles, scoped
-        to this widget's unique class. This is how we theme it.
+        Generates CSS that *overrides* SimpleBar's default styles, scoped
+        to this widget's unique theme class. This is how we apply custom themes.
         """
         try:
-            theme_tuple = style_key
-            (
-                scroll_width, _, thumb_color, thumb_hover_color,
-                track_color, radius, _
-            ) = theme_tuple
+            (width, height, thumb_color, thumb_hover_color,
+             track_color, radius, thumb_padding) = style_key
             
-            # These selectors target the DOM elements created by SimpleBar
-            # and apply our theme properties to them.
+            # These selectors precisely target the DOM elements created by SimpleBar.
             return f"""
-                /* Style the vertical track */
+                /* Style the scrollbar track (the groove it runs in) */
                 .{css_class} .simplebar-track.simplebar-vertical {{
-                    background-color: {track_color};
-                    width: {scroll_width + 2}px; /* Make track slightly wider */
+                    background: {track_color};
+                    width: {width}px;
+                }}
+                .{css_class} .simplebar-track.simplebar-horizontal {{
+                    background: {track_color};
+                    height: {height}px;
                 }}
 
-                /* Style the scrollbar thumb itself */
+                /* Style the draggable scrollbar thumb */
                 .{css_class} .simplebar-scrollbar::before {{
                     background-color: {thumb_color};
                     border-radius: {radius}px;
-                    /* The opacity is controlled by SimpleBar, but we can force it */
-                    opacity: 1; 
+                    /* Use a transparent border to create padding inside the thumb */
+                    border: {thumb_padding}px solid transparent;
+                    background-clip: content-box;
+                    opacity: 1; /* Override auto-hide opacity if needed */
                 }}
 
                 /* Style the thumb on hover */
-                .{css_class} .simplebar-track.simplebar-vertical:hover .simplebar-scrollbar::before {{
+                .{css_class} .simplebar-track:hover .simplebar-scrollbar::before {{
                     background-color: {thumb_hover_color};
                 }}
-                
-                /* Set the width of the draggable scrollbar area */
-                .{css_class} .simplebar-track.simplebar-vertical .simplebar-scrollbar {{
-                    width: {scroll_width}px;
+                .{css_class} {{
+                    /* height: -webkit-fill-available; */
+                    height: inherit;
                 }}
             """
         except Exception as e:
@@ -1370,7 +1388,6 @@ class Scrollbar(Widget):
             print(f"ERROR generating CSS for Themed SimpleBar {css_class}: {e}")
             traceback.print_exc()
             return ""
-
 
 
 class Column(Widget):
@@ -1956,7 +1973,7 @@ class ListView(Widget):
         # NOTE: itemExtent, cacheExtent are omitted as they don't typically change
         # the container's *own* CSS class rules directly. shrinkWrap is included as it affects sizing.
         self.style_key = (
-            make_hashable(self.padding), # Use helper or ensure EdgeInsets is hashable
+            self.padding, # Use helper or ensure EdgeInsets is hashable
             self.scrollDirection,
             self.reverse,
             self.primary,
@@ -2008,19 +2025,19 @@ class ListView(Widget):
                 flex_direction += "-reverse"
 
             # Overflow based on physics and primary scroll view status
-            overflow_style = ""
-            axis_to_scroll = 'y' if scrollDirection == Axis.VERTICAL else 'x'
-            if physics == ScrollPhysics.NEVER_SCROLLABLE:
-                overflow_style = "overflow: hidden;"
-            elif physics == ScrollPhysics.CLAMPING:
-                 # Usually implies hidden, but let CSS default handle (might clip)
-                 overflow_style = f"overflow-{axis_to_scroll}: hidden;" # More specific? Or just overflow: hidden? Let's use specific.
-            elif physics == ScrollPhysics.ALWAYS_SCROLLABLE or physics == ScrollPhysics.BOUNCING:
-                 # Standard CSS uses 'auto' or 'scroll'. 'auto' is generally preferred.
-                 # 'bouncing' (-webkit-overflow-scrolling: touch;) is iOS specific, apply if needed.
-                 overflow_style = f"overflow-{axis_to_scroll}: auto;"
-                 if physics == ScrollPhysics.BOUNCING:
-                       overflow_style += " -webkit-overflow-scrolling: touch;" # Add iOS momentum
+            # overflow_style = ""
+            # axis_to_scroll = 'y' if scrollDirection == Axis.VERTICAL else 'x'
+            # if physics == ScrollPhysics.NEVER_SCROLLABLE:
+            #     overflow_style = "overflow: hidden;"
+            # elif physics == ScrollPhysics.CLAMPING:
+            #      # Usually implies hidden, but let CSS default handle (might clip)
+            #      overflow_style = f"overflow-{axis_to_scroll}: hidden;" # More specific? Or just overflow: hidden? Let's use specific.
+            # elif physics == ScrollPhysics.ALWAYS_SCROLLABLE or physics == ScrollPhysics.BOUNCING:
+            #      # Standard CSS uses 'auto' or 'scroll'. 'auto' is generally preferred.
+            #      # 'bouncing' (-webkit-overflow-scrolling: touch;) is iOS specific, apply if needed.
+            #      overflow_style = f"overflow-{axis_to_scroll}: auto;"
+            #      if physics == ScrollPhysics.BOUNCING:
+            #            overflow_style += " -webkit-overflow-scrolling: touch;" # Add iOS momentum
 
             # Sizing based on shrinkWrap
             size_style = ""
@@ -2034,10 +2051,10 @@ class ListView(Widget):
                  # Expand to fill parent (common default for lists)
                  # Requires parent context, using 100% assumes parent has size.
                  # Using flex-grow is better if ListView is inside another flex container.
-                 size_style = "flex-grow: 1; flex-basis: 0; width: 100%; height: 100%;" # Attempt to fill
+                 size_style = "flex-grow: 1; flex-basis: 0; width: 100%;" # Attempt to fill
                  # Need to handle potential conflict if both width/height 100% and overflow are set.
                  # Add min-height/min-width to prevent collapse?
-                 size_style += " min-height: 0; min-width: 0;"
+                #  size_style += " min-height: 0; min-width: 0;"
 
 
             # Padding
@@ -2047,9 +2064,11 @@ class ListView(Widget):
             padding_obj = padding_repr
             padding_style = ""
             if isinstance(padding_obj, EdgeInsets):
-                 padding_style = f"padding: {padding_obj.to_css()};"
+                print(f"padding: {padding_repr};")
+                padding_style = f"padding: {padding_obj.to_css_value()};"
             elif padding_repr: # Handle fallback if not EdgeInsets obj
-                 padding_style = f"padding: {padding_repr};" # Assumes it's already CSS string? Risky.
+                padding_style = f"padding: {padding_repr};" # Assumes it's already CSS string? Risky.
+                print(f"padding: {padding_repr};")
 
 
             # Combine styles
@@ -2058,7 +2077,7 @@ class ListView(Widget):
                 f"flex-direction: {flex_direction}; "
                 f"{padding_style} "
                 f"{size_style} "
-                f"{overflow_style}"
+                # "{overflow_style}"
                 # Other base styles? e.g., list-style: none; if using <ul> internally
             )
 
@@ -2197,8 +2216,10 @@ class GridView(Widget):
             padding_style = ""
             if isinstance(padding_obj, EdgeInsets):
                  padding_style = f"padding: {padding_obj.to_css()};"
+                 print(padding_style)
             elif padding_repr:
                  padding_style = f"padding: {padding_repr};" # Fallback
+                 print(padding_style)
 
 
             # Grid Layout Properties

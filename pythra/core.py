@@ -430,22 +430,25 @@ class Framework:
                         );
                         // --- END OF FIX ---
                     '''
-                # --- FINAL, SIMPLIFIED ScrollBar LOGIC ---
-                if props.get('init_custom_scrollbar'):
-                    wrapper_id = target_id
+                if props.get('init_simplebar'):
+                    options_json = json.dumps(props.get('simplebar_options', {}))
                     command_js += f"""
-                        import('./js/customScrollBar.js').then((module) => {{
-                        window._pythra_instances['{wrapper_id}_sb'] = new module.CustomScrollBar(
-                            '{wrapper_id}_content', '{wrapper_id}_track', '{wrapper_id}_thumb'
-                        );
-                        }});
+                        var el_{target_id} = document.getElementById('{target_id}');
+                        if (el_{target_id} && !el_{target_id}.simplebar) {{
+                            new SimpleBar(el_{target_id}, {options_json});
+                        }}
                     """
 
             elif action == 'REMOVE':
                 command_js = f"""
-                    if (window._pythra_instances && window._pythra_instances['{target_id}_sb']) {{
-                        window._pythra_instances['{target_id}_sb'].destroy();
-                        delete window._pythra_instances['{target_id}_sb'];
+                    var el_to_remove = document.getElementById('{target_id}');
+                    if (el_to_remove) {{
+                        // Check if it was a SimpleBar instance before removing.
+                        if (el_to_remove.simplebar) {{
+                            // This is crucial to prevent memory leaks from ResizeObserver.
+                            el_to_remove.simplebar.unMount();
+                        }}
+                        el_to_remove.remove();
                     }}
                 """
                 command_js = f'var el = document.getElementById("{target_id}"); if(el) el.remove();'
@@ -455,24 +458,24 @@ class Framework:
                 if prop_update_js:
                     command_js = f'var elToUpdate = document.getElementById("{target_id}"); if (elToUpdate) {{ {prop_update_js} }}'
 
-                new_scrollbar_props = data.get('props', {}).get('custom_scrollbar_props')
-                old_scrollbar_props = data.get('old_props', {}).get('custom_scrollbar_props')
+                # new_scrollbar_props = data.get('props', {}).get('custom_scrollbar_props')
+                # old_scrollbar_props = data.get('old_props', {}).get('custom_scrollbar_props')
 
-                if new_scrollbar_props != old_scrollbar_props:
-                     command_js += f"""
-                        import('./js/customScrollBar.js').then((module) => {{
-                           window._pythra_instances = window._pythra_instances || {{}};
-                           if (window._pythra_instances['{target_id}_sb']) {{
-                               window._pythra_instances['{target_id}_sb'].destroy();
-                           }}
-                           if ({json.dumps(new_scrollbar_props)} !== null) {{ // Re-create only if new props exist
-                               window._pythra_instances['{target_id}_sb'] = new module.CustomScrollBar(
-                                   '{target_id}', 
-                                   {json.dumps(new_scrollbar_props)}
-                               );
-                           }}
-                        }});
-                     """
+                # if new_scrollbar_props != old_scrollbar_props:
+                #      command_js += f"""
+                #         import('./js/customScrollBar.js').then((module) => {{
+                #            window._pythra_instances = window._pythra_instances || {{}};
+                #            if (window._pythra_instances['{target_id}_sb']) {{
+                #                window._pythra_instances['{target_id}_sb'].destroy();
+                #            }}
+                #            if ({json.dumps(new_scrollbar_props)} !== null) {{ // Re-create only if new props exist
+                #                window._pythra_instances['{target_id}_sb'] = new module.CustomScrollBar(
+                #                    '{target_id}', 
+                #                    {json.dumps(new_scrollbar_props)}
+                #                );
+                #            }}
+                #         }});
+                #      """
             elif action == 'MOVE':
                 parent_id, before_id = data['parent_html_id'], data['before_id']
                 before_id_js = f"document.getElementById('{before_id}')" if before_id else 'null'
@@ -711,13 +714,12 @@ class Framework:
 <head>
     <meta charset="UTF-8">
     <title>{html.escape(title)}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v={int(time.time())}">
     <!-- ADD SIMPLEBAR CSS -->
     <link rel="stylesheet" href="https://unpkg.com/simplebar@latest/dist/simplebar.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v={int(time.time())}">
     <style id="dynamic-styles">{initial_css_rules}</style>
     {self._get_js_includes()}
-    <script type="module" src="./js/customScrollBar.js"></script>
 </head>
 <body>
     <div id="root-container">{html_content}</div>

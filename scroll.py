@@ -1,4 +1,3 @@
-
 # import sys
 # import time
 # import random
@@ -70,7 +69,6 @@
 #     app.run(title="ScrollBar Test")
 
 
-
 # In your main application file (e.g., main.py)
 # In your main.py
 
@@ -78,11 +76,13 @@ from pythra.core import Framework
 from pythra.widgets import *
 from pythra.state import StatefulWidget, State
 from pythra.base import Key
-from pythra.styles import ScrollbarTheme, Colors, EdgeInsets
+from pythra.styles import *
+
 
 class MyApp(StatefulWidget):
     def createState(self) -> State:
         return MyAppState()
+
 
 class MyAppState(State):
     def build(self):
@@ -92,7 +92,7 @@ class MyAppState(State):
             thumbColor="#2196F3",
             trackColor="rgba(0, 0, 128, 0.1)",
             thumbHoverColor="#1976D2",
-            radius=6
+            radius=6,
         )
 
         long_list = [ListTile(key=Key(i), title=Text(f"Item #{i}")) for i in range(100)]
@@ -100,18 +100,80 @@ class MyAppState(State):
         return Scaffold(
             appBar=AppBar(title=Text("SimpleBar Integration Demo")),
             body=Container(
+                color=Colors.lightgreen,
+                height=300,
                 padding=EdgeInsets.all(16),
-                child=Scrollbar(
-                    # The Scrollbar now defines the scrollable area's height
-                    height=100,
-                    theme=blue_theme,
-                    autoHide=False, # Make scrollbar always visible for demo
-                    child=ListView(children=long_list)
-                )
-            )
+                child=Container(
+                    color=Colors.lightpink,
+                    height="100%",
+                    child=Scrollbar(
+                        # The Scrollbar now defines the scrollable area's height
+                        height=100,
+                        theme=blue_theme,
+                        autoHide=False,  # Make scrollbar always visible for demo
+                        child=Column(
+                            crossAxisAlignment=CrossAxisAlignment.STRETCH,
+                            children=[
+                                Container(
+                                    height=200,
+                                    padding=EdgeInsets.all(16),
+                                    child=Scrollbar(
+                                        # The Scrollbar now defines the scrollable area's height
+                                        height=100,
+                                        theme=blue_theme,
+                                        autoHide=False,  # Make scrollbar always visible for demo
+                                        child=ListView(
+                                            padding=EdgeInsets.all(12),
+                                            children=long_list,
+                                        ),
+                                    ),
+                                ),
+                                SizedBox(
+                                    height=20,
+                                ),
+                                Container(
+                                    height=200,
+                                    padding=EdgeInsets.all(16),
+                                    child=Scrollbar(
+                                        # The Scrollbar now defines the scrollable area's height
+                                        height=100,
+                                        theme=blue_theme,
+                                        autoHide=False,  # Make scrollbar always visible for demo
+                                        child=ListView(
+                                            padding=EdgeInsets.all(12),
+                                            children=long_list,
+                                        ),
+                                    ),
+                                ),
+                                SizedBox(
+                                    height=20,
+                                ),
+                                Container(
+                                    height=200,
+                                    padding=EdgeInsets.all(16),
+                                    child=Scrollbar(
+                                        # The Scrollbar now defines the scrollable area's height
+                                        height=100,
+                                        theme=blue_theme,
+                                        autoHide=False,  # Make scrollbar always visible for demo
+                                        child=ListView(
+                                            padding=EdgeInsets.all(12),
+                                            children=long_list,
+                                        ),
+                                    ),
+                                ),
+                                SizedBox(
+                                    height=50,
+                                ),
+                            ],
+                        ),
+                    ),
+                ),
+            ),
         )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     app = Framework.instance()
     app.set_root(MyApp(key=Key("app")))
     app.run(title="Pythra with SimpleBar")
