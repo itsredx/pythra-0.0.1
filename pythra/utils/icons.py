@@ -47,7 +47,7 @@ class MaterialIconProvider:
         """
         if self._base_url is None:
             #raise RuntimeError("MaterialIconProvider has not been configured. Call .configure() first.")
-            self._base_url = f"http://localhost:{port}/{assets_dir}/icon/material-icons"
+            self._base_url = f"http://localhost:{port}/{assets_dir}/icon/material-icons/"
         
 
         dir_style = self.STYLE_MAP.get(style.lower())
