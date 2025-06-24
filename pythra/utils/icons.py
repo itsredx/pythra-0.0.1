@@ -1,4 +1,10 @@
 # In your 'utils/icons.py' or wherever the provider lives
+from .. import Config
+
+config = Config()
+assets_dir = config.get('assets_dir', 'assets')
+port = config.get('assets_server_port')
+
 
 class MaterialIconProvider:
     """
@@ -24,7 +30,7 @@ class MaterialIconProvider:
     def configure(self, base_url: str):
         """
         Sets the base URL for the icon asset server.
-        Example: "http://localhost:8000/asset/icon/"
+        Example: "http://localhost:{port}/{assets_dir}/icon/"
         """
         if not base_url.endswith('/'):
             base_url += '/'
@@ -40,7 +46,9 @@ class MaterialIconProvider:
             style: The style of the icon ('filled', 'outlined', etc.).
         """
         if self._base_url is None:
-            raise RuntimeError("MaterialIconProvider has not been configured. Call .configure() first.")
+            #raise RuntimeError("MaterialIconProvider has not been configured. Call .configure() first.")
+            self._base_url = f"http://localhost:{port}/{assets_dir}/icon/material-icons"
+        
 
         dir_style = self.STYLE_MAP.get(style.lower())
         if not dir_style:
