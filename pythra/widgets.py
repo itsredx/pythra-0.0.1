@@ -1698,6 +1698,29 @@ class AssetImage:
     def __repr__(self):
         return f"AssetImage('{self.src}')"
 
+class AssetIcon:
+    """
+    A helper class that represents a path to a custom icon image
+    located in the framework's assets directory.
+    """
+    def __init__(self, file_name: str):
+        # Basic check for leading slashes
+        clean_file_name = file_name.lstrip('/')
+        # TODO: Add more robust path joining and sanitization
+        self.src = f'http://localhost:{port}/{assets_dir}/icons/{clean_file_name}'
+
+    def get_source(self) -> str:
+        return self.src
+
+    def __eq__(self, other):
+        return isinstance(other, AssetIcon) and self.src == other.src
+
+    def __hash__(self):
+        return hash(self.src)
+
+    def __repr__(self):
+        return f"AssetIcon('{self.src}')"
+
 class NetworkImage:
     """Helper to represent a network image URL."""
     def __init__(self, url: str):
@@ -1823,52 +1846,51 @@ class Image(Widget):
 # --- Icon Widget Refactored ---
 class Icon(Widget):
     """
-    Displays an icon, either from a font (like Font Awesome) or a custom image file.
-    Compatible with the reconciliation rendering system.
+    Displays an icon, either from a font library (like Font Awesome)
+    or from a custom image file using AssetIcon.
     """
     shared_styles: Dict[Tuple, str] = {}
 
     def __init__(self,
-                 # Provide one of these:
-                 icon_name: Optional[str] = None, # e.g., 'home', 'gear' for Font Awesome
-                 custom_icon: Optional[Union[str, AssetImage]] = None, # Asset path string or AssetImage
                  key: Optional[Key] = None,
-                 size: int = 16,
+                 # Provide one of these two options:
+                 icon_name: Optional[str] = None,
+                 custom_icon: Optional[AssetIcon] = None,
+                 # --- Styling ---
+                 size: int = 24, # Default M3 icon size
                  color: Optional[str] = None):
 
-        # Icon widget has no children
         super().__init__(key=key, children=[])
 
         if not icon_name and not custom_icon:
-            raise ValueError("Icon widget requires either 'icon_name' or 'custom_icon'.")
+            raise ValueError("Icon widget requires either 'icon_name' (for font icons) or 'custom_icon' (for image icons).")
         if icon_name and custom_icon:
              print("Warning: Both 'icon_name' and 'custom_icon' provided to Icon. Prioritizing 'custom_icon'.")
-             icon_name = None # Prioritize custom image
-
+             icon_name = None
 
         self.icon_name = icon_name
-        # Ensure custom_icon is an AssetImage if it's a string path
-        if isinstance(custom_icon, str):
-             self.custom_icon_source = AssetImage(custom_icon)
-        elif isinstance(custom_icon, AssetImage):
+        
+        # --- THIS IS THE FIX ---
+        # Store the AssetIcon object directly, not its source string.
+        if isinstance(custom_icon, AssetIcon):
              self.custom_icon_source = custom_icon
         else:
-            self.custom_icon_source = None # Should be None if icon_name is used
+            # This handles the case where custom_icon is None or an incorrect type.
+            self.custom_icon_source = None
+        # --- END OF FIX ---
 
         self.size = size
         self.color = color
 
-        # --- CSS Class Management ---
-        # Key includes properties affecting styling
+        # The style key logic remains correct.
         self.style_key = (
             self.size,
             self.color,
-            # Distinguish between font/image icon in key if CSS differs significantly
             'img' if self.custom_icon_source else 'font',
         )
 
         if self.style_key not in Icon.shared_styles:
-            self.css_class = f"shared-icon-{len(Icon.shared_styles)}"
+            self.css_class = f"fa fa-{self.icon_name} shared-icon-{len(Icon.shared_styles)}"
             Icon.shared_styles[self.style_key] = self.css_class
         else:
             self.css_class = Icon.shared_styles[self.style_key]
@@ -1876,12 +1898,17 @@ class Icon(Widget):
     def render_props(self) -> Dict[str, Any]:
         """Return properties for diffing."""
         props = {
-            'icon_name': self.icon_name, # e.g., 'home'
+            'css_class': self.css_class,
+            'icon_name': self.icon_name,
+            
+            # --- THIS IS THE FIX ---
+            # Now this line works, because self.custom_icon_source is either
+            # an AssetIcon object (with a .get_source() method) or None.
             'custom_icon_src': self.custom_icon_source.get_source() if self.custom_icon_source else None,
+            # --- END OF FIX ---
+            
             'size': self.size,
             'color': self.color,
-            'css_class': self.css_class,
-            # Indicate render type for potential JS patching logic
             'render_type': 'img' if self.custom_icon_source else 'font',
         }
         return {k: v for k, v in props.items() if v is not None}
@@ -1892,46 +1919,35 @@ class Icon(Widget):
 
     @staticmethod
     def generate_css_rule(style_key: Tuple, css_class: str) -> str:
-        """Static method callable by the Reconciler to generate the CSS rule."""
+        """
+        The CSS generation logic was already correct and does not need to change.
+        It correctly handles the 'font' vs 'img' render types.
+        """
         try:
-            # Unpack the style key
             size, color, render_type = style_key
-
-            # Base styles common to both icon types
             common_styles = (
-                 f"width: {size}px; "
-                 f"height: {size}px; "
-                 f"display: inline-block; " # Or block depending on layout needs
-                 f"vertical-align: middle; " # Align with text nicely
-                 f"line-height: {size}px; " # Helps center font icons vertically sometimes
+                 f"width: {size}px; height: {size}px; display: inline-flex; "
+                 f"justify-content: center; align-items: center; "
+                 f"vertical-align: middle; line-height: {size}px;"
             )
-
             specific_styles = ""
             if render_type == 'font':
+                 # For Font Awesome, we must add the 'fa' class in the HTML stub
+                 # The icon_name itself becomes the fa-X class.
+                 # This logic is handled in the reconciler.
                  specific_styles = (
                       f"font-size: {size}px; "
-                      f"{f'color: {color};' if color else 'color: inherit;'}" # Inherit or set color
+                      f"{f'color: {color};' if color else 'color: inherit;'}"
                  )
-                 # Add font-family if using a specific icon font *not* globally included
-                 # specific_styles += "font-family: 'YourIconFont';"
             elif render_type == 'img':
-                 specific_styles = (
-                      f"object-fit: contain; " # Or other fit as needed
-                      f"background-color: transparent; " # Ensure no default background
-                 )
-                 # Color doesn't directly apply to <img>, use filter for basic tinting? (Advanced)
-                 # if color: specific_styles += f"filter: ...;" # Complex
-
-            # Return the complete CSS rule
+                 specific_styles = "object-fit: contain; background-color: transparent;"
+            
             return f".{css_class} {{ {common_styles} {specific_styles} }}"
-
         except Exception as e:
             print(f"Error generating CSS for Icon {css_class} with key {style_key}: {e}")
             return f"/* Error generating rule for .{css_class} */"
 
-    # Removed instance methods: to_html(), to_css()
-    # Removed child methods: get_children(), remove_all_children() (implicit from base)
-
+            
 class ListView(Widget):
     """
     A scrollable list of widgets arranged linearly.

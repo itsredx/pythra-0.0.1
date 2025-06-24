@@ -623,7 +623,7 @@ class Framework:
                     if (el_{target_id} && !el_{target_id}.simplebar) {{ // Check if not already initialized
                         new SimpleBar(el_{target_id}, {options_json});
                         console.log('SimpleBar initialized for #{target_id}');
-                    }}
+                    }};
                 """)
             # --- END OF NEW BLOCK ---
 
@@ -682,7 +682,7 @@ class Framework:
             document.addEventListener('DOMContentLoaded', () => {{
                 window._pythra_instances = window._pythra_instances || {{}};
                 try {{
-                    {';\\n'.join(js_commands)}
+                    {''.join(js_commands)}
                 }} catch (e) {{
                     console.error("Error running Pythra initializers:", e);
                 }}

@@ -97,6 +97,7 @@ from .widgets import (
     Image, # Requires AssetImage/NetworkImage from widgets too
     AssetImage,
     NetworkImage,
+    AssetIcon,
     Icon,
 
     # --- Buttons ---

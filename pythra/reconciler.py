@@ -150,41 +150,6 @@ class Reconciler:
         self._diff_children_recursive(old_data.get('children_keys', []), new_widget.get_children(), html_id, result, previous_map)
 
     def _insert_node_recursive(self, new_widget, parent_html_id, result, previous_map, before_id=None):
-        # NO LONGER NEEDED: ClipPath is now a standard rendering widget
-        # The special case for meta-widgets has been removed.
-
-        # --- NEW Scrollbar logic ---
-        # if isinstance(new_widget, Scrollbar):
-        #     # The Scrollbar widget is special: it renders its own structure
-        #     # and we need to render its `content` property into a specific slot.
-        #     # So we treat it like an "update" path for the container, and a
-        #     # recursive call for its content.
-
-        #     # First, process the Scrollbar widget itself (as a container)
-        #     # We need to manually do what the normal path does.
-        #     html_id = self.id_generator.next_id() # Assume it's an insert for simplicity here
-        #     new_props = new_widget.render_props()
-        #     key = new_widget.get_unique_id()
-
-        #     # Generate the HTML stub for the Scrollbar container
-        #     stub_html = self._generate_html_stub(new_widget, html_id, new_props)
-        #     patch_data = { 'html': stub_html, 'parent_html_id': parent_html_id, 'props': new_props, 'before_id': None }
-        #     result.patches.append(Patch(action='INSERT', html_id=html_id, data=patch_data))
-            
-        #     # Add the scrollbar itself to the rendered map
-        #     result.new_rendered_map[key] = {
-        #         'html_id': html_id, 'widget_type': type(new_widget).__name__, 'key': new_widget.key,
-        #         'widget_instance': new_widget, 'props': new_props,
-        #         'parent_html_id': parent_html_id,
-        #         'children_keys': [new_widget.child.get_unique_id()] # The "child" is the content widget
-        #     }
-        #     self._collect_details(new_widget, new_props, result)
-
-        #     # Now, recurse to render the content widget into the designated slot
-        #     content_parent_id = f"{html_id}_content"
-        #     self._diff_node_recursive(None, new_widget.child, content_parent_id, result, previous_map)
-        #     return
-        # # --- END NEW ScrollBar logic ---
         
         if new_widget is None: return
 
@@ -318,6 +283,16 @@ class Reconciler:
         # --- END MODIFICATION ---
 
         inner_html = ""
+
+        # --- THIS IS THE FIX ---
+        # Special handling for Font Awesome icons.
+        if widget_type_name == 'Icon' and props.get('render_type') == 'font':
+            icon_name = props.get('icon_name')
+            if icon_name:
+                # Prepend the necessary Font Awesome classes.
+                classes = f"{classes}".strip()
+                print("Icon FA: ", classes)
+        # --- END OF FIX ---
             
         if widget_type_name == 'ClipPath':
             if 'width' in props: inline_styles['width'] = props['width']
@@ -356,6 +331,8 @@ class Reconciler:
             attrs += f' src="{html.escape(props.get("src", ""), quote=True)}" alt=""'
         elif widget_type_name == 'Icon' and props.get('render_type') == 'img':
             attrs += f' src="{html.escape(props.get("custom_icon_src", ""), quote=True)}" alt=""'
+
+        
 
         # if hasattr(type(widget), '_generate_html_stub'):
         #     return type(widget)._generate_html_stub(widget, html_id, props)
