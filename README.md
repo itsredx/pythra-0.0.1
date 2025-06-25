@@ -46,7 +46,7 @@ Currently, PyThra is under active development. To use it, clone the repository a
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-username/pythra.git
+git clone https://github.com/itsredx/pythra-0.0.1.git
 cd pythra
 
 # 2. (Optional but recommended) Create and activate a virtual environment
@@ -56,7 +56,6 @@ source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
 # 3. Install required packages
 pip install -r requirements.txt 
 ```
-*(Note: You will need to create a `requirements.txt` file containing `PySide6` and any other dependencies).*
 
 ## 💡 Example Usage
 
