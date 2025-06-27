@@ -18,7 +18,7 @@ from .base import Widget
 # from .reconciler import Key
 from .base import Key # Prefer placing Key in base.py as it's fundamental
 from .state import State, StatefulWidget
-
+from .icons import Icons, IconData
 from .controllers import TextEditingController
 
 

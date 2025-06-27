@@ -1843,109 +1843,223 @@ class Image(Widget):
     # Removed instance methods: to_html(), to_css()
 
 
-# --- Icon Widget Refactored ---
+from .icons import IconData # Import the new data class
+
 class Icon(Widget):
     """
-    Displays an icon, either from a font library (like Font Awesome)
-    or from a custom image file using AssetIcon.
+    Displays an icon from a font using an IconData object. This widget renders
+    a <span> tag and relies on the browser's font rendering (ligatures)
+    to display the correct symbol.
     """
     shared_styles: Dict[Tuple, str] = {}
 
     def __init__(self,
+                 icon: IconData, # The required IconData object
                  key: Optional[Key] = None,
-                 # Provide one of these two options:
-                 icon_name: Optional[str] = None,
-                 custom_icon: Optional[AssetIcon] = None,
-                 # --- Styling ---
-                 size: int = 24, # Default M3 icon size
-                 color: Optional[str] = None):
+                 size: int = 24,
+                 color: Optional[str] = None,
+                 # Variable font settings
+                 fill: bool = False,
+                 weight: Optional[int] = 400, # Range 100-700
+                 grade: Optional[int] = 0,   # Range -50-200
+                 optical_size: Optional[int] = 24
+                ):
 
         super().__init__(key=key, children=[])
 
-        if not icon_name and not custom_icon:
-            raise ValueError("Icon widget requires either 'icon_name' (for font icons) or 'custom_icon' (for image icons).")
-        if icon_name and custom_icon:
-             print("Warning: Both 'icon_name' and 'custom_icon' provided to Icon. Prioritizing 'custom_icon'.")
-             icon_name = None
+        if not isinstance(icon, IconData):
+            raise TypeError("Icon widget requires an IconData object. Use Icons.home, etc.")
 
-        self.icon_name = icon_name
-        
-        # --- THIS IS THE FIX ---
-        # Store the AssetIcon object directly, not its source string.
-        if isinstance(custom_icon, AssetIcon):
-             self.custom_icon_source = custom_icon
-        else:
-            # This handles the case where custom_icon is None or an incorrect type.
-            self.custom_icon_source = None
-        # --- END OF FIX ---
-
+        self.icon = icon
         self.size = size
         self.color = color
+        self.fill = fill
+        self.weight = weight
+        self.grade = grade
+        self.optical_size = optical_size
 
-        # The style key logic remains correct.
+        # The style key now includes all font variation settings
         self.style_key = (
+            self.icon.fontFamily,
             self.size,
             self.color,
-            'img' if self.custom_icon_source else 'font',
+            self.fill,
+            self.weight,
+            self.grade,
+            self.optical_size
         )
 
         if self.style_key not in Icon.shared_styles:
-            self.css_class = f"fa fa-{self.icon_name} shared-icon-{len(Icon.shared_styles)}"
+            self.css_class = f"material-icon-{len(Icon.shared_styles)}"
             Icon.shared_styles[self.style_key] = self.css_class
         else:
             self.css_class = Icon.shared_styles[self.style_key]
 
     def render_props(self) -> Dict[str, Any]:
-        """Return properties for diffing."""
-        props = {
+        """Return properties for diffing. The icon name is now the text content."""
+        return {
             'css_class': self.css_class,
-            'icon_name': self.icon_name,
-            
-            # --- THIS IS THE FIX ---
-            # Now this line works, because self.custom_icon_source is either
-            # an AssetIcon object (with a .get_source() method) or None.
-            'custom_icon_src': self.custom_icon_source.get_source() if self.custom_icon_source else None,
-            # --- END OF FIX ---
-            
-            'size': self.size,
-            'color': self.color,
-            'render_type': 'img' if self.custom_icon_source else 'font',
+            'data': self.icon.name # The text content of the <span>
         }
-        return {k: v for k, v in props.items() if v is not None}
 
     def get_required_css_classes(self) -> Set[str]:
-        """Return the set of CSS class names needed."""
         return {self.css_class}
 
     @staticmethod
+    def _get_widget_render_tag(widget: 'Widget') -> str:
+        # Override the render tag for this specific widget type
+        if isinstance(widget, Icon):
+            return 'span' # Render as a span, not an <i> or <img>
+        # Fallback to a central tag map if you have one
+        return 'div'
+
+    @staticmethod
     def generate_css_rule(style_key: Tuple, css_class: str) -> str:
-        """
-        The CSS generation logic was already correct and does not need to change.
-        It correctly handles the 'font' vs 'img' render types.
-        """
+        """Generates the CSS including the powerful font-variation-settings."""
         try:
-            size, color, render_type = style_key
-            common_styles = (
-                 f"width: {size}px; height: {size}px; display: inline-flex; "
-                 f"justify-content: center; align-items: center; "
-                 f"vertical-align: middle; line-height: {size}px;"
-            )
-            specific_styles = ""
-            if render_type == 'font':
-                 # For Font Awesome, we must add the 'fa' class in the HTML stub
-                 # The icon_name itself becomes the fa-X class.
-                 # This logic is handled in the reconciler.
-                 specific_styles = (
-                      f"font-size: {size}px; "
-                      f"{f'color: {color};' if color else 'color: inherit;'}"
-                 )
-            elif render_type == 'img':
-                 specific_styles = "object-fit: contain; background-color: transparent;"
-            
-            return f".{css_class} {{ {common_styles} {specific_styles} }}"
+            (fontFamily, size, color, fill, weight, grade, optical_size) = style_key
+
+            # This is the magic property for variable fonts
+            font_variation_settings = f"'FILL' {1 if fill else 0}, 'wght' {weight}, 'GRAD' {grade}, 'opsz' {optical_size}"
+
+            return f"""
+                .{css_class} {{
+                    font-family: '{fontFamily}';
+                    font-weight: normal;
+                    font-style: normal;
+                    font-size: {size}px;
+                    line-height: 1;
+                    letter-spacing: normal;
+                    text-transform: none;
+                    display: inline-block;
+                    white-space: nowrap;
+                    word-wrap: normal;
+                    direction: ltr;
+                    -webkit-font-smoothing: antialiased;
+                    text-rendering: optimizeLegibility;
+                    -moz-osx-font-smoothing: grayscale;
+                    font-feature-settings: 'liga';
+                    color: {color or 'inherit'};
+                    font-variation-settings: {font_variation_settings};
+                }}
+            """
         except Exception as e:
-            print(f"Error generating CSS for Icon {css_class} with key {style_key}: {e}")
-            return f"/* Error generating rule for .{css_class} */"
+            # ... error handling ...
+            return f"/* Error generating rule for Icon .{css_class} */"
+
+# IMPORTANT: In your reconciler's _get_widget_render_tag method, make sure it
+# knows that an Icon should be a <span>.
+# A good way is to call the widget's own static method if it exists.
+
+# In pythra/reconciler.py
+def _get_widget_render_tag(self, widget: 'Widget') -> str:
+    if hasattr(type(widget), '_get_widget_render_tag'):
+        return type(widget)._get_widget_render_tag(widget)
+    # ... rest of your tag map ...
+
+# # --- Icon Widget Refactored ---
+# class Icon(Widget):
+#     """
+#     Displays an icon, either from a font library (like Font Awesome)
+#     or from a custom image file using AssetIcon.
+#     """
+#     shared_styles: Dict[Tuple, str] = {}
+
+#     def __init__(self,
+#                  key: Optional[Key] = None,
+#                  # Provide one of these two options:
+#                  icon_name: Optional[str] = None,
+#                  custom_icon: Optional[AssetIcon] = None,
+#                  # --- Styling ---
+#                  size: int = 24, # Default M3 icon size
+#                  color: Optional[str] = None):
+
+#         super().__init__(key=key, children=[])
+
+#         if not icon_name and not custom_icon:
+#             raise ValueError("Icon widget requires either 'icon_name' (for font icons) or 'custom_icon' (for image icons).")
+#         if icon_name and custom_icon:
+#              print("Warning: Both 'icon_name' and 'custom_icon' provided to Icon. Prioritizing 'custom_icon'.")
+#              icon_name = None
+
+#         self.icon_name = icon_name
+        
+#         # --- THIS IS THE FIX ---
+#         # Store the AssetIcon object directly, not its source string.
+#         if isinstance(custom_icon, AssetIcon):
+#              self.custom_icon_source = custom_icon
+#         else:
+#             # This handles the case where custom_icon is None or an incorrect type.
+#             self.custom_icon_source = None
+#         # --- END OF FIX ---
+
+#         self.size = size
+#         self.color = color
+
+#         # The style key logic remains correct.
+#         self.style_key = (
+#             self.size,
+#             self.color,
+#             'img' if self.custom_icon_source else 'font',
+#         )
+
+#         if self.style_key not in Icon.shared_styles:
+#             self.css_class = f"fa fa-{self.icon_name} shared-icon-{len(Icon.shared_styles)}"
+#             Icon.shared_styles[self.style_key] = self.css_class
+#         else:
+#             self.css_class = Icon.shared_styles[self.style_key]
+
+#     def render_props(self) -> Dict[str, Any]:
+#         """Return properties for diffing."""
+#         props = {
+#             'css_class': self.css_class,
+#             'icon_name': self.icon_name,
+            
+#             # --- THIS IS THE FIX ---
+#             # Now this line works, because self.custom_icon_source is either
+#             # an AssetIcon object (with a .get_source() method) or None.
+#             'custom_icon_src': self.custom_icon_source.get_source() if self.custom_icon_source else None,
+#             # --- END OF FIX ---
+            
+#             'size': self.size,
+#             'color': self.color,
+#             'render_type': 'img' if self.custom_icon_source else 'font',
+#         }
+#         return {k: v for k, v in props.items() if v is not None}
+
+#     def get_required_css_classes(self) -> Set[str]:
+#         """Return the set of CSS class names needed."""
+#         return {self.css_class}
+
+#     @staticmethod
+#     def generate_css_rule(style_key: Tuple, css_class: str) -> str:
+#         """
+#         The CSS generation logic was already correct and does not need to change.
+#         It correctly handles the 'font' vs 'img' render types.
+#         """
+#         try:
+#             size, color, render_type = style_key
+#             common_styles = (
+#                  f"width: {size}px; height: {size}px; display: inline-flex; "
+#                  f"justify-content: center; align-items: center; "
+#                  f"vertical-align: middle; line-height: {size}px;"
+#             )
+#             specific_styles = ""
+#             if render_type == 'font':
+#                  # For Font Awesome, we must add the 'fa' class in the HTML stub
+#                  # The icon_name itself becomes the fa-X class.
+#                  # This logic is handled in the reconciler.
+#                  specific_styles = (
+#                       f"font-size: {size}px; "
+#                       f"{f'color: {color};' if color else 'color: inherit;'}"
+#                  )
+#             elif render_type == 'img':
+#                  specific_styles = "object-fit: contain; background-color: transparent;"
+            
+#             return f".{css_class} {{ {common_styles} {specific_styles} }}"
+#         except Exception as e:
+#             print(f"Error generating CSS for Icon {css_class} with key {style_key}: {e}")
+#             return f"/* Error generating rule for .{css_class} */"
 
             
 class ListView(Widget):

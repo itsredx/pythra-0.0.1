@@ -37,7 +37,7 @@ from pythra import (
     ListTile,
     Divider,
     SingleChildScrollView,
-    AssetIcon,
+    AssetIcon, Icons,
     __all__,  # Example usage
 )
 
@@ -118,7 +118,12 @@ class TestAppState(State):
                 key=Key(item["id"]),
                 title=Text(item["name"]),
                 trailing=IconButton(
-                    icon=Icon(icon_name="star", color=Colors.error),
+                    icon=Icon(
+                        Icons.settings_rounded,
+                        # size=48,
+                        color=Colors.secondary,
+                        fill=True,
+                        weight=700),
                     onPressed=lambda item_id=item["id"]: self.remove_item_by_id(
                         item_id
                     ),
@@ -356,7 +361,7 @@ class Application:
 
         # Schedule tests *after* the event loop starts (run will block)
         # Use QTimer with 0 delay to run after initial events are processed
-        # QTimer.singleShot(0, self.schedule_tests)
+        QTimer.singleShot(0, self.schedule_tests)
 
         # Run the framework (starts Qt event loop via webwidget)
         self.framework.run(title="Framework Reconciliation Test")  # Blocks here

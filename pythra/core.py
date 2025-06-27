@@ -692,6 +692,31 @@ class Framework:
         return full_script
 
     def _write_initial_files(self, title: str, html_content: str, initial_css_rules: str, initial_js: str):
+         # --- THIS IS THE NEW FONT DEFINITION CSS ---
+         font_face_rules = f"""
+         /* Define the Material Symbols fonts hosted by our server */
+         @font-face {{
+           font-family: 'Material Symbols Outlined';
+           font-style: normal;
+           font-weight: 100 700; /* The range of weights the variable font supports */
+           src: url(http://localhost:{self.config.get('assets_server_port')}/{self.config.get('assets_dir')}/fonts/MaterialSymbolsOutlined.ttf) format('truetype');
+         }}
+
+         @font-face {{
+           font-family: 'Material Symbols Rounded';
+           font-style: normal;
+           font-weight: 100 700;
+           src: url(http://localhost:{self.config.get('assets_server_port')}/{self.config.get('assets_dir')}/fonts/MaterialSymbolsRounded.ttf) format('truetype');
+         }}
+
+         @font-face {{
+           font-family: 'Material Symbols Sharp';
+           font-style: normal;
+           font-weight: 100 700;
+           src: url(http://localhost:{self.config.get('assets_server_port')}/{self.config.get('assets_dir')}/fonts/MaterialSymbolsSharp.ttf) format('truetype');
+         }}
+         """
+         # --- END OF NEW FONT CSS ---
          base_css = """
          body { margin: 0; font-family: sans-serif; background-color: #f0f0f0; overflow: hidden;}
          * { box-sizing: border-box; }
@@ -707,7 +732,7 @@ class Framework:
          }
          """
          try:
-              with open(self.css_file_path, 'w', encoding='utf-8') as c: c.write(base_css)
+              with open(self.css_file_path, 'w', encoding='utf-8') as c: c.write(base_css + font_face_rules)
               with open(self.html_file_path, 'w', encoding='utf-8') as f:
                     f.write(f"""<!DOCTYPE html>
 <html lang="en">
