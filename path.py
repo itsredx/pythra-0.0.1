@@ -167,14 +167,14 @@ class TestAppState(State):
                         ],
                     ),
                     SizedBox(height=20),
-                    TextField(
-                        # The Key is CRITICAL for preserving focus!
-                        key=Key("username_field"), 
-                        label="Username",
-                        value=self.username,
-                        onChanged=self.on_username_changed
-                    ),
-                    SizedBox(height=20),
+                    # TextField(
+                    #     # The Key is CRITICAL for preserving focus!
+                    #     key=Key("username_field"), 
+                    #     label="Username",
+                    #     value=self.username,
+                    #     onChanged=self.on_username_changed
+                    # ),
+                    # SizedBox(height=20),
                     Text(f"Username Test:{self.username}", key=Key("Username")),
                     SizedBox(height=10),
                     Row(
