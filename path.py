@@ -46,7 +46,7 @@ from pythra import (
     AspectRatio,
     PolygonClipper,
     RoundedPolygon,
-    TextField,  # <-- ADD THESE IMPORTS
+    TextField, Icons  # <-- ADD THESE IMPORTS
 )
 import math  # For the StarClipper
 
@@ -127,7 +127,12 @@ class TestAppState(State):
                 key=Key(item["id"]),
                 title=Text(item["name"]),
                 trailing=IconButton(
-                    icon=Icon(icon_name="minus", color=Colors.error),
+                    icon=Icon(
+                        Icons.settings_rounded,
+                        # size=48,
+                        color=Colors.secondary,
+                        fill=True,
+                        weight=700),
                     onPressed=lambda item_id=item["id"]: self.remove_item_by_id(
                         item_id
                     ),
