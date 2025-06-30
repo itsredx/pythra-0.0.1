@@ -12,7 +12,7 @@ window = create_window(
                 window_id="main_window",
                 html_file="C:/Users/SMILETECH COMPUTERS/Documents/pythra_0.0.2_new_state/pythra/window/ind.html",
                 js_api=api,
-                frameless=True)
+                frameless=True, maximized=False, fixed_size=True)
 # Create API instance and register callbacks
 
 api.register_callback("close", window.close_window)
@@ -20,4 +20,4 @@ api.register_callback("bg", change_color)
 api.register_callback("testCallback", lambda: print("Button clicked!"))
 
 if __name__ == "__main__":
-    start(window=window, debug=True)
+    start(window=window, debug=False)
