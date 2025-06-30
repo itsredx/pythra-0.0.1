@@ -677,7 +677,9 @@ class Framework:
         <script type="module">
             // Import JS modules if needed (e.g., for ClipPath)
             // import {{ ... }} from './js/....js';
-            { '\\n'.join(sorted(list(imports))) }
+            import {{ generateRoundedPath }} from './js/pathGenerator.js';
+            import {{ ResponsiveClipPath }} from './js/clipPathUtils.js';
+            
 
             document.addEventListener('DOMContentLoaded', () => {{
                 window._pythra_instances = window._pythra_instances || {{}};

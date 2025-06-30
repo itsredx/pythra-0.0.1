@@ -14,7 +14,7 @@
     <script>
         function handleClick(callback_name) {
         if(window.pywebview){
-            window.pywebview.on_pressed(callback_name).then(function(response) {
+            window.pywebview.on_pressed_str(callback_name).then(function(response) {
                 console.log(response);
             }).catch(function(error) {
                 console.error(error);

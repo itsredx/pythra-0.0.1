@@ -1,13 +1,13 @@
 import os
 
-#os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--disable-gpu --disable-software-rasterizer"
-#os.environ["QT_QUICK_BACKEND"] = "software"
-#os.environ["QTWEBENGINE_DISABLE_GPU"] = "1"
-#os.environ["QTWEBENGINE_DISABLE_SANDBOX"] = "1"
+# os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = "--disable-gpu --disable-software-rasterizer"
+# os.environ["QT_QUICK_BACKEND"] = "software"
+# os.environ["QTWEBENGINE_DISABLE_GPU"] = "1"
+# os.environ["QTWEBENGINE_DISABLE_SANDBOX"] = "1"
 # os.environ["QT_OPENGL"] = "software"
 
 from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout
-from PySide6.QtCore import Qt, QObject, Slot, QUrl
+from PySide6.QtCore import Qt, QObject, Slot, QUrl, QSize
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineSettings
 from PySide6.QtWebChannel import QWebChannel
@@ -15,6 +15,7 @@ import sys
 
 
 app = QApplication(sys.argv)
+
 
 class WindowManager:
     def __init__(self):
@@ -38,7 +39,6 @@ class WindowManager:
             print(f"Window ID {window_id} not found.")
 
 
-
 class Api(QObject):
     def __init__(self):
         super().__init__()
@@ -53,6 +53,7 @@ class Api(QObject):
 
     def register_callback(self, name, callback):
         self.callbacks[name] = callback
+        print("Callbacks: ", self.callbacks)
 
     @Slot(str, int, result=str)
     def on_pressed(self, callback_name, *args):
@@ -82,7 +83,7 @@ class Api(QObject):
         if callback:
             try:
                 # The callback will be the state method (e.g., self.on_username_changed)
-                callback(value) 
+                callback(value)
             except Exception as e:
                 print(f"Error executing input callback '{callback_name}': {e}")
         else:
@@ -90,7 +91,7 @@ class Api(QObject):
 
     @Slot(str, int)
     def send_message(self, message, *args):
-        print(f"Frontend message: {message}, " ,*args)
+        print(f"Frontend message: {message}, ", *args)
         return "Message received!"
 
     @Slot(str)
@@ -101,19 +102,39 @@ class Api(QObject):
 # Create a global instance of the WindowManager
 window_manager = WindowManager()
 
+
 class DebugWindow(QWebEngineView):
     """A separate window for inspecting HTML elements."""
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Debug Window")
         self.resize(800, 600)
 
+
 class WebWindow(QWidget):
-    def __init__(self, title, window_id="main_window", html_file=None, js_api=None, width=800, height=600, window_state="normal", frameless=False, on_top=False):
+    def __init__(
+        self,
+        title,
+        window_id="main_window",
+        html_file=None,
+        js_api=None,
+        width=800,
+        height=600,
+        window_state="normal",
+        frameless=False,
+        on_top=False,
+        maximized=False,
+        fixed_size=False,
+    ):
         super().__init__()
         self.setWindowTitle(title)
-        self.setGeometry(100, 100, width, height)
-        
+        self.fixed_size = fixed_size
+        if not maximized and not fixed_size:
+            self.setGeometry(100, 100, width, height)
+
+        if fixed_size and not maximized:
+            self.setFixedSize(QSize(width, height))
 
         if on_top:
             # Make the window stay on top
@@ -130,10 +151,18 @@ class WebWindow(QWidget):
 
         # WebView
         self.webview = QWebEngineView(self)
-        self.webview.settings().setAttribute(QWebEngineSettings.LocalContentCanAccessRemoteUrls, True)
-        self.webview.settings().setAttribute(QWebEngineSettings.LocalContentCanAccessFileUrls, True)
-        self.webview.settings().setAttribute(QWebEngineSettings.AllowRunningInsecureContent, True)
-        self.webview.settings().setAttribute(QWebEngineSettings.JavascriptCanOpenWindows, True)
+        self.webview.settings().setAttribute(
+            QWebEngineSettings.LocalContentCanAccessRemoteUrls, True
+        )
+        self.webview.settings().setAttribute(
+            QWebEngineSettings.LocalContentCanAccessFileUrls, True
+        )
+        self.webview.settings().setAttribute(
+            QWebEngineSettings.AllowRunningInsecureContent, True
+        )
+        self.webview.settings().setAttribute(
+            QWebEngineSettings.JavascriptCanOpenWindows, True
+        )
 
         # Enable transparency
         if frameless:
@@ -145,13 +174,13 @@ class WebWindow(QWidget):
 
         if html_file:
             self.webview.setUrl(QUrl.fromLocalFile(html_file))
-            #print(js_api.callbacks)
-            print('⚡ HTML loaded:')
+            # print(js_api.callbacks)
+            print("⚡ HTML loaded:")
         else:
-            print('HTML not loaded: ',html_file)
+            print("HTML not loaded: ", html_file)
 
         self.layout.addWidget(self.webview)  # Webview occupies the entire space
-        print('⚡ WEBVIEW loaded:')
+        print("⚡ WEBVIEW loaded:")
 
         # Setup QWebChannel
         self.channel = QWebChannel()
@@ -177,6 +206,26 @@ class WebWindow(QWidget):
 
     def show_window(self):
         self.show()
+    
+    def show_max_window(self):
+        self.showMaximized()
+        size = self.size()
+        print(size)
+        screen = QApplication.primaryScreen()
+        size = screen.availableGeometry().size()
+        print("Max available window size:", size.width(), size.height())
+        max_size = screen.availableGeometry().size()
+        print("size obj: ", max_size)
+        # self.setFixedSize(max_size)
+
+        if self.fixed_size:
+            self.setFixedSize(max_size)
+
+    def minimize(self):
+        self.showMinimized()
+
+    def restore_normal(slef):
+        self.showNormal()
 
     def close_window(self):
         self.close()
@@ -184,7 +233,7 @@ class WebWindow(QWidget):
     def evaluate_js(self, window_id, *scripts):
         if window_id in window_manager.windows:
             window = window_manager.windows[window_id]
-            if hasattr(window, 'webview') and window.webview:
+            if hasattr(window, "webview") and window.webview:
                 for script in scripts:
                     window.webview.page().runJavaScript(script)
             else:
@@ -192,31 +241,55 @@ class WebWindow(QWidget):
         else:
             print(f"Window ID {window_id} not found.")
 
-
-
     def toggle_overlay(self):
         self.overlay_box.setVisible(not self.overlay_box.isVisible())
 
 
-
 # Create Window Function
-def create_window(title: str, window_id: str, html_file: str = None, js_api: Api = None, width: int = 800, height: int = 600, window_state: str = "normal", frameless: bool = True):
-    window = WebWindow(title, window_id=window_id, html_file=html_file, js_api=js_api, width=width, height=height, window_state=window_state, frameless=frameless)
-    window.show_window()
+def create_window(
+    title: str,
+    window_id: str,
+    html_file: str = None,
+    js_api: Api = None,
+    width: int = 800,
+    height: int = 600,
+    window_state: str = "normal",
+    frameless: bool = True,
+    maximized: bool =False,
+        fixed_size: bool =False,
+):
+    window = WebWindow(
+        title,
+        window_id=window_id,
+        html_file=html_file,
+        js_api=js_api,
+        width=width,
+        height=height,
+        window_state=window_state,
+        frameless=frameless,
+        maximized=maximized,
+        fixed_size=fixed_size,
+        
+    )
+    if maximized:
+        window.show_max_window()
+    else:
+        window.show_window()
     return window
+
 
 def change_color():
     window.run_js("main_window", "document.body.style.backgroundColor = 'lightblue';")
 
-def start(window, debug):
 
+def start(window, debug):
 
     # Example to toggle debug window (could connect to a button or shortcut)
     if debug:
         window.toggle_debug_window()
 
-
     sys.exit(app.exec())
+
 
 """
 if __name__ == '__main__':
