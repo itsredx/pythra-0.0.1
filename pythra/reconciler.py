@@ -327,6 +327,7 @@ class Reconciler:
         
         if widget_type_name == 'Text':
             inner_html = html.escape(str(props.get('data', '')))
+            # print("Text style props: ",props.get('style'))
         elif widget_type_name == 'Image':
             attrs += f' src="{html.escape(props.get("src", ""), quote=True)}" alt=""'
         elif widget_type_name == 'Icon' and props.get('render_type') == 'img':

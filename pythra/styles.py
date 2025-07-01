@@ -27,23 +27,23 @@ class EdgeInsets:
             right (float): Padding/margin value for the right side. Defaults to 0.
             bottom (float): Padding/margin value for the bottom side. Defaults to 0.
         """
-        self.left = max(0.0, left)   # Ensure non-negative
-        self.top = max(0.0, top)
-        self.right = max(0.0, right)
-        self.bottom = max(0.0, bottom)
+        self.left = max(-500.0, left)   # Ensure non-negative
+        self.top = max(-500.0, top)
+        self.right = max(-500.0, right)
+        self.bottom = max(-500.0, bottom)
 
     # --- Static Constructors ---
     @staticmethod
     def all(value: float) -> 'EdgeInsets':
         """Creates EdgeInsets with the same value for all four sides."""
-        val = max(0.0, value)
+        val = max(-500.0, value)
         return EdgeInsets(left=val, top=val, right=val, bottom=val)
 
     @staticmethod
     def symmetric(horizontal: float = 0.0, vertical: float = 0.0) -> 'EdgeInsets':
         """Creates EdgeInsets with symmetric horizontal and vertical values."""
-        h = max(0.0, horizontal)
-        v = max(0.0, vertical)
+        h = max(-500.0, horizontal)
+        v = max(-500.0, vertical)
         return EdgeInsets(left=h, right=h, top=v, bottom=v)
 
     @staticmethod
