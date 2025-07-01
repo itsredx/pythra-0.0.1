@@ -1104,6 +1104,7 @@ class ButtonStyle:
                  # --- Shape & Border ---
                  elevation: Optional[float] = None, # Shadow depth (used to generate BoxShadow)
                  padding: Optional[EdgeInsets] = None, # Padding inside the button
+                 margin: Optional[EdgeInsets] = None, # margin outside the button
                  minimumSize: Optional[Tuple[Optional[float], Optional[float]]] = None, # (minWidth, minHeight) in px
                  maximumSize: Optional[Tuple[Optional[float], Optional[float]]] = None, # (maxWidth, maxHeight) in px
                  side: Optional[BorderSide] = None, # Border properties
@@ -1139,6 +1140,7 @@ class ButtonStyle:
         self.shadowColor = shadowColor
         self.elevation = elevation
         self.padding = padding
+        self.margin = margin
         self.minimumSize = minimumSize
         self.maximumSize = maximumSize
         self.side = side
@@ -1167,6 +1169,7 @@ class ButtonStyle:
             styles['box-shadow'] = f"0px {offset_y}px {blur}px {spread}px {color}"
 
         if self.padding and isinstance(self.padding, EdgeInsets): styles['padding'] = self.padding.to_css() # Use EdgeInsets method
+        if self.margin and isinstance(self.margin, EdgeInsets): styles['margin'] = self.margin.to_css() # Use EdgeInsets method
         if self.minimumSize:
             min_w, min_h = self.minimumSize
             if min_w is not None: styles['min-width'] = f"{min_w}px"
@@ -1230,6 +1233,7 @@ class ButtonStyle:
                 self.shadowColor == other.shadowColor and
                 self.elevation == other.elevation and
                 self.padding == other.padding and
+                self.margin == other.margin and
                 self.minimumSize == other.minimumSize and
                 self.maximumSize == other.maximumSize and
                 self.side == other.side and
@@ -1243,7 +1247,7 @@ class ButtonStyle:
         return hash((
             self.backgroundColor, self.foregroundColor,
             self.disabledBackgroundColor, self.disabledForegroundColor,
-            self.shadowColor, self.elevation, self.padding,
+            self.shadowColor, self.elevation, self.padding, self.margin,
             self.minimumSize, self.maximumSize, # Tuples are hashable
             self.side, self.shape, self.textStyle, self.alignment
         ))
@@ -1253,7 +1257,7 @@ class ButtonStyle:
         props = []
         # Add checks to show only non-default/non-None values
         attrs = ['backgroundColor', 'foregroundColor', 'disabledBackgroundColor', 'disabledForegroundColor',
-                 'shadowColor', 'elevation', 'padding', 'minimumSize', 'maximumSize',
+                 'shadowColor', 'elevation', 'padding', 'margin','minimumSize', 'maximumSize',
                  'side', 'shape', 'textStyle', 'alignment']
         for attr in attrs:
             value = getattr(self, attr)
@@ -1269,7 +1273,7 @@ class ButtonStyle:
         return {attr: getattr(self, attr).to_dict() if hasattr(getattr(self, attr), 'to_dict') else getattr(self, attr)
                 for attr in [
                     'backgroundColor', 'foregroundColor', 'disabledBackgroundColor', 'disabledForegroundColor',
-                    'shadowColor', 'elevation', 'padding', 'minimumSize', 'maximumSize',
+                    'shadowColor', 'elevation', 'padding', 'margin', 'minimumSize', 'maximumSize',
                     'side', 'shape', 'textStyle', 'alignment'
                 ] if getattr(self, attr) is not None}
 
@@ -1279,7 +1283,7 @@ class ButtonStyle:
          return tuple(getattr(self, attr).to_tuple() if hasattr(getattr(self, attr), 'to_tuple') else getattr(self, attr)
                       for attr in [
                           'backgroundColor', 'foregroundColor', 'disabledBackgroundColor', 'disabledForegroundColor',
-                          'shadowColor', 'elevation', 'padding', 'minimumSize', 'maximumSize',
+                          'shadowColor', 'elevation', 'padding', 'margin', 'minimumSize', 'maximumSize',
                           'side', 'shape', 'textStyle', 'alignment'
                       ])
 

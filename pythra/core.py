@@ -111,6 +111,7 @@ class Framework:
             new_widget_root=initial_tree_to_reconcile,
             parent_html_id="root-container",
         )
+        
 
         # 4. Update framework state from the initial result.
         self.reconciler.context_maps["main"] = result.new_rendered_map
@@ -327,6 +328,7 @@ class Framework:
         widget_instance = node_data["widget_instance"]
 
         stub = self.reconciler._generate_html_stub(widget_instance, html_id, props)
+        print("stub: ", stub)
 
         children_html = "".join(
             self._generate_html_from_map(child_key, rendered_map)
@@ -656,6 +658,7 @@ class Framework:
                 js_prop_updates.append(
                     f"{element_var}.textContent = {json.dumps(str(value))};"
                 )
+                print("data: ",value)
             elif key == "css_class":
                 js_prop_updates.append(
                     f"{element_var}.className = {json.dumps(value)};"
