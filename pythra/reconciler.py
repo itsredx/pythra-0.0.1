@@ -249,7 +249,7 @@ class Reconciler:
             if prop_name in props and hasattr(widget, func_name):
                 if (cb_name := props[prop_name]) and (cb_func := getattr(widget, func_name)):
                     result.registered_callbacks[cb_name] = cb_func
-                    print(f"Callback registerd sucssesfully [{cb_name}] with function [{cb_func}]")
+                    # print(f"Callback registerd sucssesfully [{cb_name}] with function [{cb_func}]")
 
     def _get_widget_render_tag(self, widget: 'Widget') -> str:
         widget_type_name = type(widget).__name__
@@ -286,12 +286,14 @@ class Reconciler:
 
         # --- THIS IS THE FIX ---
         # Special handling for Font Awesome icons.
-        if widget_type_name == 'Icon' and props.get('render_type') == 'font':
-            icon_name = props.get('icon_name')
+        if widget_type_name == 'Icon':
+            icon_name = props.get('data')
             if icon_name:
                 # Prepend the necessary Font Awesome classes.
-                classes = f"{classes}".strip()
-                print("Icon FA: ", classes)
+                inner_html = f"{icon_name}".strip()
+                print("Icon FA: ", icon_name)
+            else:
+                print("Data: ",props.get('data'))
         # --- END OF FIX ---
             
         if widget_type_name == 'ClipPath':

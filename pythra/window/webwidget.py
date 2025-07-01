@@ -53,7 +53,7 @@ class Api(QObject):
 
     def register_callback(self, name, callback):
         self.callbacks[name] = callback
-        print("Callbacks: ", self.callbacks)
+        # print("Callbacks: ", self.callbacks)
 
     @Slot(str, int, result=str)
     def on_pressed(self, callback_name, *args):

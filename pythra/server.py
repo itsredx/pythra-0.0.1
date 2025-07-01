@@ -3,6 +3,15 @@ import socketserver
 import threading
 import time
 
+class CORSRequestHandler(http.server.SimpleHTTPRequestHandler):
+    def end_headers(self):
+        # Allow any origin (including file://) to access fonts
+        self.send_header('Access-Control-Allow-Origin', '*')
+        # Optionally allow font-specific content type
+        self.send_header('Access-Control-Allow-Headers', 'Range')
+        self.send_header('Accept-Ranges', 'bytes')
+        super().end_headers()
+
 
 
 class AssetServer(threading.Thread):
@@ -44,7 +53,7 @@ class AssetServer(threading.Thread):
         This method is executed when the thread is started. It creates an HTTP server that listens
         on the specified port and serves files from the given directory.
         """
-        handler = http.server.SimpleHTTPRequestHandler
+        handler = CORSRequestHandler #http.server.SimpleHTTPRequestHandler
         handler.directory = self.directory
         with socketserver.TCPServer(("", self.port), handler) as httpd:
             self.server = httpd

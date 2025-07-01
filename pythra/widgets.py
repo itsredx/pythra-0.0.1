@@ -225,7 +225,7 @@ class Text(Widget):
 
         # --- CSS Class Management ---
         self.style_key = tuple(make_hashable(prop) for prop in (
-            self.style.to_css(), self.textAlign, self.overflow
+            self.style.to_css() if self.style else self.style, self.textAlign, self.overflow
         ))
 
         if self.style_key not in Text.shared_styles:
@@ -485,7 +485,8 @@ class ElevatedButton(Widget):
              backgroundColor=Colors.blue, # Example default
              foregroundColor=Colors.white, # Example default
              elevation=2,
-             padding=EdgeInsets.symmetric(horizontal=16, vertical=8) # Example default
+             padding=EdgeInsets.symmetric(horizontal=16, vertical=8), # Example default
+             margin=EdgeInsets.all(4)
         )
 
         # --- CSS Class Management ---
@@ -528,7 +529,7 @@ class ElevatedButton(Widget):
             # or the output of make_hashable(ButtonStyle(...))
             try:
                 (bgColor, fgColor, disBgColor, disFgColor, shadowColor, elevation,
-                 padding_tuple, minSize_tuple, maxSize_tuple, side_tuple, shape_repr,
+                 padding_tuple, margin_tuple, minSize_tuple, maxSize_tuple, side_tuple, shape_repr,
                  textStyle_tuple, alignment_tuple) = style_key
             except (ValueError, TypeError) as unpack_error:
                  # Handle cases where the key doesn't match the expected structure
@@ -544,8 +545,8 @@ class ElevatedButton(Widget):
                 'display': 'inline-flex', # Use inline-flex to size with content but allow block behavior
                 'align-items': 'center', # Vertically center icon/text
                 'justify-content': 'center', # Horizontally center icon/text
-                'padding': '8px 16px', # Default padding (M3 like)
-                'margin': '4px', # Default margin
+                'padding': {EdgeInsets(*padding_tuple).to_css_value()} if padding_tuple else '8px 16px', # Default padding (M3 like)
+                'margin': {EdgeInsets(*margin_tuple).to_css_value()} if margin_tuple else '4px', # Default margin
                 'border': 'none', # Elevated buttons usually have no border by default
                 'border-radius': '20px', # M3 full rounded shape (default for elevated)
                 'background-color': bgColor or '#6200ee', # Use provided or default
@@ -572,6 +573,13 @@ class ElevatedButton(Widget):
                       padding_obj = EdgeInsets(*padding_tuple) # Assumes tuple is (l,t,r,b)
                       base_styles_dict['padding'] = padding_obj.to_css_value()
                  except Exception: pass # Ignore if padding_tuple isn't valid
+
+            if margin_tuple:
+                 # Recreate EdgeInsets or use tuple directly if to_css_value works
+                 try:
+                      margin_obj = EdgeInsets(*margin_tuple) # Assumes tuple is (l,t,r,b)
+                      base_styles_dict['margin'] = margin_obj.to_css_value()
+                 except Exception: pass # Ignore if margin_tuple isn't valid
 
             # Minimum/Maximum Size
             if minSize_tuple:
@@ -1922,7 +1930,7 @@ class Icon(Widget):
     def _get_widget_render_tag(widget: 'Widget') -> str:
         # Override the render tag for this specific widget type
         if isinstance(widget, Icon):
-            return 'span' # Render as a span, not an <i> or <img>
+            return 'i' # Render as a span, not an <i> or <img>
         # Fallback to a central tag map if you have one
         return 'div'
 
