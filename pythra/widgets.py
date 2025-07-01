@@ -82,6 +82,8 @@ class Container(Widget):
             self.clipBehavior
         ))
 
+        print(self.style_key)
+
         # 2. Check the cache. If this style combination is new, create a new class.
         #    Otherwise, reuse the existing one.
         if self.style_key not in Container.shared_styles:
@@ -138,6 +140,7 @@ class Container(Widget):
             
             if margin_tuple and isinstance(margin_tuple, tuple):
                 styles.append(f"margin: {EdgeInsets(*margin_tuple).to_css_value()};")
+                print(f"margin: {EdgeInsets(*margin_tuple).to_css_value()};")
 
             # Handle explicit Width and Height
             if width is not None:
@@ -222,7 +225,7 @@ class Text(Widget):
 
         # --- CSS Class Management ---
         self.style_key = tuple(make_hashable(prop) for prop in (
-            self.style, self.textAlign, self.overflow
+            self.style.to_css(), self.textAlign, self.overflow
         ))
 
         if self.style_key not in Text.shared_styles:
@@ -253,7 +256,8 @@ class Text(Widget):
             (style, textAlign, overflow) = style_key
 
             # Assume style.to_css() returns combined font/color etc. rules
-            style_str = style.to_css() if hasattr(style, 'to_css') else ''
+            style_str = style if style else ''
+            print("Style str: ", style)
             text_align_str = f"text-align: {textAlign};" if textAlign else ''
             overflow_str = f"overflow: {overflow}; white-space: nowrap; text-overflow: ellipsis;" if overflow == 'ellipsis' else (f"overflow: {overflow};" if overflow else '')
 
@@ -303,7 +307,7 @@ class TextButton(Widget):
         # --- CSS Class Management ---
         # Use make_hashable or ensure ButtonStyle itself is hashable
         # For TextButton, often only a subset of ButtonStyle matters, but let's hash the whole object for now
-        self.style_key = (make_hashable(self.style),)
+        self.style_key = (make_hashable(self.style.to_css()),)
 
         if self.style_key not in TextButton.shared_styles:
             self.css_class = f"shared-textbutton-{len(TextButton.shared_styles)}"
@@ -349,6 +353,7 @@ class TextButton(Widget):
             try:
                 # Option A: style_key = (hashable_button_style_repr,)
                 style_repr = style_key[0] # Get the representation
+                print(style_repr)
 
                 # Option B: style_key = (prop1, prop2, ...) - unpack directly
                 # (textColor, textStyle_tuple, padding_tuple, ...) = style_key # Example unpack
@@ -379,26 +384,27 @@ class TextButton(Widget):
             fg_color = getattr(style_obj, 'foregroundColor', Colors.primary or '#6750A4')
             bg_color = getattr(style_obj, 'backgroundColor', 'transparent') # Usually transparent
             padding_obj = getattr(style_obj, 'padding', EdgeInsets.symmetric(horizontal=12)) # M3 has specific padding
+            print("Padding: ", style_obj.padding)
             text_style_obj = getattr(style_obj, 'textStyle', None) # Get text style if provided
             shape_obj = getattr(style_obj, 'shape', BorderRadius.all(20)) # M3 full rounded shape often
-            min_height = getattr(style_obj, 'minimumSize', (None, 40))[1] or 40 # M3 min height 40px
+            min_height = getattr(style_obj, 'minimumSize', (None, 40)) or 40 # M3 min height 40px
 
             # --- Base TextButton Styles (M3 Inspired) ---
             base_styles_dict = {
                 'display': 'inline-flex',
                 'align-items': 'center',
                 'justify-content': 'center',
-                'padding': padding_obj.to_css_value() if isinstance(padding_obj, EdgeInsets) else '4px 12px', # Use style padding or M3-like default
-                'margin': '4px', # Default margin between adjacent buttons
+                # 'padding': padding_obj.to_css() if padding_obj else '4px 12px', # Use style padding or M3-like default
+                # 'margin': '4px', # Default margin between adjacent buttons
                 'border': 'none', # Text buttons have no border
-                'border-radius': shape_obj.to_css_value() if isinstance(shape_obj, BorderRadius) else f"{shape_obj or 20}px", # Use shape or M3 default
-                'background-color': bg_color or 'transparent',
-                'color': fg_color, # Use style foreground or M3 primary
+                # 'border-radius': shape_obj.to_css_value() if isinstance(shape_obj, BorderRadius) else f"{shape_obj or 20}px", # Use shape or M3 default
+                # 'background-color': bg_color or 'transparent',
+                # 'color': fg_color, # Use style foreground or M3 primary
                 'cursor': 'pointer',
                 'text-align': 'center',
                 'text-decoration': 'none',
                 'outline': 'none',
-                'min-height': f"{min_height}px", # M3 min target size
+                # 'min-height': f"{min_height}px", # M3 min target size
                 'min-width': '48px', # Ensure min width for touch target even if padding is small
                 'box-sizing': 'border-box',
                 'position': 'relative', # For state layer/ripple
@@ -407,10 +413,11 @@ class TextButton(Widget):
                 '-webkit-appearance': 'none',
                 '-moz-appearance': 'none',
                 'appearance': 'none',
+                
             }
 
             # --- Assemble Main Rule ---
-            main_rule = f".{css_class} {{ {' '.join(f'{k}: {v};' for k, v in base_styles_dict.items())} }}"
+            main_rule = f".{css_class} {{ {' '.join(f'{k}: {v};' for k, v in base_styles_dict.items())} {style_repr}}}"
 
             # --- State Styles ---
             # M3 uses semi-transparent state layers matching the text color
@@ -420,11 +427,11 @@ class TextButton(Widget):
                  # Basic check: Assume hex format #RRGGBB
                  if fg_color and fg_color.startswith('#') and len(fg_color) == 7:
                      r, g, b = int(fg_color[1:3], 16), int(fg_color[3:5], 16), int(fg_color[5:7], 16)
-                     hover_bg_color = Colors.rgba(r, g, b, 0.08) # 8% opacity overlay
-                     active_bg_color = Colors.rgba(r, g, b, 0.12) # 12% opacity overlay
+                     hover_bg_color = Colors.rgba(r, g, b, 0.50) # 8% opacity overlay
+                     active_bg_color = Colors.rgba(r, g, b, 0.00) # 12% opacity overlay
             except: pass # Ignore errors, use fallback
 
-            hover_rule = f".{css_class}:hover {{ background-color: {hover_bg_color}; }}"
+            hover_rule = f".{css_class}:hover {{ background-color: transparent; color: red; }}"
             active_rule = f".{css_class}:active {{ background-color: {active_bg_color}; }}"
 
             # Disabled state
@@ -444,7 +451,7 @@ class TextButton(Widget):
                   default_text_styles = "font-weight: 500; font-size: 14px; letter-spacing: 0.1px; line-height: 20px;"
                   text_style_rule = f".{css_class} > * {{ {default_text_styles} }}"
 
-
+            # print("\n".join([main_rule, text_style_rule, hover_rule, active_rule, disabled_rule]))
             return "\n".join([main_rule, text_style_rule, hover_rule, active_rule, disabled_rule])
 
         except Exception as e:
@@ -1493,6 +1500,7 @@ class Column(Widget):
             # Cross axis for Column is horizontal -> maps to align-items
             # Handle baseline alignment specifically
             align_items_val = crossAxisAlignment
+            # width_style = ""
             if crossAxisAlignment == CrossAxisAlignment.BASELINE:
                 # For baseline alignment in flexbox, typically use align-items: baseline;
                 # textBaseline (alphabetic/ideographic) might not have a direct, simple CSS equivalent
@@ -1501,6 +1509,7 @@ class Column(Widget):
             elif crossAxisAlignment == CrossAxisAlignment.STRETCH and mainAxisSize == MainAxisSize.MAX:
                 # Default behavior for align-items: stretch might need width/height adjustments
                 pass # Keep 'stretch'
+                # width_style = "height: -webkit-fill-available;"
             # If not baseline or stretch, use the value directly (e.g., 'center', 'flex-start', 'flex-end')
 
 
@@ -1510,7 +1519,7 @@ class Column(Widget):
                 # Fill available vertical space. If parent is also flex, might need flex-grow.
                 # Using height: 100% assumes parent has a defined height.
                 # 'flex: 1;' is often better in flex contexts. Let's use fit-content for min.
-                height_style = "flex-grow: 1; flex-basis: 0;" # Common pattern to fill space
+                height_style = "height: 100%;" # Common pattern to fill space
                 # Alternatively: height: 100%; # If parent has height
             elif mainAxisSize == MainAxisSize.MIN:
                 # Wrap content height
@@ -1643,8 +1652,11 @@ class Row(Widget):
 
             # Cross axis for Row is vertical -> maps to align-items
             align_items_val = crossAxisAlignment
+            height_style = ""
             if crossAxisAlignment == CrossAxisAlignment.BASELINE:
                  align_items_val = 'baseline'
+            elif crossAxisAlignment == CrossAxisAlignment.STRETCH:
+                height_style = "height: 100%;"
             # Handle STRETCH if needed (default usually works if parent has height)
 
             # MainAxisSize determines width behavior
@@ -1666,6 +1678,7 @@ class Row(Widget):
                 f"justify-content: {justify_content_val}; " # Main axis (Horizontal)
                 f"align-items: {align_items_val}; "       # Cross axis (Vertical)
                 f"{width_style} "
+                f"{height_style}"
                 f"{direction_style}"
             )
 
@@ -5160,8 +5173,8 @@ class ClipPath(Widget):
                  points: List[Tuple[float, float]] = None,
                  radius: float = 0,
                  viewBox: Tuple[float, float] = (100, 100),
-                 width: Optional[Union[str, int, float]] = 'max-content',
-                 height: Optional[Union[str, int, float]] = 'max-content',
+                 width: Optional[Union[str, int, float]] = '100%',
+                 height: Optional[Union[str, int, float]] = '100%',
                  aspectRatio: Optional[float] = None): # <-- NEW PARAMETER
         
         if not child: raise ValueError("ClipPath widget requires a child.")

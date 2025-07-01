@@ -6,13 +6,17 @@ font_dir: "fonts"
 
 Debug: True
 
-frameless: False
+frameless: True
+
+maximixed: True
+
+fixed_size: True
 
 win_height: 600
 
 win_width: 800
 
-app_name: "Pythra Test..."
+app_name: "Player"
 
 
 dependencies: 
