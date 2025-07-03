@@ -51,7 +51,10 @@ from pythra import (
     Icons,
     Padding,
     TextStyle,
-    TextButton,  # <-- ADD THESE IMPORTS
+    TextButton,
+    ListView,
+    Scrollbar,
+    ScrollbarTheme,  # <-- ADD THESE IMPORTS
 )
 import math  # For the StarClipper
 
@@ -60,10 +63,48 @@ import math  # For the StarClipper
 class PlayerAppState(State):
     def __init__(self):
         super().__init__()
+        self.items = [
+            {"id": 1, "name": "Apple 🍎"},
+            {"id": 2, "name": "Banana 🍌"},
+            {"id": 3, "name": "Cherry 🍒"},
+            {"id": 4, "name": "Apple 🍎"},
+            {"id": 5, "name": "Apple 🍎"},
+            {"id": 6, "name": "Banana 🍌"},
+            {"id": 7, "name": "Cherry 🍒"},
+            {"id": 8, "name": "Apple 🍎"},
+            {"id": 9, "name": "Apple 🍎"},
+            {"id": 10, "name": "Banana 🍌"},
+            {"id": 11, "name": "Cherry 🍒"},
+            {"id": 12, "name": "Apple 🍎"},
+            {"id": 13, "name": "Apple 🍎"},
+            {"id": 14, "name": "Banana 🍌"},
+            {"id": 15, "name": "Cherry 🍒"},
+            {"id": 16, "name": "Apple 🍎"},
+            {"id": 17, "name": "Apple 🍎"},
+            {"id": 18, "name": "Banana 🍌"},
+            {"id": 19, "name": "Cherry 🍒"},
+            {"id": 20, "name": "Apple 🍎"},
+            
+        ]
 
     # --- Build Method ---TODO SINGLECHILDSCROL
     def build(self) -> Widget:
         print(f"\n--- Building PlayerApp UI ---")
+
+        list_item_widgets = [
+            Container(
+                key=Key(f"List_item_{str(item['id'])}"),
+                color= Colors.lightpink if item['id']% 2 != 0 else Colors.transparent, 
+                padding=EdgeInsets.all(6),
+                margin=EdgeInsets.only(right=24),
+                child=Row(
+                    children=[
+                        Text(item["name"]),
+                    ]
+                ),
+            )
+            for item in self.items
+        ]
 
         return Container(
             height="100vh",
@@ -110,7 +151,7 @@ class PlayerAppState(State):
                                             Container(
                                                 height=50,
                                                 width="100%",
-                                                padding=EdgeInsets.symmetric(35),
+                                                padding=EdgeInsets.symmetric(16),
                                                 color=Colors.transparent,
                                                 child=Row(
                                                     crossAxisAlignment=CrossAxisAlignment.START,
@@ -235,7 +276,7 @@ class PlayerAppState(State):
                                 ),
                                 Container(
                                     key=Key("body_path"),
-                                    height="100%",
+                                    height="-webkit-fill-available",
                                     width="100%",
                                     margin=EdgeInsets.only(
                                         top=-70,
@@ -250,7 +291,7 @@ class PlayerAppState(State):
                                         # aspectRatio=1.0,
                                         viewBox=(
                                             1248.7,
-                                            733.24,
+                                            608.24,
                                         ),  # Define the coordinate system of the path
                                         child=Container(
                                             width="100%",
@@ -276,6 +317,7 @@ class PlayerAppState(State):
                                                                                 color=Colors.hex(
                                                                                     "#D9D9D9"
                                                                                 ),
+                                                                                size=16,
                                                                                 fill=True,
                                                                                 weight=700,
                                                                             ),
@@ -308,11 +350,12 @@ class PlayerAppState(State):
                                                                         margin=EdgeInsets.all(
                                                                             0
                                                                         ),
+                                                                        # maximumSize=(156.3, 33.6)
                                                                     ),
                                                                 ),
                                                             ],
                                                         ),
-                                                        SizedBox(height=36),
+                                                        SizedBox(height=50),
                                                         Row(
                                                             mainAxisAlignment=MainAxisAlignment.START,
                                                             children=[
@@ -324,6 +367,7 @@ class PlayerAppState(State):
                                                                                 color=Colors.hex(
                                                                                     "#353535"
                                                                                 ),
+                                                                                size=16,
                                                                                 fill=True,
                                                                                 weight=700,
                                                                             ),
@@ -360,6 +404,49 @@ class PlayerAppState(State):
                                                                 ),
                                                             ],
                                                         ),
+                                                        SizedBox(height=30),
+                                                        Row(
+                                                            mainAxisAlignment=MainAxisAlignment.START,
+                                                            children=[
+                                                                Text(
+                                                                    "Juice WRLD",
+                                                                    style=TextStyle(
+                                                                        color=Colors.hex(
+                                                                            "#FF94DA"
+                                                                        ),
+                                                                        fontSize=16.0,
+                                                                        fontFamily="verdana",
+                                                                    ),
+                                                                )
+                                                            ],
+                                                        ),
+                                                        SizedBox(height=10),
+                                                        Container(
+                                                            height=500,
+                                                            width="100%",
+                                                            child=Scrollbar(
+                                                                theme=ScrollbarTheme(
+                                                                    width=14,
+                                                                    thumbColor=Colors.hex(
+                                                                        "#D9D9D9"
+                                                                    ),
+                                                                    trackColor=Colors.hex(
+                                                                        "#3535353e"
+                                                                    ),
+                                                                    thumbHoverColor=Colors.hex(
+                                                                        "#9c9b9b"
+                                                                    ),
+                                                                    radius=6,
+                                                                ),
+                                                                autoHide=False,
+                                                                child=ListView(
+                                                                    key=Key(
+                                                                        "item_list_column"
+                                                                    ),
+                                                                    children=list_item_widgets,
+                                                                ),
+                                                            ),
+                                                        ),
                                                     ]
                                                 ),
                                             ),
@@ -369,11 +456,23 @@ class PlayerAppState(State):
                                             (450, 70),
                                             (450, 0),
                                             (1248.7, 0),
-                                            (1248.7, 733.24),
-                                            (0, 733.24),
+                                            (1248.7, 608.24),
+                                            (0, 608.24),
                                             # (0, 50),
                                         ],
                                         radius=18.0,
+                                    ),
+                                ),
+                                SizedBox(
+                                    height=13,
+                                ),
+                                Container(
+                                    key=Key("Control_container"),
+                                    height=112,
+                                    width="100%",
+                                    decoration=BoxDecoration(
+                                        color=Colors.hex("#484848"),
+                                        borderRadius=BorderRadius.circular(18.0),
                                     ),
                                 ),
                             ],

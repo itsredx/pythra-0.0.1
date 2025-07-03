@@ -32,7 +32,7 @@ from .styles import (
     # Appearance
     Colors, BoxDecoration, BoxShadow, Offset,
     BorderRadius, BorderSide, BorderStyle,
-    TextStyle,
+    TextStyle, ScrollbarTheme,
     # Behavior/Misc
     ClipBehavior, ImageFit, BoxFit, Overflow, StackFit, ScrollPhysics,
     TextDirection, TextBaseline, VerticalDirection,
