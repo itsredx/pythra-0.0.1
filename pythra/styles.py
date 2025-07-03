@@ -1818,13 +1818,15 @@ class ScrollbarTheme:
     
     # The radius of the corners on the thumb.
     radius: int = 6 
+    trackRadius: int = 8 
     
     # Creates a "padding" effect around the thumb by using a transparent border.
     thumbPadding: int = 3 
+    trackMargin: Optional[EdgeInsets] = 0 
 
     def to_tuple(self) -> Tuple:
         """Returns a hashable tuple representation for use as a style key."""
         return (
             self.width, self.height, self.thumbColor, self.thumbHoverColor,
-            self.trackColor, self.radius, self.thumbPadding
+            self.trackColor, self.radius, self.trackRadius, self.thumbPadding, self.trackMargin
         )

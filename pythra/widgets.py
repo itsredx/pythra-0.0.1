@@ -1365,7 +1365,7 @@ class Scrollbar(Widget):
         """
         try:
             (width, height, thumb_color, thumb_hover_color,
-             track_color, radius, thumb_padding) = style_key
+             track_color, radius, track_radius, thumb_padding, track_margin) = style_key
             
             # These selectors precisely target the DOM elements created by SimpleBar.
             return f"""
@@ -1373,14 +1373,26 @@ class Scrollbar(Widget):
                 .{css_class} .simplebar-track.simplebar-vertical {{
                     background: {track_color};
                     width: {width}px;
+                    border-radius: {track_radius}px;
+                    margin: {track_margin};
                 }}
                 .{css_class} .simplebar-track.simplebar-horizontal {{
                     background: {track_color};
                     height: {height}px;
+                    border-radius: {track_radius}px;
                 }}
 
                 /* Style the draggable scrollbar thumb */
                 .{css_class} .simplebar-scrollbar::before {{
+                    background-color: {thumb_color};
+                    border-radius: {radius}px;
+                    /* Use a transparent border to create padding inside the thumb */
+                    border: {thumb_padding}px solid transparent;
+                    background-clip: content-box;
+                    opacity: 1; /* Override auto-hide opacity if needed */
+                }}
+
+                .{css_class} .simplebar-scrollbar::after {{
                     background-color: {thumb_color};
                     border-radius: {radius}px;
                     /* Use a transparent border to create padding inside the thumb */
@@ -1396,6 +1408,12 @@ class Scrollbar(Widget):
                 .{css_class} {{
                     /* height: -webkit-fill-available; */
                     height: inherit;
+                }}
+                .{css_class}  .simplebar-track.simplebar-horizontal {{
+                    display: none;
+                }}
+                .simplebar-scrollbar {{
+                    display: none;
                 }}
             """
         except Exception as e:
