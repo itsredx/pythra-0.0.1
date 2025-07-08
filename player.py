@@ -5,6 +5,8 @@ import time
 import random
 import string
 from PySide6.QtCore import QTimer, QCoreApplication
+from components.drawer import DrawerState, Drawer
+from components.control import ControlsState, Controls
 
 # --- Framework Imports ---
 # Make sure to import ClipPath and the clipper base classes
@@ -54,7 +56,10 @@ from pythra import (
     TextButton,
     ListView,
     Scrollbar,
-    ScrollbarTheme,  # <-- ADD THESE IMPORTS
+    ScrollbarTheme,
+    TextEditingController,
+    InputDecoration,
+    BorderSide,  # <-- ADD THESE IMPORTS
 )
 import math  # For the StarClipper
 
@@ -68,7 +73,7 @@ class PlayerAppState(State):
             {"id": 2, "name": "Banana 🍌"},
             {"id": 3, "name": "Cherry 🍒"},
             {"id": 4, "name": "Apple 🍎"},
-            {"id": 5, "name": "Apple 🍎"},
+            {"id": 5, "name": "Shoma (feat. Yng Bun)"},
             {"id": 6, "name": "Banana 🍌"},
             {"id": 7, "name": "Cherry 🍒"},
             {"id": 8, "name": "Apple 🍎"},
@@ -84,23 +89,177 @@ class PlayerAppState(State):
             {"id": 18, "name": "Banana 🍌"},
             {"id": 19, "name": "Cherry 🍒"},
             {"id": 20, "name": "Apple 🍎"},
-            
         ]
+        self.password_controller = TextEditingController()
+        self.password_controller.add_listener(self.on_username_updates)
+        self.value_entered = False
+
+    def on_username_updates(self):
+        print(f"Listener notified! Username is now: {self.password_controller.text}")
+        # We still need to call setState if a listener changes other parts of the UI
+        # For simple text updates, this isn't necessary, but for validation it is.
+        if len(self.password_controller.text) >= 1:
+            self.value_entered = True
+            print("Value in: ", self.value_entered)
+            self.setState()  # Re-render to remove the error message
 
     # --- Build Method ---TODO SINGLECHILDSCROL
     def build(self) -> Widget:
-        print(f"\n--- Building PlayerApp UI ---")
+        # print(f"\n--- Building PlayerApp UI ---")
+        password_decoration = InputDecoration(
+            hintText="Search",
+            fillColor="#363636",  # Use a different color on focus
+            border=BorderSide(width=1, color=Colors.grey),  # Thinner, grey border
+            filled=True,
+            focusColor=Colors.hex("#FF94DA"),
+        )
 
         list_item_widgets = [
             Container(
                 key=Key(f"List_item_{str(item['id'])}"),
-                color= Colors.lightpink if item['id']% 2 != 0 else Colors.transparent, 
-                padding=EdgeInsets.all(6),
-                margin=EdgeInsets.only(right=24),
+                height=46,
+                color=(
+                    Colors.hex("#363636") if item["id"] % 2 != 0 else Colors.transparent
+                ),
+                padding=EdgeInsets.all(9),
+                margin=EdgeInsets.only(
+                    right=24,
+                    top=2,
+                    bottom=2,
+                ),
+                decoration=BoxDecoration(borderRadius=BorderRadius.all(4)),
                 child=Row(
+                    mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
                     children=[
-                        Text(item["name"]),
-                    ]
+                        SizedBox(width=20),
+                        (
+                            Icon(
+                                icon=Icons.bar_chart_rounded,
+                                size=12,
+                                color=(
+                                    Colors.hex("#FF94DA")
+                                    if item["id"] == 5
+                                    else Colors.hex("#D9D9D9")
+                                ),
+                            )
+                            if item["id"] == 5
+                            else SizedBox(width=16)
+                        ),
+                        SizedBox(width=20),
+                        Container(
+                            width=300,
+                            child=Text(
+                                item["name"],
+                                style=TextStyle(
+                                    color=(
+                                        Colors.hex("#FF94DA")
+                                        if item["id"] == 5
+                                        else Colors.hex("#D9D9D9")
+                                    ),
+                                    fontSize=12.0,
+                                    fontFamily="verdana",
+                                ),
+                            ),
+                        ),
+                        Container(
+                            # color=Colors.green,
+                            child=Row(
+                                mainAxisAlignment=MainAxisAlignment.END,
+                                children=[
+                                    Container(
+                                        width=150,
+                                        height=28,
+                                        child=Text(
+                                            "Red X" if item["id"] == 5 else "Artist",
+                                            style=TextStyle(
+                                                color=(
+                                                    Colors.hex("#FF94DA")
+                                                    if item["id"] == 5
+                                                    else Colors.hex("#D9D9D9")
+                                                ),
+                                                fontSize=12.0,
+                                                fontFamily="verdana",
+                                            ),
+                                        ),
+                                        alignment=Alignment.center(),
+                                        color=(
+                                            Colors.hex("#3535353e")
+                                            if item["id"] == 1
+                                            else Colors.transparent
+                                        ),
+                                        decoration=BoxDecoration(
+                                            borderRadius=BorderRadius.all(4)
+                                        ),
+                                    ),
+                                    SizedBox(width=90),
+                                    Container(
+                                        width=150,
+                                        color=(
+                                            Colors.hex("#3535353e")
+                                            if item["id"] == 1
+                                            else Colors.transparent
+                                        ),
+                                        height=28,
+                                        child=Text(
+                                            (
+                                                "On the couch"
+                                                if item["id"] == 5
+                                                else "Album"
+                                            ),
+                                            style=TextStyle(
+                                                color=(
+                                                    Colors.hex("#FF94DA")
+                                                    if item["id"] == 5
+                                                    else Colors.hex("#D9D9D9")
+                                                ),
+                                                fontSize=12.0,
+                                                fontFamily="verdana",
+                                            ),
+                                        ),
+                                        alignment=Alignment.center(),
+                                        decoration=BoxDecoration(
+                                            borderRadius=BorderRadius.all(4)
+                                        ),
+                                    ),
+                                    SizedBox(width=90),
+                                    Container(
+                                        width=100,
+                                        child=Text(
+                                            "RnB" if item["id"] == 5 else "Genre",
+                                            style=TextStyle(
+                                                color=(
+                                                    Colors.hex("#FF94DA")
+                                                    if item["id"] == 5
+                                                    else Colors.hex("#D9D9D9")
+                                                ),
+                                                fontSize=12.0,
+                                                fontFamily="verdana",
+                                            ),
+                                        ),
+                                        alignment=Alignment.center(),
+                                    ),
+                                    SizedBox(width=90),
+                                    Container(
+                                        # color=Colors.blue,
+                                        width=100,
+                                        child=Text(
+                                            "02:23" if item["id"] == 5 else "04:43",
+                                            style=TextStyle(
+                                                color=(
+                                                    Colors.hex("#FF94DA")
+                                                    if item["id"] == 5
+                                                    else Colors.hex("#D9D9D9")
+                                                ),
+                                                fontSize=12.0,
+                                                fontFamily="verdana",
+                                            ),
+                                        ),
+                                        alignment=Alignment.center_right(),
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ],
                 ),
             )
             for item in self.items
@@ -122,13 +281,14 @@ class PlayerAppState(State):
                             color=Colors.hex("#484848"),
                             borderRadius=BorderRadius.circular(18.0),
                         ),
+                        child=Drawer(),
                     ),
                     SizedBox(
                         width=13,
                     ),
                     Container(
                         height="100%",
-                        width="100%",
+                        width=1190,
                         # color= Colors.hex("#484848"),
                         decoration=BoxDecoration(
                             color=Colors.transparent,
@@ -148,149 +308,236 @@ class PlayerAppState(State):
                                         mainAxisAlignment=MainAxisAlignment.END,
                                         crossAxisAlignment=CrossAxisAlignment.STRETCH,
                                         children=[
-                                            Container(
-                                                height=50,
-                                                width="100%",
-                                                padding=EdgeInsets.symmetric(16),
-                                                color=Colors.transparent,
-                                                child=Row(
-                                                    crossAxisAlignment=CrossAxisAlignment.START,
-                                                    children=[
-                                                        Text(
-                                                            "Music",
-                                                            key=Key("music_header"),
-                                                            style=TextStyle(
-                                                                color=Colors.hex(
-                                                                    "#D9D9D9"
+                                            Row(
+                                                children=[
+                                                    Container(
+                                                        height=50,
+                                                        width="100%",
+                                                        padding=EdgeInsets.symmetric(
+                                                            16
+                                                        ),
+                                                        color=Colors.transparent,
+                                                        child=Row(
+                                                            crossAxisAlignment=CrossAxisAlignment.START,
+                                                            children=[
+                                                                Text(
+                                                                    "Music",
+                                                                    key=Key(
+                                                                        "music_header"
+                                                                    ),
+                                                                    style=TextStyle(
+                                                                        color=Colors.hex(
+                                                                            "#D9D9D9"
+                                                                        ),
+                                                                        fontSize=33.0,
+                                                                        fontWeight=500,
+                                                                        fontFamily="verdana",
+                                                                    ),
                                                                 ),
-                                                                fontSize=33.0,
-                                                                fontWeight=500,
-                                                                fontFamily="verdana",
+                                                                SizedBox(
+                                                                    width=25,
+                                                                ),
+                                                                Container(
+                                                                    child=Column(
+                                                                        children=[
+                                                                            SizedBox(
+                                                                                height=10,
+                                                                            ),
+                                                                            TextButton(
+                                                                                child=Text(
+                                                                                    "Songs",
+                                                                                    key=Key(
+                                                                                        "Songs"
+                                                                                    ),
+                                                                                    style=TextStyle(
+                                                                                        color=Colors.hex(
+                                                                                            "#D9D9D9"
+                                                                                        ),
+                                                                                        fontSize=17.0,
+                                                                                        fontFamily="verdana",
+                                                                                    ),
+                                                                                ),
+                                                                                style=ButtonStyle(
+                                                                                    backgroundColor=Colors.transparent,
+                                                                                ),
+                                                                            ),
+                                                                            SizedBox(
+                                                                                height=10,
+                                                                            ),
+                                                                            Image(
+                                                                                AssetImage(
+                                                                                    "selector.svg"
+                                                                                ),
+                                                                                width=16,
+                                                                                height=3,
+                                                                            ),
+                                                                        ]
+                                                                    )
+                                                                ),
+                                                                SizedBox(
+                                                                    width=25,
+                                                                ),
+                                                                Container(
+                                                                    child=Column(
+                                                                        children=[
+                                                                            SizedBox(
+                                                                                height=10,
+                                                                            ),
+                                                                            TextButton(
+                                                                                child=Text(
+                                                                                    "Albums",
+                                                                                    key=Key(
+                                                                                        "Albums"
+                                                                                    ),
+                                                                                    style=TextStyle(
+                                                                                        color=Colors.hex(
+                                                                                            "#D9D9D9"
+                                                                                        ),
+                                                                                        fontSize=17.0,
+                                                                                        fontFamily="verdana",
+                                                                                    ),
+                                                                                ),
+                                                                                style=ButtonStyle(
+                                                                                    backgroundColor=Colors.transparent,
+                                                                                ),
+                                                                            ),
+                                                                        ]
+                                                                    ),
+                                                                ),
+                                                                SizedBox(
+                                                                    width=25,
+                                                                ),
+                                                                Container(
+                                                                    child=Column(
+                                                                        children=[
+                                                                            SizedBox(
+                                                                                height=10,
+                                                                            ),
+                                                                            TextButton(
+                                                                                child=Text(
+                                                                                    "Artists",
+                                                                                    key=Key(
+                                                                                        "Artists"
+                                                                                    ),
+                                                                                    style=TextStyle(
+                                                                                        color=Colors.hex(
+                                                                                            "#D9D9D9"
+                                                                                        ),
+                                                                                        fontSize=17.0,
+                                                                                        fontFamily="verdana",
+                                                                                    ),
+                                                                                ),
+                                                                                style=ButtonStyle(
+                                                                                    backgroundColor=Colors.transparent,
+                                                                                ),
+                                                                            ),
+                                                                        ]
+                                                                    ),
+                                                                ),
+                                                            ],
+                                                        ),
+                                                    ),
+                                                    Container(
+                                                        height=14,
+                                                        width=14,
+                                                        margin=EdgeInsets.only(
+                                                            top=-95,
+                                                        ),
+                                                        decoration=BoxDecoration(
+                                                            color=Colors.lightgreen,
+                                                            borderRadius=BorderRadius.circular(
+                                                                4.0
                                                             ),
                                                         ),
-                                                        SizedBox(
-                                                            width=25,
+                                                        child=ElevatedButton(
+                                                            child=Container(
+                                                                height=14,
+                                                                width=14,
+                                                                decoration=BoxDecoration(
+                                                                    color=Colors.ash,
+                                                                    borderRadius=BorderRadius.circular(
+                                                                        4.0
+                                                                    ),
+                                                                ),
+                                                            ),
+                                                            style=ButtonStyle(
+                                                                padding=EdgeInsets.all(
+                                                                    0
+                                                                ),
+                                                                margin=EdgeInsets.all(
+                                                                    0
+                                                                ),
+                                                                shape=BorderRadius.circular(
+                                                                    4.0
+                                                                ),
+                                                                backgroundColor=Colors.lightgreen,
+                                                            ),
+                                                            onPressed=self.framework.minimize,
                                                         ),
-                                                        Container(
-                                                            child=Column(
-                                                                children=[
-                                                                    SizedBox(
-                                                                        height=10,
-                                                                    ),
-                                                                    TextButton(
-                                                                        child=Text(
-                                                                            "Songs",
-                                                                            key=Key(
-                                                                                "Songs"
-                                                                            ),
-                                                                            style=TextStyle(
-                                                                                color=Colors.hex(
-                                                                                    "#D9D9D9"
-                                                                                ),
-                                                                                fontSize=17.0,
-                                                                                fontFamily="verdana",
-                                                                            ),
-                                                                        ),
-                                                                        style=ButtonStyle(
-                                                                            backgroundColor=Colors.transparent,
-                                                                        ),
-                                                                    ),
-                                                                    SizedBox(
-                                                                        height=10,
-                                                                    ),
-                                                                    Image(
-                                                                        AssetImage(
-                                                                            "selector.svg"
-                                                                        ),
-                                                                        width=16,
-                                                                        height=3,
-                                                                    ),
-                                                                ]
-                                                            )
+                                                    ),
+                                                    SizedBox(width=6),
+                                                    Container(
+                                                        height=14,
+                                                        width=14,
+                                                        margin=EdgeInsets.only(
+                                                            top=-95,
                                                         ),
-                                                        SizedBox(
-                                                            width=25,
-                                                        ),
-                                                        Container(
-                                                            child=Column(
-                                                                children=[
-                                                                    SizedBox(
-                                                                        height=10,
-                                                                    ),
-                                                                    TextButton(
-                                                                        child=Text(
-                                                                            "Albums",
-                                                                            key=Key(
-                                                                                "Albums"
-                                                                            ),
-                                                                            style=TextStyle(
-                                                                                color=Colors.hex(
-                                                                                    "#D9D9D9"
-                                                                                ),
-                                                                                fontSize=17.0,
-                                                                                fontFamily="verdana",
-                                                                            ),
-                                                                        ),
-                                                                        style=ButtonStyle(
-                                                                            backgroundColor=Colors.transparent,
-                                                                        ),
-                                                                    ),
-                                                                ]
+                                                        decoration=BoxDecoration(
+                                                            color=Colors.error,
+                                                            borderRadius=BorderRadius.circular(
+                                                                4.0
                                                             ),
                                                         ),
-                                                        SizedBox(
-                                                            width=25,
-                                                        ),
-                                                        Container(
-                                                            child=Column(
-                                                                children=[
-                                                                    SizedBox(
-                                                                        height=10,
+                                                        child=ElevatedButton(
+                                                            child=Container(
+                                                                height=14,
+                                                                width=14,
+                                                                decoration=BoxDecoration(
+                                                                    color=Colors.ash,
+                                                                    borderRadius=BorderRadius.circular(
+                                                                        4.0
                                                                     ),
-                                                                    TextButton(
-                                                                        child=Text(
-                                                                            "Artists",
-                                                                            key=Key(
-                                                                                "Artists"
-                                                                            ),
-                                                                            style=TextStyle(
-                                                                                color=Colors.hex(
-                                                                                    "#D9D9D9"
-                                                                                ),
-                                                                                fontSize=17.0,
-                                                                                fontFamily="verdana",
-                                                                            ),
-                                                                        ),
-                                                                        style=ButtonStyle(
-                                                                            backgroundColor=Colors.transparent,
-                                                                        ),
-                                                                    ),
-                                                                ]
+                                                                ),
                                                             ),
+                                                            style=ButtonStyle(
+                                                                padding=EdgeInsets.all(
+                                                                    0
+                                                                ),
+                                                                margin=EdgeInsets.all(
+                                                                    0
+                                                                ),
+                                                                shape=BorderRadius.circular(
+                                                                    4.0
+                                                                ),
+                                                                backgroundColor=Colors.error,
+                                                            ),
+                                                            onPressed=self.framework.close,
                                                         ),
-                                                    ],
-                                                ),
-                                            ),
+                                                    ),
+                                                ]
+                                            )
                                         ],
                                     ),
                                 ),
                                 Container(
-                                    key=Key("body_path"),
+                                    key=Key("Artist_music_artwork_container_border"),
                                     height="-webkit-fill-available",
                                     width="100%",
                                     margin=EdgeInsets.only(
-                                        top=-70,
+                                        top=-60,
                                     ),
                                     decoration=BoxDecoration(
                                         color=Colors.transparent,
                                         borderRadius=BorderRadius.circular(18.0),
                                     ),
                                     child=ClipPath(
-                                        key=Key("responsive_star_clip"),
+                                        key=Key(
+                                            "responsive_Artist_music_artwork_container"
+                                        ),
                                         # width="50%",
                                         # aspectRatio=1.0,
                                         viewBox=(
-                                            1248.7,
+                                            1190,
                                             608.24,
                                         ),  # Define the coordinate system of the path
                                         child=Container(
@@ -357,7 +604,7 @@ class PlayerAppState(State):
                                                         ),
                                                         SizedBox(height=50),
                                                         Row(
-                                                            mainAxisAlignment=MainAxisAlignment.START,
+                                                            mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
                                                             children=[
                                                                 ElevatedButton(
                                                                     child=Row(
@@ -402,27 +649,93 @@ class PlayerAppState(State):
                                                                         ),
                                                                     ),
                                                                 ),
+                                                                Container(
+                                                                    child=Row(
+                                                                        children=[
+                                                                            Text(
+                                                                                "Sort by:",
+                                                                                style=TextStyle(
+                                                                                    color=Colors.hex(
+                                                                                        "#D9D9D9"
+                                                                                    ),
+                                                                                    fontSize=14.0,
+                                                                                    fontFamily="verdana",
+                                                                                ),
+                                                                            ),
+                                                                            SizedBox(
+                                                                                width=5
+                                                                            ),
+                                                                            TextButton(
+                                                                                child=Text(
+                                                                                    "Artists",
+                                                                                    style=TextStyle(
+                                                                                        color=Colors.hex(
+                                                                                            "#FF94DA"
+                                                                                        ),
+                                                                                        fontSize=14.0,
+                                                                                        fontFamily="verdana",
+                                                                                    ),
+                                                                                ),
+                                                                                style=ButtonStyle(
+                                                                                    backgroundColor=Colors.transparent,
+                                                                                ),
+                                                                            ),
+                                                                            SizedBox(
+                                                                                width=5
+                                                                            ),
+                                                                            ElevatedButton(
+                                                                                child=Icon(
+                                                                                    icon=Icons.arrow_drop_down_rounded,
+                                                                                    color=Colors.hex(
+                                                                                        "#D9D9D9"
+                                                                                    ),
+                                                                                    size=16,
+                                                                                    fill=True,
+                                                                                    weight=700,
+                                                                                ),
+                                                                                style=ButtonStyle(
+                                                                                    padding=EdgeInsets.all(
+                                                                                        0
+                                                                                    ),
+                                                                                    margin=EdgeInsets.all(
+                                                                                        0
+                                                                                    ),
+                                                                                    shape=BorderRadius.circular(
+                                                                                        4.0
+                                                                                    ),
+                                                                                    backgroundColor=Colors.transparent,
+                                                                                    elevation=0,
+                                                                                ),
+                                                                            ),
+                                                                        ]
+                                                                    )
+                                                                ),
                                                             ],
                                                         ),
                                                         SizedBox(height=30),
                                                         Row(
                                                             mainAxisAlignment=MainAxisAlignment.START,
                                                             children=[
-                                                                Text(
-                                                                    "Juice WRLD",
-                                                                    style=TextStyle(
-                                                                        color=Colors.hex(
-                                                                            "#FF94DA"
+                                                                TextButton(
+                                                                    child=Text(
+                                                                        "Juice WRLD",
+                                                                        style=TextStyle(
+                                                                            color=Colors.hex(
+                                                                                "#FF94DA"
+                                                                            ),
+                                                                            fontSize=16.0,
+                                                                            fontFamily="verdana",
                                                                         ),
-                                                                        fontSize=16.0,
-                                                                        fontFamily="verdana",
+                                                                    ),
+                                                                    style=ButtonStyle(
+                                                                        backgroundColor=Colors.transparent,
                                                                     ),
                                                                 )
                                                             ],
                                                         ),
                                                         SizedBox(height=10),
                                                         Container(
-                                                            height=500,
+                                                            height=470,
                                                             width="100%",
                                                             child=Scrollbar(
                                                                 theme=ScrollbarTheme(
@@ -447,6 +760,7 @@ class PlayerAppState(State):
                                                                 ),
                                                             ),
                                                         ),
+                                                        # SizedBox(height=10),
                                                     ]
                                                 ),
                                             ),
@@ -455,8 +769,8 @@ class PlayerAppState(State):
                                             (0, 70),
                                             (450, 70),
                                             (450, 0),
-                                            (1248.7, 0),
-                                            (1248.7, 608.24),
+                                            (1190, 0),
+                                            (1190, 608.24),
                                             (0, 608.24),
                                             # (0, 50),
                                         ],
@@ -467,13 +781,15 @@ class PlayerAppState(State):
                                     height=13,
                                 ),
                                 Container(
-                                    key=Key("Control_container"),
+                                    key=Key("Artist_music_artwork_container"),
                                     height=112,
                                     width="100%",
+                                    # padding=EdgeInsets.all(9),
                                     decoration=BoxDecoration(
                                         color=Colors.hex("#484848"),
                                         borderRadius=BorderRadius.circular(18.0),
                                     ),
+                                    child=Controls(),
                                 ),
                             ],
                         ),

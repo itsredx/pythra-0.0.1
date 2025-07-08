@@ -1,24 +1,42 @@
-assets_dir: "assets"
+# App configrations
+version: "0.0.1"
 
-assets_server_port: 8004
-
-font_dir: "fonts"
-
-Debug: True
-
-frameless: True
-
-maximixed: True
-
-fixed_size: True
-
-win_height: 600
-
-win_width: 800
-
-app_name: "Player"
+app_name: 
+  "Music Player"
 
 
+# Assets configrations
+assets_dir: 
+  "assets"
+
+assets_server_port: 
+  8004
+
+font_dir: 
+  "fonts"
+
+
+# Window configrations
+Debug: 
+  True
+
+frameless: 
+  True
+
+maximixed: 
+  True
+
+fixed_size: 
+  True
+
+win_height: 
+  600
+
+win_width: 
+  800
+
+
+# Dependencies
 dependencies: 
   "yaml"
 

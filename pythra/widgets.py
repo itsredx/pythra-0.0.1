@@ -82,7 +82,7 @@ class Container(Widget):
             self.clipBehavior
         ))
 
-        print(self.style_key)
+        # print(self.style_key)
 
         # 2. Check the cache. If this style combination is new, create a new class.
         #    Otherwise, reuse the existing one.
@@ -128,11 +128,12 @@ class Container(Widget):
                 # This assumes BoxDecoration.to_tuple() produces a tuple that
                 # matches the __init__ signature.
                 deco_obj = BoxDecoration(*decoration_tuple)
+                # print("Container Deco: ",deco_obj.to_css())
                 styles.append(deco_obj.to_css())
 
             if color:
                 # This will override any background-color from decoration if present.
-                styles.append(f"background-color: {color};")
+                styles.append(f"background: {color};")
             
             # Handle Padding and Margin
             if padding_tuple and isinstance(padding_tuple, tuple):
@@ -140,7 +141,7 @@ class Container(Widget):
             
             if margin_tuple and isinstance(margin_tuple, tuple):
                 styles.append(f"margin: {EdgeInsets(*margin_tuple).to_css_value()};")
-                print(f"margin: {EdgeInsets(*margin_tuple).to_css_value()};")
+                # print(f"margin: {EdgeInsets(*margin_tuple).to_css_value()};")
 
             # Handle explicit Width and Height
             if width is not None:
@@ -257,7 +258,7 @@ class Text(Widget):
 
             # Assume style.to_css() returns combined font/color etc. rules
             style_str = style if style else ''
-            print("Style str: ", style)
+            # print("Style str: ", style)
             text_align_str = f"text-align: {textAlign};" if textAlign else ''
             overflow_str = f"overflow: {overflow}; white-space: nowrap; text-overflow: ellipsis;" if overflow == 'ellipsis' else (f"overflow: {overflow};" if overflow else '')
 
@@ -384,7 +385,7 @@ class TextButton(Widget):
             fg_color = getattr(style_obj, 'foregroundColor', Colors.primary or '#6750A4')
             bg_color = getattr(style_obj, 'backgroundColor', 'transparent') # Usually transparent
             padding_obj = getattr(style_obj, 'padding', EdgeInsets.symmetric(horizontal=12)) # M3 has specific padding
-            print("Padding: ", style_obj.padding)
+            # print("Padding: ", style_obj.padding)
             text_style_obj = getattr(style_obj, 'textStyle', None) # Get text style if provided
             shape_obj = getattr(style_obj, 'shape', BorderRadius.all(20)) # M3 full rounded shape often
             min_height = getattr(style_obj, 'minimumSize', (None, 40)) or 40 # M3 min height 40px
@@ -1792,7 +1793,9 @@ class Image(Widget):
                  width: Optional[Union[int, str]] = None, # Allow '100%' etc.
                  height: Optional[Union[int, str]] = None,
                  fit: str = ImageFit.CONTAIN, # Use constants from styles.ImageFit
-                 alignment: str = 'center'): # Alignment within its box if size differs
+                 alignment: str = 'center',
+                 borderRadius: Optional[BorderRadius] = None,
+                 ): # Alignment within its box if size differs
 
         # Image widget doesn't typically have children in Flutter sense
         super().__init__(key=key, children=[])
@@ -1805,6 +1808,7 @@ class Image(Widget):
         self.height = height
         self.fit = fit
         self.alignment = alignment # Note: CSS object-position might be needed for alignment
+        self.borderRadius = borderRadius
 
         # --- CSS Class Management ---
         # Key includes properties affecting CSS style
@@ -1814,6 +1818,7 @@ class Image(Widget):
             self.width, # Include size in key as it might affect CSS rules
             self.height,
             self.alignment,
+            self.borderRadius,
         )
 
         if self.style_key not in Image.shared_styles:
@@ -1830,6 +1835,7 @@ class Image(Widget):
             'height': self.height,
             'fit': self.fit,
             'alignment': self.alignment,
+            'border_radius': self.borderRadius,
             'css_class': self.css_class,
         }
         return {k: v for k, v in props.items() if v is not None}
@@ -1843,7 +1849,7 @@ class Image(Widget):
         """Static method callable by the Reconciler to generate the CSS rule."""
         try:
             # Unpack the style key
-            fit, width, height, alignment = style_key
+            fit, width, height, alignment, border_radius = style_key
 
             # Translate properties to CSS
             fit_style = f"object-fit: {fit};" if fit else ""
@@ -1857,6 +1863,12 @@ class Image(Widget):
             if isinstance(height, (int, float)): height_style = f"height: {height}px;"
             elif isinstance(height, str): height_style = f"height: {height};"
 
+            border_radius_style = ""
+            # print("Image Border Radius: ",border_radius.to_css_value())
+            border_radius_style = f"border-radius: {border_radius.to_css_value()};" if border_radius else ""
+            # print("Image Border Radius: ",border_radius_style)
+            
+
             # Map alignment to object-position (basic example)
             # See: https://developer.mozilla.org/en-US/docs/Web/CSS/object-position
             alignment_style = ""
@@ -1869,11 +1881,12 @@ class Image(Widget):
                 f"{width_style} "
                 f"{height_style} "
                 f"{alignment_style}"
+                f"{border_radius_style}"
             )
 
             # Return the complete CSS rule
             # Note: display:block often helpful for sizing images correctly
-            return f".{css_class} {{ display: block; {styles} }}"
+            return f".{css_class} {{ display: block; {styles}}}"
 
         except Exception as e:
             print(f"Error generating CSS for Image {css_class} with key {style_key}: {e}")
@@ -1963,6 +1976,7 @@ class Icon(Widget):
 
             return f"""
                 .{css_class} {{
+                    position: relative;
                     font-family: '{fontFamily}';
                     font-weight: normal;
                     font-style: normal;
@@ -1970,6 +1984,7 @@ class Icon(Widget):
                     line-height: 1;
                     letter-spacing: normal;
                     text-transform: none;
+                    z-index: 100;
                     display: inline-block;
                     white-space: nowrap;
                     word-wrap: normal;
@@ -5447,6 +5462,8 @@ class TextField(Widget):
                  key: Key, # A Key is MANDATORY for focus to be preserved
                  controller: TextEditingController,
                  decoration: InputDecoration = InputDecoration(),
+                 leading: Optional[Icon]= None,
+                 trailing: Optional[Icon]= None,
                  enabled: bool = True,
                  obscureText: bool = False, # For passwords
                  
@@ -5463,6 +5480,7 @@ class TextField(Widget):
         self.decoration = decoration
         self.enabled = enabled
         self.obscureText = obscureText
+        self.leading = leading
 
         # The name for the callback is now derived from the controller's object ID,
         # ensuring it's unique for each controller instance.
@@ -5503,6 +5521,7 @@ class TextField(Widget):
             'onChangedName': self.onChangedName,
             'onChanged': self.onChanged,
             'label': self.decoration.label,
+            'leading': self.leading,
             'placeholder': self.decoration.hintText, # Use hintText as placeholder
             'errorText': '' if not self.decoration.errorText or None else self.decoration.errorText,
             'enabled': self.enabled,
@@ -5540,11 +5559,11 @@ class TextField(Widget):
                     class="textfield-input {css_class.replace('textfield-root-container', '')}" 
                     type="{input_type}" 
                     value="{html.escape(str(props.get('value', '')), quote=True)}"
-                    placeholder=" "
+                    placeholder="{html.escape(str(props.get('placeholder', '')), quote=True)}"
                     oninput="{on_input_handler}"
                     {'disabled' if not props.get('enabled', True) else ''}
                 >
-                <label for="{input_id}" class="textfield-label {css_class.replace('textfield-root-container', '')}">{html.escape(label_text)}</label>
+                <label for="{input_id}" class="textfield-label {css_class.replace('textfield-root-container', '')}">{html.escape(label_text) if label_text else ''}</label>
                 <div class="textfield-outline {css_class.replace('textfield-root-container', '')}"></div>
             </div>
             {f'<div id="{helper_text_id}" class="textfield-helper-text {css_class.replace('textfield-root-container', '')}">{ '' if not helper_text or None else html.escape(helper_text) }</div>'}
@@ -5562,11 +5581,12 @@ class TextField(Widget):
                 label=style_key[0], hintText=style_key[1], errorText=style_key[2],
                 fillColor=style_key[3], focusColor=style_key[4], labelColor=style_key[5],
                 errorColor=style_key[6],
+                borderRadius=style_key[7],
                 # Re-create BorderSide objects from their tuple representations
-                border=BorderSide(*style_key[7]) if style_key[7] else None,
-                focusedBorder=BorderSide(*style_key[8]) if style_key[8] else None,
-                errorBorder=BorderSide(*style_key[9]) if style_key[9] else None,
-                filled=style_key[10]
+                border=BorderSide(*style_key[8]) if style_key[8] else None,
+                focusedBorder=BorderSide(*style_key[9]) if style_key[9] else None,
+                errorBorder=BorderSide(*style_key[10]) if style_key[10] else None,
+                filled=style_key[11]
             )
         except (IndexError, TypeError) as e:
             print(f"Error unpacking style_key for TextField {css_class}. Using default decoration. Error: {e}")
@@ -5574,11 +5594,13 @@ class TextField(Widget):
 
         # --- 2. Extract all style values from the decoration object ---
         fill_color = decoration.fillColor
+        # print(f">>>>Fill Color {fill_color}<<<>>>{decoration.label}<<<")
         focus_color = decoration.focusColor
         label_color = decoration.labelColor
         error_color = decoration.errorColor
         
         # Normal border
+        border_radius = decoration.borderRadius
         border_width = decoration.border.width
         border_style = decoration.border.style
         border_color = decoration.border.color
@@ -5598,19 +5620,24 @@ class TextField(Widget):
         /* === Styles for {css_class} === */
 
         .textfield-root-container.{css_class} {{
-            display: flex; flex-direction: column; margin: 8px 0;
+            display: flex; flex-direction: column; margin: 0px;
+            border-radius: 4px;
+            width: 100%;
         }}
         .textfield-root-container.{css_class} .textfield-container {{
-            position: relative; padding-top: 8px;
+            position: relative; padding-top: 0px;
         }}
         .textfield-root-container.{css_class} .textfield-input {{
-            width: 100%; height: 56px; padding: 24px 16px 8px 16px; font-size: 16px;
-            color: {Colors.onSurface}; background-color: {fill_color};
-            border: none; outline: none; border-radius: 4px 4px 0 0; box-sizing: border-box;
+            width: 100%; height: 34px; padding: 0px 8px; font-size: 14px;
+            color: {Colors.hex("#D9D9D9")}; background-color: {fill_color};
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            border-bottom:{border_width}px {border_style} {border_color}; outline: none; {border_radius} box-sizing: border-box;
             transition: background-color 0.2s;
         }}
         .textfield-root-container.{css_class} .textfield-label {{
-            position: absolute; left: 16px; top: 26px; font-size: 16px;
+            position: absolute; left: 16px; top: 16px; font-size: 16px;
             color: {label_color}; pointer-events: none;
             transform-origin: left top; transform: translateY(-50%);
             transition: transform 0.2s, color 0.2s;
@@ -5618,9 +5645,9 @@ class TextField(Widget):
         .textfield-root-container.{css_class} .textfield-outline {{
             position: absolute; bottom: 0; left: 0; right: 0;
             height: {border_width}px; background-color: {border_color};
-            transition: background-color 0.2s, height 0.2s;
+            transition: background-color 0.2s, height 0.2s; display: none;
         }}
-        .textfield-root-container.{css_class} .textfield-helper-text {{
+        .textfield-root-container.{css_class}  .textfield-helper-text {{
             padding: 4px 16px 0 16px; font-size: 12px; color: {label_color};
             min-height: 1.2em; transition: color 0.2s;
         }}
@@ -5629,10 +5656,16 @@ class TextField(Widget):
         }}
 
         /* --- FOCUSED STATE (Scoped) --- */
-        .textfield-root-container.{css_class} .textfield-input:focus ~ .textfield-label,
-        .textfield-root-container.{css_class} .textfield-input:not(:placeholder-shown) ~ .textfield-label {{
+        .textfield-root-container.{css_class} .textfield-input:focus {{
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            border-bottom:{border_width}px {border_style} {Colors.hex("#FF94DA")};
+        }}
+        .textfield-root-container.{css_class} .textfield-input:focus ~ .textfield-label {{
             transform: translateY(-190%) scale(0.75);
             color: {focus_color};
+            display: none;
         }}
         .textfield-root-container.{css_class}:focus-within .textfield-outline {{
             height: {focused_border_width}px;

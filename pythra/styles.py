@@ -516,6 +516,27 @@ class Color:
         return hex_code
 
     @staticmethod
+    def gradient(direction: str, color, color2, color3=None, color4=None, color5=None) -> str:
+        """
+        Validates and returns a hexadecimal color code string (e.g., "#RRGGBB" or "#RGB").
+
+        Args:
+            hex_code (str): A hexadecimal color code string.
+
+        Raises:
+            ValueError: If the hex code is not in a valid format.
+
+        Returns:
+            str: The validated hex color code.
+        """
+        # hex_code = hex_code.strip()
+        # # Basic validation for # followed by 3, 4, 6, or 8 hex digits
+        # if not re.match(r"^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$", hex_code):
+        #     raise ValueError(f"Invalid hex code format: '{hex_code}'. Should be #RGB, #RGBA, #RRGGBB, or #RRGGBBAA.")
+        comma=", "
+        return f"linear-gradient({direction}, {color}, {color2+comma if color3 else color2}{color3+comma if color3 else ""}{color4+comma if color4 else ""}{color5+comma if color5 else ""})"
+
+    @staticmethod
     def rgba(red: int, green: int, blue: int, alpha: float) -> str:
         """
         Creates an rgba() CSS color string.
@@ -1427,7 +1448,7 @@ class BoxDecoration:
         """Converts decoration properties to a dictionary of CSS styles."""
         styles = {}
         if self.color:
-            styles['background-color'] = self.color
+            styles['background'] = self.color
         if self.border:
             if isinstance(self.border, BorderSide):
                  # Assumes BorderSide has a way to generate full border property
@@ -1560,7 +1581,7 @@ class BoxDecoration:
         """Converts decoration properties to a dictionary of CSS styles."""
         styles = {}
         if self.color:
-            styles['background-color'] = self.color
+            styles['background'] = self.color
         if self.border:
             if isinstance(self.border, BorderSide):
                  # Assumes BorderSide has a way to generate full border property
@@ -1738,6 +1759,7 @@ class InputDecoration:
                  errorColor: Optional[str] = None, # NEW: Color for border/label/text in error state
                  
                  # --- Borders ---
+                 borderRadius: Optional[BorderRadius] = None,
                  border: Optional[BorderSide] = None,
                  focusedBorder: Optional[BorderSide] = None,
                  errorBorder: Optional[BorderSide] = None,
@@ -1754,10 +1776,13 @@ class InputDecoration:
         self.filled = filled
 
         # --- Set smart, M3-style defaults if values are not provided ---
-        self.fillColor = fillColor if fillColor is not None else (Colors.surfaceContainerHighest if self.filled else 'transparent')
+        self.fillColor = fillColor if fillColor is not None else (fillColor if self.filled else 'transparent')
+        # print("FILL FROM STYLE.PY: ", self.fillColor, self.label)
         self.focusColor = focusColor if focusColor is not None else Colors.primary
         self.labelColor = labelColor if labelColor is not None else Colors.onSurfaceVariant
         self.errorColor = errorColor if errorColor is not None else Colors.error
+
+        self.borderRadius = borderRadius if borderRadius is not None else BorderRadius.all(4)
 
         self.border = border if border is not None else BorderSide(
             width=1.0, 
@@ -1781,6 +1806,7 @@ class InputDecoration:
         return (
             self.label, self.hintText, self.errorText, self.fillColor,
             self.focusColor, self.labelColor, self.errorColor,
+            self.borderRadius.to_css(),
             make_hashable(self.border),
             make_hashable(self.focusedBorder),
             make_hashable(self.errorBorder),
