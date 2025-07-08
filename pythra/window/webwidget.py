@@ -210,12 +210,9 @@ class WebWindow(QWidget):
     def show_max_window(self):
         self.showMaximized()
         size = self.size()
-        print(size)
         screen = QApplication.primaryScreen()
         size = screen.availableGeometry().size()
-        print("Max available window size:", size.width(), size.height())
         max_size = screen.availableGeometry().size()
-        print("size obj: ", max_size)
         # self.setFixedSize(max_size)
 
         if self.fixed_size:
@@ -229,6 +226,7 @@ class WebWindow(QWidget):
 
     def close_window(self):
         self.close()
+        self.debug_window.close() if self.debug_window else print("closed")
 
     def evaluate_js(self, window_id, *scripts):
         if window_id in window_manager.windows:

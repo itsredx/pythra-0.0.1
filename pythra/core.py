@@ -60,6 +60,8 @@ class Framework:
         self._reconciliation_requested: bool = False
         self._pending_state_updates: Set[State] = set()
 
+        self._result = None
+
         # Asset Management
         self.html_file_path = os.path.abspath("web/index.html")
         self.css_file_path = os.path.abspath("web/styles.css")
@@ -111,6 +113,8 @@ class Framework:
             new_widget_root=initial_tree_to_reconcile,
             parent_html_id="root-container",
         )
+
+        self._result = result
         
 
         # 4. Update framework state from the initial result.
@@ -154,6 +158,14 @@ class Framework:
         # 9. Start the application event loop.
         print("Framework: Starting application event loop...")
         webwidget.start(window=self.window, debug=bool(self.config.get("Debug", False)))
+
+    def close(self):
+        # self.asset_server.stop()
+        self.window.close_window() if self.window else print("unable to close window: window is None")
+        self.asset_server.stop()
+
+    def minimize(self):
+        self.window.minimize() if self.window else print("unable to close window: window is None")
 
     # --- State Update and Reconciliation Cycle ---
 
@@ -245,7 +257,7 @@ class Framework:
         # 7. Generate payloads from the combined results.
         css_rules = self._generate_css_from_details(all_css_details)
         css_update_script = self._generate_css_update_script(css_rules)
-        dom_patch_script = self._generate_dom_patch_script(all_patches)
+        dom_patch_script = self._generate_dom_patch_script(all_patches, self._result.js_initializers)
 
         # 8. Execute JS to apply updates to the UI.
         combined_script = (css_update_script + "\n" + dom_patch_script).strip()
@@ -328,7 +340,7 @@ class Framework:
         widget_instance = node_data["widget_instance"]
 
         stub = self.reconciler._generate_html_stub(widget_instance, html_id, props)
-        print("stub: ", stub)
+        # print("stub: ", stub)
 
         children_html = "".join(
             self._generate_html_from_map(child_key, rendered_map)
@@ -382,51 +394,53 @@ class Framework:
         Builds an SVG path data string from serialized command data.
         This is the Python-side logic that mirrors your JS path generators.
         """
-        path_parts = []
-        for cmd_data in commands_data:
-            cmd_type = cmd_data.get("type")
-            if cmd_type == "RoundedPolygon":
-                # This is a simplified version of your JS logic for Python
-                # It uses Quadratic Curves for rounding.
-                vertices = cmd_data.get("verts", [])
-                radius = cmd_data.get("radius", 0)
-                if not vertices or radius <= 0:
-                    continue
+        return ""
+        # path_parts = []
+        # for cmd_data in commands_data:
+        #     print("CMD DATA CORE: ", cmd_data)
+        #     cmd_type = cmd_data.get("type")
+        #     if cmd_type == "RoundedPolygon":
+        #         # This is a simplified version of your JS logic for Python
+        #         # It uses Quadratic Curves for rounding.
+        #         vertices = cmd_data.get("verts", [])
+        #         radius = cmd_data.get("radius", 0)
+        #         if not vertices or radius <= 0:
+        #             continue
 
-                num_vertices = len(vertices)
-                for i in range(num_vertices):
-                    p1 = vertices[i]
-                    p0 = vertices[i - 1]
-                    p2 = vertices[(i + 1) % num_vertices]
-                    v1 = (p0[0] - p1[0], p0[1] - p1[1])
-                    v2 = (p2[0] - p1[0], p2[1] - p1[1])
-                    len_v1 = math.sqrt(v1[0] ** 2 + v1[1] ** 2)
-                    len_v2 = math.sqrt(v2[0] ** 2 + v2[1] ** 2)
-                    if len_v1 == 0 or len_v2 == 0:
-                        continue
+        #         num_vertices = len(vertices)
+        #         for i in range(num_vertices):
+        #             p1 = vertices[i]
+        #             p0 = vertices[i - 1]
+        #             p2 = vertices[(i + 1) % num_vertices]
+        #             v1 = (p0[0] - p1[0], p0[1] - p1[1])
+        #             v2 = (p2[0] - p1[0], p2[1] - p1[1])
+        #             len_v1 = math.sqrt(v1[0] ** 2 + v1[1] ** 2)
+        #             len_v2 = math.sqrt(v2[0] ** 2 + v2[1] ** 2)
+        #             if len_v1 == 0 or len_v2 == 0:
+        #                 continue
 
-                    clamped_radius = min(radius, len_v1 / 2, len_v2 / 2)
-                    arc_start_x = p1[0] + (v1[0] / len_v1) * clamped_radius
-                    arc_start_y = p1[1] + (v1[1] / len_v1) * clamped_radius
-                    arc_end_x = p1[0] + (v2[0] / len_v2) * clamped_radius
-                    arc_end_y = p1[1] + (v2[1] / len_v2) * clamped_radius
+        #             clamped_radius = min(radius, len_v1 / 2, len_v2 / 2)
+        #             arc_start_x = p1[0] + (v1[0] / len_v1) * clamped_radius
+        #             arc_start_y = p1[1] + (v1[1] / len_v1) * clamped_radius
+        #             arc_end_x = p1[0] + (v2[0] / len_v2) * clamped_radius
+        #             arc_end_y = p1[1] + (v2[1] / len_v2) * clamped_radius
 
-                    if i == 0:
-                        path_parts.append(f"M {arc_start_x} {arc_start_y}")
-                    else:
-                        path_parts.append(f"L {arc_start_x} {arc_start_y}")
-                    path_parts.append(f"Q {p1[0]} {p1[1]} {arc_end_x} {arc_end_y}")
-                path_parts.append("Z")
+        #             if i == 0:
+        #                 path_parts.append(f"M {arc_start_x} {arc_start_y}")
+        #             else:
+        #                 path_parts.append(f"L {arc_start_x} {arc_start_y}")
+        #             path_parts.append(f"Q {p1[0]} {p1[1]} {arc_end_x} {arc_end_y}")
+        #         path_parts.append("Z")
 
-            elif cmd_type == "MoveTo":
-                path_parts.append(f"M {cmd_data['x']} {cmd_data['y']}")
-            elif cmd_type == "LineTo":
-                path_parts.append(f"L {cmd_data['x']} {cmd_data['y']}")
-            elif cmd_type == "ClosePath":
-                path_parts.append("Z")
-            # ... add other command types as needed ...
+        #     elif cmd_type == "MoveTo":
+        #         path_parts.append(f"M {cmd_data['x']} {cmd_data['y']}")
+        #     elif cmd_type == "LineTo":
+        #         path_parts.append(f"L {cmd_data['x']} {cmd_data['y']}")
+        #     elif cmd_type == "ClosePath":
+        #         path_parts.append("Z")
+        #     # ... add other command types as needed ...
 
-        return " ".join(path_parts)
+        # return " ".join(path_parts)
 
     # In pythra/core.py
     # In pythra/core.py, inside the Framework class
@@ -453,7 +467,7 @@ class Framework:
             # This is a safe fallback.
             return str(data)
 
-    def _generate_dom_patch_script(self, patches: List[Patch]) -> str:
+    def _generate_dom_patch_script(self, patches: List[Patch], js_initializers=None) -> str:
         """Converts the list of Patch objects from the reconciler into executable JavaScript."""
         js_commands = []
         for patch in patches:
@@ -496,28 +510,52 @@ class Framework:
                     }}
                 """
                 props = data.get("props", {})
-                if "responsive_clip_path" in props:
-                    clip_data = props["responsive_clip_path"]
-                    initial_path_string = self._build_path_from_commands(
-                        clip_data["commands"]
-                    )
-                    ref_w, ref_h = clip_data["viewBox"][2], clip_data["viewBox"][3]
+                if 'responsive_clip_path' in props:
+                    print("INITIALIZERS: ", js_initializers)
+                    initializer_data = {
+                        'type': 'ResponsiveClipPath',
+                        'target_id': target_id,
+                        'data': props['responsive_clip_path']
+                    }
+                    js_initializers.append(initializer_data) if js_initializers else print("no js_initializers found")
+                    print("INITIALIZERS:AFTER: ", js_initializers)
+                    
+                # if "responsive_clip_path" in props:
+                #     print("PROPS: ",props)
+                #     # imports.add(
+                #     #     "import { generateRoundedPath } from './js/pathGenerator.js';"
+                #     # )
+                #     # imports.add(
+                #     #     "import { ResponsiveClipPath } from './js/clipPathUtils.js';"
+                #     # )
+                #     target_id = target_id
+                #     clip_data = props["responsive_clip_path"]
 
-                    # Store the instance on a global object for cleanup
-                    command_js += f"""
-                        window._pythra_instances = window._pythra_instances || {{}};
+                #     # Serialize the Python data into JSON strings for JS
+                #     points_json = json.dumps(clip_data["points"])
+                #     radius_json = json.dumps(clip_data["radius"])
+                #     ref_w_json = json.dumps(clip_data["viewBox"][0])
+                #     ref_h_json = json.dumps(clip_data["viewBox"][1])
 
-                        // --- THE FIX ---
-                        // Call the class from the global object we created.
-                        window._pythra_instances['{target_id}'] = new ResponsiveClipPath(
-                            '{target_id}', 
-                            '{initial_path_string}', 
-                            {ref_w}, 
-                            {ref_h}, 
-                            {{ uniformArc: true, decimalPlaces: 2 }}
-                        );
-                        // --- END OF FIX ---
-                    """
+                #     # This JS code performs the exact two-step process you described.
+                #     js_commands.append(
+                #         f"""
+                #         // Step 0: Convert Python's array-of-arrays to JS's array-of-objects
+                #         const pointsForGenerator_{target_id} = {points_json}.map(p => ({{x: p[0], y: p[1]}}));
+                        
+                #         // Step 1: Call generateRoundedPath with the points and radius
+                #         const initialPathString_{target_id} = generateRoundedPath(pointsForGenerator_{target_id}, {radius_json});
+                        
+                #         // Step 2: Feed the generated path into ResponsiveClipPath
+                #         window._pythra_instances['{target_id}'] = new ResponsiveClipPath(
+                #             '{target_id}', 
+                #             initialPathString_{target_id}, 
+                #             {ref_w_json}, 
+                #             {ref_h_json}, 
+                #             {{ uniformArc: true, decimalPlaces: 2 }}
+                #         );
+                #     """
+                #     )
                 if props.get("init_simplebar"):
                     options_json = json.dumps(props.get("simplebar_options", {}))
                     command_js += f"""

@@ -224,13 +224,13 @@ class Reconciler:
                 return new_rendered_map[key]['html_id']
         return None
 
-    def _build_svg_path_from_commands(self, commands: List['PathCommandWidget']) -> str:
-        if not commands: return ""
-        d_parts, current_pos = [], {'x': 0, 'y': 0}
-        for command_widget in commands:
-            if hasattr(command_widget, 'to_svg_command'):
-                d_parts.append(command_widget.to_svg_command(current_pos))
-        return " ".join(d_parts)
+    # def _build_svg_path_from_commands(self, commands: List['PathCommandWidget']) -> str:
+    #     if not commands: return ""
+    #     d_parts, current_pos = [], {'x': 0, 'y': 0}
+    #     for command_widget in commands:
+    #         if hasattr(command_widget, 'to_svg_command'):
+    #             d_parts.append(command_widget.to_svg_command(current_pos))
+    #     return " ".join(d_parts)
 
     def _collect_details(self, widget, props, result):
         css_classes = props.get('css_class', '').split()
@@ -291,15 +291,16 @@ class Reconciler:
             if icon_name:
                 # Prepend the necessary Font Awesome classes.
                 inner_html = f"{icon_name}".strip()
-                print("Icon FA: ", icon_name)
-            else:
-                print("Data: ",props.get('data'))
+                # print("Icon FA: ", icon_name)
+            # else:
+            #     print("Data: ",props.get('data'))
         # --- END OF FIX ---
             
         if widget_type_name == 'ClipPath':
             if 'width' in props: inline_styles['width'] = props['width']
             if 'height' in props: inline_styles['height'] = props['height']
             if 'clip_path_string' in props: inline_styles['clip-path'] = props['clip_path_string']
+            # print("CLIP-PATH STRING: ", props)
             if 'aspectRatio' in props and props['aspectRatio'] is not None: # <-- ADD THIS
                 inline_styles['aspect-ratio'] = props['aspectRatio']
         elif widget_type_name == 'SizedBox':

@@ -65,8 +65,10 @@ class AssetServer(threading.Thread):
 
         This method safely shuts down the server by calling the `shutdown()` method.
         """
+        print("shutting down the server")
         if self.server:
             self.server.shutdown()
+            print("server has been shutdown")
 
 
 
