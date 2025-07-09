@@ -56,6 +56,8 @@ class Framework:
         self.window = None
         self.id = "main_window_id"
 
+        self.called = False
+
         # State Management / Reconciliation Control
         self._reconciliation_requested: bool = False
         self._pending_state_updates: Set[State] = set()
@@ -470,7 +472,12 @@ class Framework:
     def _generate_dom_patch_script(self, patches: List[Patch], js_initializers=None) -> str:
         """Converts the list of Patch objects from the reconciler into executable JavaScript."""
         js_commands = []
+        old_id = None
+        new_id = None
+
+        count = 0
         for patch in patches:
+
             action, target_id, data = patch.action, patch.html_id, patch.data
 
             # --- THIS IS THE FIX ---
@@ -512,13 +519,46 @@ class Framework:
                 props = data.get("props", {})
                 if 'responsive_clip_path' in props:
                     print("INITIALIZERS: ", js_initializers)
+                    if target_id != new_id:
+                        old_id, new_id = new_id, target_id
                     initializer_data = {
                         'type': 'ResponsiveClipPath',
                         'target_id': target_id,
-                        'data': props['responsive_clip_path']
+                        'data': props['responsive_clip_path'],
+                        'before_id': old_id
                     }
-                    js_initializers.append(initializer_data) if js_initializers else print("no js_initializers found")
+                    # js_initializers.append(initializer_data) if js_initializers else print("no js_initializers found")
                     print("INITIALIZERS:AFTER: ", js_initializers)
+                    # target_id = initializer_data["target_id"]
+                    clip_data = initializer_data["data"]
+                    print("target id: ", target_id, "Data: ", clip_data, "before_id: ", initializer_data["before_id"] if initializer_data["before_id"] else None)
+
+                    # Serialize the Python data into JSON strings for JS
+                    points_json = json.dumps(clip_data["points"])
+                    radius_json = json.dumps(clip_data["radius"])
+                    ref_w_json = json.dumps(clip_data["viewBox"][0])
+                    ref_h_json = json.dumps(clip_data["viewBox"][1])
+
+                    # This JS code performs the exact two-step process you described.
+                    # commands_js = 
+
+
+                    js_commands.append(f"""// Step 0: Convert Python's array-of-arrays to JS's array-of-objects
+                        const pointsForGenerator_{target_id} = {points_json}.map(p => ({{x: p[0], y: p[1]}}));
+                        
+                        // Step 1: Call generateRoundedPath with the points and radius
+                        const initialPathString_{target_id} = generateRoundedPath(pointsForGenerator_{target_id}, {radius_json});
+                        
+                        // Step 2: Feed the generated path into ResponsiveClipPath
+                        window._pythra_instances['{initializer_data["before_id"]}'] = new ResponsiveClipPath(
+                            '{initializer_data["before_id"]}', 
+                            initialPathString_{target_id}, 
+                            {ref_w_json}, 
+                            {ref_h_json}, 
+                            {{ uniformArc: true, decimalPlaces: 2 }}
+                        );
+                    """)
+                    
                     
                 # if "responsive_clip_path" in props:
                 #     print("PROPS: ",props)
@@ -564,6 +604,7 @@ class Framework:
                             new SimpleBar(el_{target_id}, {options_json});
                         }}
                     """
+                    print("new SimpleBar: ", options_json)
 
             elif action == "REMOVE":
                 command_js = f"""
@@ -663,8 +704,230 @@ class Framework:
                 # TODO: RECHECK AND FIX THE TRY CATCH BLOCK CAUSING UI BREAKAGE
                 # print(f"Loggable Data str: [{loggable_data_str}]")
                 js_commands.append(
+                    
                     f"try {{ {command_js} }} catch (e) {{ console.error('Error applying patch {action} {target_id}:', e, {loggable_data_str}); }};"
                 )
+
+        if not self.called:
+
+            self.called = True
+            js_commands.insert(0, f"""
+                        var vec = (p1, p2) => ({{ x: p2.x - p1.x, y: p2.y - p1.y }});
+                        var magnitude = (v) => Math.sqrt(v.x ** 2 + v.y ** 2);
+                        var dot = (v1, v2) => v1.x * v2.x + v1.y * v2.y;
+                        var cross = (v1, v2) => v1.x * v2.y - v1.y * v2.x;
+                        var round = (val) => Math.round(val * 100) / 100; // Round to 2 decimal places
+
+                        function generateRoundedPath(points, radius) {{
+                            const numPoints = points.length;
+                            const cornerData = [];
+
+                            console.log(`>>>>>> Generator Initiated <<<<<<`)
+
+                            for (let i = 0; i < numPoints; i++) {{
+                                const p_prev = points[(i + numPoints - 1) % numPoints];
+                                const p_curr = points[i];
+                                const p_next = points[(i + 1) % numPoints];
+
+                                const v1 = vec(p_curr, p_prev);
+                                const v2 = vec(p_curr, p_next);
+                                const v1_mag = magnitude(v1);
+                                const v2_mag = magnitude(v2);
+
+                                if (v1_mag === 0 || v2_mag === 0) {{
+                                    cornerData.push({{ t1: p_curr, t2: p_curr, radius: 0 }});
+                                    continue;
+                                }}
+
+                                const angle = Math.acos(Math.max(-1, Math.min(1, dot(v1, v2) / (v1_mag * v2_mag))));
+                                let tangentDist = radius / Math.tan(angle / 2);
+                                tangentDist = Math.min(tangentDist, v1_mag / 2, v2_mag / 2);
+                                const clampedRadius = Math.abs(tangentDist * Math.tan(angle / 2));
+
+                                const t1 = {{ x: p_curr.x + (v1.x / v1_mag) * tangentDist, y: p_curr.y + (v1.y / v1_mag) * tangentDist }};
+                                const t2 = {{ x: p_curr.x + (v2.x / v2_mag) * tangentDist, y: p_curr.y + (v2.y / v2_mag) * tangentDist }};
+
+                                const sweepFlag = cross(v1, v2) < 0 ? 1 : 0;
+
+                                cornerData.push({{ t1, t2, radius: clampedRadius, sweepFlag }});
+                            }}
+
+                            const pathCommands = [];
+                            pathCommands.push(`M ${{round(cornerData[numPoints - 1].t2.x)}} ${{round(cornerData[numPoints - 1].t2.y)}}`);
+                            for (let i = 0; i < numPoints; i++) {{
+                                const corner = cornerData[i];
+                                pathCommands.push(`L ${{round(corner.t1.x)}} ${{round(corner.t1.y)}}`);
+                                pathCommands.push(`A ${{round(corner.radius)}} ${{round(corner.radius)}} 0 0 ${{corner.sweepFlag}} ${{round(corner.t2.x)}} ${{round(corner.t2.y)}}`);
+                            }}
+                            pathCommands.push('Z');
+                            console.log(pathCommands.join(' '));
+                            return pathCommands.join(' ');
+                        }}
+
+
+                        function scalePathAbsoluteMLA(pathStr, refW, refH, targetW, targetH, options = {{}}) {{
+                        const rw = targetW / refW;
+                        const rh = targetH / refH;
+                        const uniformArc = !!options.uniformArc;
+                        const decimalPlaces = typeof options.decimalPlaces === 'number' ? options.decimalPlaces : null;
+                        const rScale = uniformArc ? Math.min(rw, rh) : null;
+
+                        const fmt = (num) => {{
+                            return decimalPlaces !== null
+                            ? Number(num.toFixed(decimalPlaces)).toString()
+                            : Number(num).toString();
+                        }};
+
+                        // Normalize the string
+                        const s = pathStr
+                            .replace(/,/g, ' ')
+                            .replace(/([0-9])-/g, '$1 -')
+                            .replace(/\s+/g, ' ')
+                            .trim();
+
+                        const tokenRegex = /([MLAZHV])|(-?\d*\.?\d+(?:e[-+]?\d+)?)/gi;
+                        const tokens = [];
+                        let match;
+                        while ((match = tokenRegex.exec(s)) !== null) {{
+                            tokens.push(match[1] || match[2]);
+                        }}
+
+                        const out = [];
+                        let i = 0;
+                        while (i < tokens.length) {{
+                            const cmd = tokens[i++];
+                            out.push(cmd);
+
+                            switch (cmd) {{
+                            case 'M':
+                            case 'L':
+                                while (i + 1 < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {{
+                                const x = parseFloat(tokens[i++]) * rw;
+                                const y = parseFloat(tokens[i++]) * rh;
+                                out.push(fmt(x), fmt(y));
+                                }}
+                                break;
+
+                            case 'A':
+                                while (i + 6 < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {{
+                                const rx = parseFloat(tokens[i++]);
+                                const ry = parseFloat(tokens[i++]);
+                                const rot = tokens[i++];
+                                const laf = tokens[i++];
+                                const sf = tokens[i++];
+                                const x = parseFloat(tokens[i++]);
+                                const y = parseFloat(tokens[i++]);
+
+                                out.push(
+                                    fmt(uniformArc ? rx * rScale : rx * rw),
+                                    fmt(uniformArc ? ry * rScale : ry * rh),
+                                    rot,
+                                    laf,
+                                    sf,
+                                    fmt(x * rw),
+                                    fmt(y * rh)
+                                );
+                                }}
+                                break;
+
+                            case 'H':
+                                while (i < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {{
+                                const x = parseFloat(tokens[i++]) * rw;
+                                out.push(fmt(x));
+                                }}
+                                break;
+
+                            case 'V':
+                                while (i < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {{
+                                const y = parseFloat(tokens[i++]) * rh;
+                                out.push(fmt(y));
+                                }}
+                                break;
+
+                            case 'Z':
+                                // No coordinates to scale
+                                break;
+
+                            default:
+                                console.warn('Unsupported or unexpected token:', cmd);
+                            }}
+                        }}
+
+                        return out.join(' ');
+                        }}
+
+                        class ResponsiveClipPath {{
+                        constructor(target, originalPath, refW, refH, options = {{}}) {{
+                            this.elements = [];
+                            this.orig = originalPath.trim();
+                            this.refW = refW;
+                            this.refH = refH;
+                            this.options = options;
+                            this.currentPath = "";  // ⬅️ Store last computed path string
+                            this.update = this.update.bind(this);
+                            this.roList = [];
+
+                            if (typeof target === 'string') {{
+                            let selector = target;
+                            if (!selector.startsWith('#') && !selector.startsWith('.')) {{
+                                const byId = document.getElementById(selector);
+                                selector = byId ? `#${{selector}}` : `.${{selector}}`;
+                            }}
+                            const nodeList = document.querySelectorAll(selector);
+                            if (nodeList.length === 0) {{
+                                console.warn(`ResponsiveClipPath: no elements found for selector "${{selector}}"`);
+                            }}
+                            nodeList.forEach(el => this.elements.push(el));
+                            }} else if (target instanceof HTMLElement) {{
+                            this.elements.push(target);
+                            }} else {{
+                            console.warn('ResponsiveClipPath: invalid target', target);
+                            }}
+
+                            this.elements.forEach(el => this.initElement(el));
+                        }}
+
+                        initElement(el) {{
+                            this.applyClip(el);
+                            if (window.ResizeObserver) {{
+                            const ro = new ResizeObserver(() => this.applyClip(el));
+                            ro.observe(el);
+                            this.roList.push({{ el, ro }});
+                            }} else {{
+                            window.addEventListener('resize', this.update);
+                            }}
+                        }}
+
+                        applyClip(el) {{
+                            const rect = el.getBoundingClientRect();
+                            const newPath = scalePathAbsoluteMLA(
+                            this.orig,
+                            this.refW,
+                            this.refH,
+                            rect.width,
+                            rect.height,
+                            this.options
+                            );
+                            this.currentPath = `path("${{newPath}}")`;  // ⬅️ Save it
+                            el.style.clipPath = this.currentPath;
+                            el.style.webkitClipPath = this.currentPath;
+                        }}
+
+                        update() {{
+                            this.elements.forEach(el => this.applyClip(el));
+                        }}
+
+                        disconnect() {{
+                            this.roList.forEach(({{ el, ro }}) => ro.unobserve(el));
+                            this.roList = [];
+                            window.removeEventListener('resize', this.update);
+                        }}
+
+                        // ✅ Your new method
+                        getResponsivePath() {{
+                            return this.currentPath;
+                        }}
+                        }}""")
                 # js_commands.append(f"console.log('Applying patch {action} {target_id}:', {loggable_data_str});")
                 # --- END OF FIX ---
             # print(js_commands)
@@ -805,6 +1068,7 @@ class Framework:
                 )
                 target_id = init["target_id"]
                 clip_data = init["data"]
+                print("target id: ", target_id, "Data: ", clip_data)
 
                 # Serialize the Python data into JSON strings for JS
                 points_json = json.dumps(clip_data["points"])
@@ -921,7 +1185,7 @@ class Framework:
     <meta charset="UTF-8">
     <title>{html.escape(title)}</title>
     <!-- ADD SIMPLEBAR CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/simplebar@latest/dist/simplebar.css" />
+    <link rel="stylesheet" href="./js/scroll-bar/simplebar.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v={int(time.time())}">
     <style id="dynamic-styles">{initial_css_rules}</style>
@@ -932,7 +1196,7 @@ class Framework:
     <div id="overlay-container"></div>
 
     <!-- ADD SIMPLEBAR JS -->
-    <script src="https://unpkg.com/simplebar@latest/dist/simplebar.min.js"></script>
+    <script src="./js/scroll-bar/simplebar.min.js"></script>
     {initial_js}
 </body>
 </html>"""
