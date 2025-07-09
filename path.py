@@ -225,6 +225,9 @@ class TestAppState(State):
                                 width="100%",
                                 height="100%",
                                 decoration=BoxDecoration(color=Colors.red),
+                                child=Text(
+                                    "Hellllllllpooooooo"
+                                )
                             ),
                             points=[
                                 (50, 0),

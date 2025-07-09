@@ -150,6 +150,7 @@ class Reconciler:
         self._diff_children_recursive(old_data.get('children_keys', []), new_widget.get_children(), html_id, result, previous_map)
 
     def _insert_node_recursive(self, new_widget, parent_html_id, result, previous_map, before_id=None):
+
         
         if new_widget is None: return
 
@@ -157,6 +158,8 @@ class Reconciler:
         new_props = new_widget.render_props()
         self._collect_details(new_widget, new_props, result)
         key = new_widget.get_unique_id()
+        old_id = None
+        new_id = None
 
         # --- ADD THIS BLOCK TO TRIGGER SIMPLEBAR INITIALIZATION ---
         if type(new_widget).__name__ == 'Scrollbar':
@@ -170,12 +173,16 @@ class Reconciler:
 
         # --- NEW: Check for responsive clip path and add to initializers ---
         if 'responsive_clip_path' in new_props:
+            if html_id != new_id:
+                old_id, new_id = new_id, html_id
             initializer_data = {
                 'type': 'ResponsiveClipPath',
                 'target_id': html_id,
-                'data': new_props['responsive_clip_path']
+                'data': new_props['responsive_clip_path'],
+                'before_id': old_id
             }
             result.js_initializers.append(initializer_data)
+
         # --- END NEW ---
         result.new_rendered_map[key] = {
             'html_id': html_id, 'widget_type': type(new_widget).__name__, 'key': new_widget.key,
