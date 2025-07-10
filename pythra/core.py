@@ -531,7 +531,7 @@ class Framework:
                     print("INITIALIZERS:AFTER: ", js_initializers)
                     # target_id = initializer_data["target_id"]
                     clip_data = initializer_data["data"]
-                    print("target id: ", target_id, "Data: ", clip_data, "before_id: ", initializer_data["before_id"] if initializer_data["before_id"] else None)
+                    # print("target id: ", target_id, "Data: ", clip_data, "before_id: ", initializer_data["before_id"] if initializer_data["before_id"] else None)
 
                     # Serialize the Python data into JSON strings for JS
                     points_json = json.dumps(clip_data["points"])
@@ -959,7 +959,7 @@ class Framework:
                 js_prop_updates.append(
                     f"{element_var}.textContent = {json.dumps(str(value))};"
                 )
-                print("data: ",value)
+                # print("data: ",value)
             elif key == "css_class":
                 js_prop_updates.append(
                     f"{element_var}.className = {json.dumps(value)};"
@@ -1068,7 +1068,7 @@ class Framework:
                 )
                 target_id = init["target_id"]
                 clip_data = init["data"]
-                print("target id: ", target_id, "Data: ", clip_data)
+                # print("target id: ", target_id, "Data: ", clip_data)
 
                 # Serialize the Python data into JSON strings for JS
                 points_json = json.dumps(clip_data["points"])

@@ -1,4 +1,5 @@
 # main.py
+from pathlib import Path
 
 import sys
 import time
@@ -7,6 +8,9 @@ import string
 from PySide6.QtCore import QTimer, QCoreApplication
 from components.drawer import DrawerState, Drawer
 from components.control import ControlsState, Controls
+
+from media_scanner import scan_media_library
+from song_utils import group_songs
 
 # --- Framework Imports ---
 # Make sure to import ClipPath and the clipper base classes
@@ -95,6 +99,33 @@ class PlayerAppState(State):
         self.search_controller.add_listener(self.on_search_updates)
         self.value_entered = False
 
+        # 1) at startup, build your library
+        library_path = Path.home() / "Music"
+        artwork_cache_dir = Path.home() / ".artwork_cache"
+        library_cache_file = Path.home() / ".library_cache.json"
+
+        raw_library = scan_media_library(
+            library_path=library_path,
+            artwork_cache_dir=artwork_cache_dir,
+            library_cache_file=library_cache_file,
+            fallback_artwork_path=None,
+            force_rescan=False,
+        )
+        # 2) convert ffprobe output into the dict shape your UI needs
+        #    (keys: title, artist, album, genre, duration, now_playing)
+        self.songs = []
+        for entry in raw_library:
+            self.songs.append(
+                {
+                    "title": f"{entry["title"][:35]}..." if len(entry["title"]) >= 36 else entry["title"],
+                    "artist": f"{entry["artist"][:20]}..." if len(entry["artist"]) >= 21 else entry["artist"],
+                    "album": f"{entry.get("album", "")[:20]}" if len(entry.get("album", "")) >= 21 else entry.get("album", ""),
+                    "genre": entry.get("genre", ""),
+                    "duration": f"{int(entry['duration_s']//60)}:{int(entry['duration_s']%60):02d}",
+                    "now_playing": False,
+                }
+            )
+
     def on_search_updates(self):
         print(f"Listener notified! Username is now: {self.search_controller.text}")
         # We still need to call setState if a listener changes other parts of the UI
@@ -124,174 +155,193 @@ class PlayerAppState(State):
             focusColor=Colors.hex("#FF94DA"),
         )
 
-        list_item_widgets = [
-            ElevatedButton(
-                child=Container(
-                    key=Key(f"List_item_{str(item['id'])}"),
-                    height=46,
-                    color=(
-                        Colors.hex("#363636")
-                        if item["id"] % 2 != 0
-                        else Colors.transparent
-                    ),
-                    padding=EdgeInsets.all(9),
-                    margin=EdgeInsets.all(0),
-                    decoration=BoxDecoration(borderRadius=BorderRadius.all(8)),
+        # 3) group by first-letter and sort
+        grouped = group_songs(self.songs, key="title")
+
+        # 4) build a flat widget list: one heading + its items
+        widgets = []
+        for grp in grouped:
+            widgets.append(
+                Container(
+                    key=Key(f"heading_textbutton_container_{grp['heading']}"),
+                    margin=EdgeInsets.only(top=4, bottom=4),
+                child=TextButton(
+                    key=Key(f"heading_textbutton_{grp['heading']}"),
                     child=Row(
-                        mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
+                        key=Key(f"heading_textbutton_innerrow_{grp['heading']}"),
+                        mainAxisAlignment = MainAxisAlignment.START,
                         children=[
-                            SizedBox(width=20),
-                            (
-                                Icon(
-                                    icon=Icons.bar_chart_rounded,
-                                    size=12,
-                                    color=(
-                                        Colors.hex("#FF94DA")
-                                        if item["id"] == 5
-                                        else Colors.hex("#D9D9D9")
-                                    ),
-                                )
-                                if item["id"] == 5
-                                else SizedBox(width=16)
-                            ),
-                            SizedBox(width=20),
-                            Container(
-                                width=300,
-                                child=Text(
-                                    item["name"],
-                                    style=TextStyle(
-                                        color=(
-                                            Colors.hex("#FF94DA")
-                                            if item["id"] == 5
-                                            else Colors.hex("#D9D9D9")
-                                        ),
-                                        fontSize=12.0,
-                                        fontFamily="verdana",
-                                    ),
-                                ),
-                            ),
-                            Container(
-                                # color=Colors.green,
-                                child=Row(
-                                    mainAxisAlignment=MainAxisAlignment.END,
-                                    children=[
-                                        Container(
-                                            width=150,
-                                            height=28,
-                                            child=Text(
-                                                (
-                                                    "Red X"
-                                                    if item["id"] == 5
-                                                    else "Artist"
-                                                ),
-                                                style=TextStyle(
-                                                    color=(
-                                                        Colors.hex("#FF94DA")
-                                                        if item["id"] == 5
-                                                        else Colors.hex("#D9D9D9")
-                                                    ),
-                                                    fontSize=12.0,
-                                                    fontFamily="verdana",
-                                                ),
-                                            ),
-                                            alignment=Alignment.center(),
-                                            color=(
-                                                Colors.hex("#3535353e")
-                                                if item["id"] == 1
-                                                else Colors.transparent
-                                            ),
-                                            decoration=BoxDecoration(
-                                                borderRadius=BorderRadius.all(4)
-                                            ),
-                                        ),
-                                        SizedBox(width=90),
-                                        Container(
-                                            width=150,
-                                            color=(
-                                                Colors.hex("#3535353e")
-                                                if item["id"] == 1
-                                                else Colors.transparent
-                                            ),
-                                            height=28,
-                                            child=Text(
-                                                (
-                                                    "On the couch"
-                                                    if item["id"] == 5
-                                                    else "Album"
-                                                ),
-                                                style=TextStyle(
-                                                    color=(
-                                                        Colors.hex("#FF94DA")
-                                                        if item["id"] == 5
-                                                        else Colors.hex("#D9D9D9")
-                                                    ),
-                                                    fontSize=12.0,
-                                                    fontFamily="verdana",
-                                                    # textAlign=TextAlign.left()
-                                                ),
-                                            ),
-                                            alignment=Alignment.center_left(),
-                                            decoration=BoxDecoration(
-                                                borderRadius=BorderRadius.all(4)
-                                            ),
-                                        ),
-                                        SizedBox(width=90),
-                                        Container(
-                                            width=100,
-                                            child=Text(
-                                                "RnB" if item["id"] == 5 else "Genre",
-                                                style=TextStyle(
-                                                    color=(
-                                                        Colors.hex("#FF94DA")
-                                                        if item["id"] == 5
-                                                        else Colors.hex("#D9D9D9")
-                                                    ),
-                                                    fontSize=12.0,
-                                                    fontFamily="verdana",
-                                                ),
-                                            ),
-                                            alignment=Alignment.center(),
-                                        ),
-                                        SizedBox(width=80),
-                                        Container(
-                                            # color=Colors.blue,
-                                            width=100,
-                                            child=Text(
-                                                "02:23" if item["id"] == 5 else "04:43",
-                                                style=TextStyle(
-                                                    color=(
-                                                        Colors.hex("#FF94DA")
-                                                        if item["id"] == 5
-                                                        else Colors.hex("#D9D9D9")
-                                                    ),
-                                                    fontSize=12.0,
-                                                    fontFamily="verdana",
-                                                ),
-                                            ),
-                                            alignment=Alignment.center_right(),
-                                        ),
-                                    ],
-                                ),
-                            ),
-                        ],
+                            Text(
+                        grp["heading"],
+                        key=Key(f"heading_{grp['heading']}"),
+                        style=TextStyle(
+                            color=Colors.hex("#FF94DA"),
+                            fontSize=16.0,
+                            fontFamily="verdana",
+                        ),
                     ),
-                ),
-                style=ButtonStyle(
-                    padding=EdgeInsets.only(
-                        right=24,
-                        top=2,
-                        bottom=2,
+                    ],
                     ),
-                    margin=EdgeInsets.only(top=2, bottom=2),
-                    shape=BorderRadius.all(8.0),
-                    backgroundColor=Colors.transparent,
-                    elevation=0,
-                    # maximumSize=(290, 36),
-                    # minimumSize=(290, 36),
-                ),
+                    style=ButtonStyle(
+                        backgroundColor=Colors.transparent,
+                    ),
+                ),)
             )
-            for item in self.items
-        ]
+            for i, song in enumerate(grp["items"]):
+                widgets.append(
+                    ElevatedButton(
+                        key=Key(f"{grp['heading']}_elevated_btn_item_{i}"),
+                        child=Container(
+                            key=Key(f"{grp['heading']}_item_{i}"),
+                            height=46,
+                            color=
+                                Colors.hex("#363636")
+                                if  i % 2 != 0
+                                else Colors.transparent
+                            ,
+                            padding=EdgeInsets.all(9),
+                            margin=EdgeInsets.all(0),
+                            decoration=BoxDecoration(borderRadius=BorderRadius.all(8)),
+                            child=Row(
+                                key=Key(f"{grp['heading']}_elevated_btn_row_item_{i}"),
+                                mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
+                                children=[
+                                    SizedBox(key=Key(f"{grp['heading']}playing_icon_left_padding_item_{i}"),width=20),
+                                        Icon(
+                                            key=Key(f"{grp['heading']}playing_icon_item_{i}"),
+                                            icon=Icons.bar_chart_rounded,
+                                            size=12,
+                                            color=Colors.hex("#D9D9D9"),
+                                        ),
+                                        # if item["id"] == 5
+                                        # else SizedBox(width=16)
+                                    
+                                    SizedBox(key=Key(f"{grp['heading']}playing_icon_top_right_padding_item_{i}"),width=20),
+                                    Container(
+                                        key=Key(f"{grp['heading']}_title_container_item_{i}"),
+                                        width=300,
+                                        child=Row(
+                                            key=Key(f"{grp['heading']}_title_container_row_item_{i}"),
+                        mainAxisAlignment = MainAxisAlignment.START,
+                        children=[Text(
+                                            song["title"][:45],
+                                            key=Key(f"{grp['heading']}_title_text_item_{i}"),
+                                            style=TextStyle(
+                                                color=Colors.hex("#D9D9D9"),
+                                                fontSize=12.0,
+                                                fontFamily="verdana",
+                                            ),
+                                        ),]),
+                                    ),
+                                    Container(
+                                        key=Key(f"{grp['heading']}_artist_container_item_{i}"),
+                                        # color=Colors.green,
+                                        child=Row(
+                                            key=Key(f"{grp['heading']}_artist_container_row_item_{i}"),
+                                            mainAxisAlignment=MainAxisAlignment.END,
+                                            children=[
+                                                Container(
+                                                    key=Key(f"{grp['heading']}_artist_container_row_container_item_{i}"),
+                                                    width=150,
+                                                    height=28,
+                                                    child=Row(
+                                                        key=Key(f"{grp['heading']}_artist_container_row_container_row_item_{i}"),
+                        mainAxisAlignment = MainAxisAlignment.START,
+                        children=[Text(
+                                                        song["artist"],
+                                                        key=Key(f"{grp['heading']}_artist_text_item_{i}"),
+                                                        style=TextStyle(
+                                                            color=Colors.hex("#D9D9D9"),
+                                                            fontSize=12.0,
+                                                            fontFamily="verdana",
+                                                        ),
+                                                    ),]),
+                                                    alignment=Alignment.center(),
+                                                    color=Colors.transparent,
+                                                    decoration=BoxDecoration(
+                                                        borderRadius=BorderRadius.all(4)
+                                                    ),
+                                                ),
+                                                SizedBox(key=Key(f"{grp['heading']}_artist_padding_right_item_{i}"),width=90),
+                                                Container(
+                                                    key=Key(f"{grp['heading']}_album_container_item_{i}"),
+                                                    width=150,
+                                                    color=Colors.transparent,
+                                                    height=28,
+                                                    child=Row(
+                                                        key=Key(f"{grp['heading']}_album_container_row_item_{i}"),
+                        mainAxisAlignment = MainAxisAlignment.START,
+                        children=[Text(
+                                                        song["album"],
+                                                        key=Key(f"{grp['heading']}_album_text_item_{i}"),
+                                                        style=TextStyle(
+                                                            color=Colors.hex("#D9D9D9"),
+                                                            fontSize=12.0,
+                                                            fontFamily="verdana",
+                                                            # textAlign=TextAlign.left()
+                                                        ),
+                                                    ),]),
+                                                    alignment=Alignment.center_left(),
+                                                    decoration=BoxDecoration(
+                                                        borderRadius=BorderRadius.all(4)
+                                                    ),
+                                                ),
+                                                SizedBox(key=Key(f"{grp['heading']}_album_right_padding_item_{i}"),width=90),
+                                                Container(
+                                                    key=Key(f"{grp['heading']}_genre_container_item_{i}"),
+                                                    width=100,
+                                                    child=Row(
+                                                        key=Key(f"{grp['heading']}_genre_container_row_item_{i}"),
+                        mainAxisAlignment = MainAxisAlignment.START,
+                        children=[Text(
+                                                        song["genre"],
+                                                        key=Key(f"{grp['heading']}_genre_text_item_{i}"),
+                                                        style=TextStyle(
+                                                            color=Colors.hex("#D9D9D9"),
+                                                            fontSize=12.0,
+                                                            fontFamily="verdana",
+                                                        ),
+                                                    ),]),
+                                                    alignment=Alignment.center(),
+                                                ),
+                                                SizedBox(key=Key(f"{grp['heading']}_genre_right_margin_item_{i}"),width=80),
+                                                Container(
+                                                    key=Key(f"{grp['heading']}_duration_container_item_{i}"),
+                                                    # color=Colors.blue,
+                                                    width=100,
+                                                    child=Text(
+                                                        song["duration"],
+                                                        key=Key(f"{grp['heading']}_duration_text_item_{i}"),
+                                                        style=TextStyle(
+                                                            color=Colors.hex("#D9D9D9"),
+                                                            fontSize=12.0,
+                                                            fontFamily="verdana",
+                                                        ),
+                                                    ),
+                                                    alignment=Alignment.center_right(),
+                                                ),
+                                            ],
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        style=ButtonStyle(
+                            padding=EdgeInsets.only(
+                                right=24,
+                                top=2,
+                                bottom=2,
+                            ),
+                            margin=EdgeInsets.only(top=2, bottom=2),
+                            shape=BorderRadius.all(8.0),
+                            backgroundColor=Colors.transparent,
+                            elevation=0,
+                            # maximumSize=(290, 36),
+                            # minimumSize=(290, 36),
+                        ),
+                    )
+                    # for item in self.items
+                )
 
         return Container(
             key=Key("player_app_root_container"),
@@ -334,20 +384,23 @@ class PlayerAppState(State):
                                                     children=[
                                                         Icon(
                                                             Icons.arrow_back_ios_rounded,
+                                                            key=Key("Title_row_back_icon"),
                                                             size=16,
                                                             color=Colors.hex(
                                                                 "#d9d9d955"
                                                             ),
                                                         ),
-                                                        SizedBox(width=12),
+                                                        SizedBox(key=Key("Title_row_back_icon_right_padding"),width=12),
                                                         Icon(
                                                             icon=Icons.play_music_rounded,
+                                                            key=Key("Title_row_music_player_icon"),
                                                             size=22,
                                                             color=Colors.hex("#D9D9D9"),
                                                         ),
-                                                        SizedBox(width=12),
+                                                        SizedBox(key=Key("Title_row_music_player_icon_right_padding"),width=12),
                                                         Text(
                                                             "Music Player",
+                                                            key=Key("Title_row_music_player_name_text"),
                                                             style=TextStyle(
                                                                 color=Colors.hex(
                                                                     "#D9D9D9"
@@ -555,7 +608,7 @@ class PlayerAppState(State):
                                                                         "#D9D9D9"
                                                                     ),
                                                                 ),
-                                                                SizedBox(width=16),
+                                                                SizedBox(key=Key("Music_library_icon_padding"),width=16),
                                                                 Text(
                                                                     "Music library",
                                                                     key=Key(
@@ -594,7 +647,7 @@ class PlayerAppState(State):
                                                     width="100%",
                                                     color=Colors.hex("#7C7C7C"),
                                                 ),
-                                                SizedBox(height=12),
+                                                SizedBox(key=Key("drawer_divider_padding"),height=12),
                                                 ElevatedButton(
                                                     key=Key(
                                                         "Play_queue_text_icon_elevated_btn"
@@ -627,7 +680,7 @@ class PlayerAppState(State):
                                                                         "#D9D9D9"
                                                                     ),
                                                                 ),
-                                                                SizedBox(width=16),
+                                                                SizedBox(key=Key("Play_queue_icon_padding"),width=16),
                                                                 Text(
                                                                     "Play queue",
                                                                     key=Key(
@@ -701,6 +754,9 @@ class PlayerAppState(State):
                                                                             ),
                                                                         ),
                                                                         SizedBox(
+                                                                            key=Key(
+                                                                                "playlist_icon_btn_padding"
+                                                                            ),
                                                                             width=16
                                                                         ),
                                                                         Text(
@@ -786,7 +842,9 @@ class PlayerAppState(State):
                                                                         "#D9D9D9"
                                                                     ),
                                                                 ),
-                                                                SizedBox(width=16),
+                                                                SizedBox(key=Key(
+                                                                        "settings_icon_btn_padding"
+                                                                    ),width=16),
                                                                 Text(
                                                                     "Settings",
                                                                     key=Key(
@@ -1132,6 +1190,9 @@ class PlayerAppState(State):
                                                                                 ),
                                                                             ),
                                                                             SizedBox(
+                                                                                key=Key(
+                                                                                        "Songs_text_in_header_margin_bottom"
+                                                                                    ),
                                                                                 height=10,
                                                                             ),
                                                                             Image(
@@ -1554,7 +1615,7 @@ class PlayerAppState(State):
                                                                                     "Dropdown_text_btn"
                                                                                 ),
                                                                                 child=Text(
-                                                                                    "Artists",
+                                                                                    "A - Z",
                                                                                     key=Key(
                                                                                         "sort_by_dropdown_text"
                                                                                     ),
@@ -1571,6 +1632,9 @@ class PlayerAppState(State):
                                                                                 ),
                                                                             ),
                                                                             SizedBox(
+                                                                                key=Key(
+                                                                                        "sort_by_dropdown_text_margin_right"
+                                                                                    ),
                                                                                 width=5
                                                                             ),
                                                                             ElevatedButton(
@@ -1614,44 +1678,44 @@ class PlayerAppState(State):
                                                             ),
                                                             height=30,
                                                         ),
-                                                        Row(
-                                                            key=Key(
-                                                                "sort_identifier_row"
-                                                            ),
-                                                            mainAxisAlignment=MainAxisAlignment.START,
-                                                            children=[
-                                                                TextButton(
-                                                                    key=Key(
-                                                                        "sort_identifier_text_btn"
-                                                                    ),
-                                                                    child=Text(
-                                                                        "Juice WRLD",
-                                                                        key=Key(
-                                                                            "sort_identifier_text"
-                                                                        ),
-                                                                        style=TextStyle(
-                                                                            color=Colors.hex(
-                                                                                "#FF94DA"
-                                                                            ),
-                                                                            fontSize=16.0,
-                                                                            fontFamily="verdana",
-                                                                        ),
-                                                                    ),
-                                                                    style=ButtonStyle(
-                                                                        backgroundColor=Colors.transparent,
-                                                                    ),
-                                                                )
-                                                            ],
-                                                        ),
-                                                        SizedBox(
-                                                            key=Key("list_top_padding"),
-                                                            height=10,
-                                                        ),
+                                                        # Row(
+                                                        #     key=Key(
+                                                        #         "sort_identifier_row"
+                                                        #     ),
+                                                        #     mainAxisAlignment=MainAxisAlignment.START,
+                                                        #     children=[
+                                                        #         TextButton(
+                                                        #             key=Key(
+                                                        #                 "sort_identifier_text_btn"
+                                                        #             ),
+                                                        #             child=Text(
+                                                        #                 "Juice WRLD",
+                                                        #                 key=Key(
+                                                        #                     "sort_identifier_text"
+                                                        #                 ),
+                                                        #                 style=TextStyle(
+                                                        #                     color=Colors.hex(
+                                                        #                         "#FF94DA"
+                                                        #                     ),
+                                                        #                     fontSize=16.0,
+                                                        #                     fontFamily="verdana",
+                                                        #                 ),
+                                                        #             ),
+                                                        #             style=ButtonStyle(
+                                                        #                 backgroundColor=Colors.transparent,
+                                                        #             ),
+                                                        #         )
+                                                        #     ],
+                                                        # ),
+                                                        # SizedBox(
+                                                        #     key=Key("list_top_padding"),
+                                                        #     height=10,
+                                                        # ),
                                                         Container(
                                                             key=Key(
                                                                 "list_container_path"
                                                             ),
-                                                            height=470,
+                                                            height=496,
                                                             width="100%",
                                                             child=Scrollbar(
                                                                 key=Key(
@@ -1675,7 +1739,7 @@ class PlayerAppState(State):
                                                                     key=Key(
                                                                         "item_list_column"
                                                                     ),
-                                                                    children=list_item_widgets,
+                                                                    children=widgets,
                                                                 ),
                                                             ),
                                                         ),

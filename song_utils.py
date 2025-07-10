@@ -116,7 +116,12 @@ def group_songs(
     for song in songs:
         value = song.get(key, "").strip()
         if key == "title":
-            heading = value[0].upper() if value else "#"
+            if not value:
+                heading = "#"
+            else:
+                first = value[0].upper()
+                # only A–Z map to themselves; everything else becomes “#”
+                heading = first if first.isalpha() else "#"
         else:
             heading = value or "#"
         # ensure song has now_playing field
