@@ -5,7 +5,7 @@ from pythra.widgets import *
 from pythra.styles import *
 from pythra.state import StatefulWidget, State
 
-Colors = Colors()
+# Colors = Colors()
 
 class CounterState(State):
     def __init__(self):
