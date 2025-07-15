@@ -39,6 +39,28 @@ class StatefulWidget(Widget):
         """Returns the associated State object."""
         return self._state
 
+
+class StatelessWidget(Widget):
+    """
+    A widget that describes part of the user interface by building a constellation
+    of other widgets that describe the user interface more concretely.
+
+    The building process is stateless, meaning it depends only on the configuration
+    information in the object itself (its constructor parameters) and the build context.
+    """
+    def __init__(self, key: Optional[Key] = None):
+        super().__init__(key=key)
+
+    def build(self) -> Widget:
+        """
+        Describes the part of the user interface represented by this widget.
+
+        The framework calls this method when this widget is inserted into the tree.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement the build() method."
+        )
+
 # --- State Class ---
 class State:
     """
