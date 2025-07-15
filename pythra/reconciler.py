@@ -171,6 +171,14 @@ class Reconciler:
             result.js_initializers.append(initializer)
         # --- END OF NEW BLOCK ---
 
+        if type(new_widget).__name__ == "VirtualListView":
+            result.js_initializers.append({
+                "type": "VirtualList",
+                "target_id": new_widget.css_class,
+                "item_count": new_widget.item_count,
+                "estimated_height": new_widget.estimated_height,
+            })
+
         # --- NEW: Check for responsive clip path and add to initializers ---
         if 'responsive_clip_path' in new_props:
             if html_id != new_id:
@@ -290,6 +298,15 @@ class Reconciler:
         # --- END MODIFICATION ---
 
         inner_html = ""
+
+        if widget_type_name == "VirtualListView":
+            return f"""
+            <div id="{html_id}" class="{props.get('css_class','')}" style="color: peach;">
+            <div class="viewport" id="{html_id}_viewport">
+                <div class="phantom"></div>
+            </div>
+            </div>
+            """
 
         # --- THIS IS THE FIX ---
         # Special handling for Font Awesome icons.

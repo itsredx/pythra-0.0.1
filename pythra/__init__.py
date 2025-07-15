@@ -17,7 +17,7 @@ from .base import Widget
 # If in reconciler.py, change the import below:
 # from .reconciler import Key
 from .base import Key # Prefer placing Key in base.py as it's fundamental
-from .state import State, StatefulWidget
+from .state import State, StatefulWidget, StatelessWidget
 from .icons import Icons, IconData
 from .controllers import TextEditingController
 
@@ -80,6 +80,7 @@ from .widgets import (
     Padding,
     SizedBox,
     ListView,
+    VirtualListView,
     GridView,
     ListTile,
     Divider,
@@ -132,6 +133,7 @@ __all__ = [
     'Key',
     'State',
     'StatefulWidget',
+    'StatelessWidget',
 
     # --- Styling ---
     'EdgeInsets', 'Alignment', 'TextAlign', 'Axis',

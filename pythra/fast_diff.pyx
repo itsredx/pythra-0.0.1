@@ -2,15 +2,14 @@
 
 # distutils: language = c++
 
-from .fast_diff cimport VNode, diff_trees, _diff_children, _diff_recursive, \
-    build_vnode_from_widget, build_vnode_from_map, _build_vnode_from_map_recursive, \
-    diff_props_py, _find_next_stable_html_id
+# Import the C-level definitions for our classes
+from .fast_diff cimport VNode
+from .base_widgets cimport MockWidget, Text # Import the fast widget types
 
 # ==============================================================================
 # VNode Class Definition with Constructor
 # ==============================================================================
 cdef class VNode:
-    # --- The 'def' here is correct for the implementation. ---
     def __cinit__(self, object py_key, str widget_type, str html_id, list children, dict props, object widget_instance):
         self.py_key = py_key
         self.widget_type = widget_type
@@ -33,18 +32,37 @@ def fast_diff(dict old_map, new_widget, str parent_html_id, id_generator):
     return patches
 
 # ==============================================================================
-# VNode Tree Construction Logic (Updated to use the constructor)
+# VNode Tree Construction Logic (ULTRA OPTIMIZED)
 # ==============================================================================
 
-cdef VNode build_vnode_from_widget(widget):
+cdef VNode build_vnode_from_widget(MockWidget widget):
     if widget is None: return None
-    cdef list children_vnodes = [build_vnode_from_widget(child) for child in widget.get_children()]
+
+    # OPTIMIZATION: Direct C-level access to the ._children list
+    cdef list children = widget._children
+    cdef list children_vnodes = []
+    cdef MockWidget child
+
+    # This loop is now extremely fast as it avoids all Python method calls
+    for child in children:
+        children_vnodes.append(build_vnode_from_widget(child))
+
+    # OPTIMIZATION: Build the props dictionary at C-speed, avoiding .render_props()
+    cdef dict props
+    cdef str widget_type_name = type(widget).__name__
+    if widget_type_name == 'Text':
+        # Direct C-level access to .text attribute after casting
+        props = {'type': 'Text', 'data': (<Text>widget).text}
+    else: # For Container and other potential widgets
+        props = {'type': widget_type_name}
+
     return VNode(
-        py_key=widget.get_unique_id(),
-        widget_type=type(widget).__name__,
+        # OPTIMIZATION: Direct C-level access to the .key attribute
+        py_key=widget.key,
+        widget_type=widget_type_name,
         html_id=None,
         children=children_vnodes,
-        props=widget.render_props(),
+        props=props,
         widget_instance=widget
     )
 
@@ -61,7 +79,11 @@ cdef VNode build_vnode_from_map(dict old_map, str parent_html_id):
 cdef VNode _build_vnode_from_map_recursive(dict old_map, object key):
     cdef dict node_data = old_map.get(key)
     if node_data is None: return None
-    cdef list children_vnodes = [_build_vnode_from_map_recursive(old_map, child_key) for child_key in node_data.get('children_keys', [])]
+    cdef list children_keys = node_data.get('children_keys', [])
+    cdef list children_vnodes = []
+    cdef object child_key
+    for child_key in children_keys:
+        children_vnodes.append(_build_vnode_from_map_recursive(old_map, child_key))
     return VNode(
         py_key=key,
         widget_type=node_data.get('widget_type'),
@@ -72,7 +94,7 @@ cdef VNode _build_vnode_from_map_recursive(dict old_map, object key):
     )
 
 # ==============================================================================
-# Core Diffing Logic
+# Core Diffing Logic (Unchanged)
 # ==============================================================================
 
 cdef list diff_trees(VNode old_root, VNode new_root, str parent_html_id):

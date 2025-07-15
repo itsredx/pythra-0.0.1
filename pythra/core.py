@@ -1055,9 +1055,36 @@ class Framework:
                         new SimpleBar(el_{target_id}, {options_json});
                         console.log('SimpleBar initialized for #{target_id}');
                     }};
+                    
                 """
                 )
             # --- END OF NEW BLOCK ---
+
+            if init["type"] == "VirtualList":
+                target_id = init["target_id"]
+                estimated_height = init["estimated_height"]
+                item_count = init["item_count"]
+                js_commands.append(
+                    f"""
+                    const VlistId = "{target_id}";          // same key used above
+                    const count = {item_count};             // reconciler can inject this
+                    const estimate = {estimated_height};                        // same as Python
+
+                    new VirtualList(
+                    VlistId,
+                    count,
+                    estimate,
+                    (i) => {{
+                        // reconciler will create the actual DOM for row `i`
+                        // we just need the component to be ready; reconciler patches
+                        // the inner content later.
+                        const div = document.createElement("div");
+                        div.dataset.index = i;
+                        return div;
+                    }}
+                    );
+                """
+                )
 
             if init["type"] == "ResponsiveClipPath":
                 imports.add(
@@ -1196,6 +1223,7 @@ class Framework:
     <div id="overlay-container"></div>
 
     <!-- ADD SIMPLEBAR JS -->
+    <script src="./js/virtualList.js"></script>
     <script src="./js/scroll-bar/simplebar.min.js"></script>
     {initial_js}
 </body>

@@ -2005,115 +2005,96 @@ class Icon(Widget):
 # knows that an Icon should be a <span>.
 # A good way is to call the widget's own static method if it exists.
 
-# In pythra/reconciler.py
-def _get_widget_render_tag(self, widget: 'Widget') -> str:
-    if hasattr(type(widget), '_get_widget_render_tag'):
-        return type(widget)._get_widget_render_tag(widget)
-    # ... rest of your tag map ...
+# pythra/widgets.py
+class VirtualListView(Widget):
+    """
+    A *virtual* scrollable list – renders only the rows that are visible.
+    Compatible with reconciliation and JS viewport.
+    """
+    shared_styles: Dict[Tuple, str] = {}
 
-# # --- Icon Widget Refactored ---
-# class Icon(Widget):
-#     """
-#     Displays an icon, either from a font library (like Font Awesome)
-#     or from a custom image file using AssetIcon.
-#     """
-#     shared_styles: Dict[Tuple, str] = {}
+    def __init__(
+        self,
+        item_count: int,
+        item_builder: Callable[[int], Widget],
+        key: Optional[Key] = None,
+        estimated_height: int = 50,
+        padding: Optional[EdgeInsets] = None,
+        scroll_direction: str = Axis.VERTICAL,
+        reverse: bool = False,
+        physics: str = ScrollPhysics.ALWAYS_SCROLLABLE,
+    ):
+        super().__init__(key=key, children=[])  # children are virtual
+        self.item_count = item_count
+        self.item_builder = item_builder
+        self.estimated_height = estimated_height
+        self.padding = padding or EdgeInsets.all(0)
+        self.scroll_direction = scroll_direction
+        self.reverse = reverse
+        self.physics = physics
 
-#     def __init__(self,
-#                  key: Optional[Key] = None,
-#                  # Provide one of these two options:
-#                  icon_name: Optional[str] = None,
-#                  custom_icon: Optional[AssetIcon] = None,
-#                  # --- Styling ---
-#                  size: int = 24, # Default M3 icon size
-#                  color: Optional[str] = None):
+        print("Item Count: ", self.item_count)
 
-#         super().__init__(key=key, children=[])
+        # CSS key
+        self.style_key = (
+            make_hashable(self.padding),
+            scroll_direction,
+            reverse,
+            physics,
+            estimated_height,
+        )
+        if self.style_key not in VirtualListView.shared_styles:
+            self.css_class = f"virtual-list-{len(VirtualListView.shared_styles)}"
+            VirtualListView.shared_styles[self.style_key] = self.css_class
+        else:
+            self.css_class = VirtualListView.shared_styles[self.style_key]
 
-#         if not icon_name and not custom_icon:
-#             raise ValueError("Icon widget requires either 'icon_name' (for font icons) or 'custom_icon' (for image icons).")
-#         if icon_name and custom_icon:
-#              print("Warning: Both 'icon_name' and 'custom_icon' provided to Icon. Prioritizing 'custom_icon'.")
-#              icon_name = None
+    def render_props(self):
+        return {
+            "css_class": self.css_class,
+            "item_count": self.item_count,
+            "estimated_height": self.estimated_height,
+            "scroll_direction": self.scroll_direction,
+            "padding": self._get_render_safe_prop(self.padding),
+            "reverse": self.reverse,
+            "physics": self.physics,
+        }
 
-#         self.icon_name = icon_name
-        
-#         # --- THIS IS THE FIX ---
-#         # Store the AssetIcon object directly, not its source string.
-#         if isinstance(custom_icon, AssetIcon):
-#              self.custom_icon_source = custom_icon
-#         else:
-#             # This handles the case where custom_icon is None or an incorrect type.
-#             self.custom_icon_source = None
-#         # --- END OF FIX ---
+    def get_required_css_classes(self):
+        return {self.css_class}
 
-#         self.size = size
-#         self.color = color
-
-#         # The style key logic remains correct.
-#         self.style_key = (
-#             self.size,
-#             self.color,
-#             'img' if self.custom_icon_source else 'font',
-#         )
-
-#         if self.style_key not in Icon.shared_styles:
-#             self.css_class = f"fa fa-{self.icon_name} shared-icon-{len(Icon.shared_styles)}"
-#             Icon.shared_styles[self.style_key] = self.css_class
-#         else:
-#             self.css_class = Icon.shared_styles[self.style_key]
-
-#     def render_props(self) -> Dict[str, Any]:
-#         """Return properties for diffing."""
-#         props = {
-#             'css_class': self.css_class,
-#             'icon_name': self.icon_name,
-            
-#             # --- THIS IS THE FIX ---
-#             # Now this line works, because self.custom_icon_source is either
-#             # an AssetIcon object (with a .get_source() method) or None.
-#             'custom_icon_src': self.custom_icon_source.get_source() if self.custom_icon_source else None,
-#             # --- END OF FIX ---
-            
-#             'size': self.size,
-#             'color': self.color,
-#             'render_type': 'img' if self.custom_icon_source else 'font',
-#         }
-#         return {k: v for k, v in props.items() if v is not None}
-
-#     def get_required_css_classes(self) -> Set[str]:
-#         """Return the set of CSS class names needed."""
-#         return {self.css_class}
-
-#     @staticmethod
-#     def generate_css_rule(style_key: Tuple, css_class: str) -> str:
-#         """
-#         The CSS generation logic was already correct and does not need to change.
-#         It correctly handles the 'font' vs 'img' render types.
-#         """
-#         try:
-#             size, color, render_type = style_key
-#             common_styles = (
-#                  f"width: {size}px; height: {size}px; display: inline-flex; "
-#                  f"justify-content: center; align-items: center; "
-#                  f"vertical-align: middle; line-height: {size}px;"
-#             )
-#             specific_styles = ""
-#             if render_type == 'font':
-#                  # For Font Awesome, we must add the 'fa' class in the HTML stub
-#                  # The icon_name itself becomes the fa-X class.
-#                  # This logic is handled in the reconciler.
-#                  specific_styles = (
-#                       f"font-size: {size}px; "
-#                       f"{f'color: {color};' if color else 'color: inherit;'}"
-#                  )
-#             elif render_type == 'img':
-#                  specific_styles = "object-fit: contain; background-color: transparent;"
-            
-#             return f".{css_class} {{ {common_styles} {specific_styles} }}"
-#         except Exception as e:
-#             print(f"Error generating CSS for Icon {css_class} with key {style_key}: {e}")
-#             return f"/* Error generating rule for .{css_class} */"
+    @staticmethod
+    def generate_css_rule(style_key, css_class):
+        padding, direction, reverse, physics, _ = style_key
+        flex_dir = "column" if direction == Axis.VERTICAL else "row"
+        if reverse:
+            flex_dir += "-reverse"
+        overflow = "hidden" if physics == ScrollPhysics.NEVER_SCROLLABLE else "auto"
+        pad = EdgeInsets(*padding).to_css_value() if padding else "0"
+        return f"""
+        .{css_class} {{
+            display: flex;
+            flex-direction: {flex_dir};
+            overflow: {overflow};
+            padding: {pad};
+            box-sizing: border-box;
+            position: relative;
+        }}
+        .{css_class} > .viewport {{
+            flex: 1 1 auto;
+            overflow-y: auto;
+            overflow-x: hidden;
+            position: relative;
+        }}
+        .{css_class} .phantom {{
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 1px;
+            pointer-events: none;
+            visibility: hidden;
+        }}
+        """
 
             
 class ListView(Widget):
@@ -5253,196 +5234,6 @@ class ClipPath(Widget):
         # Styles are applied dynamically via JS, no shared class needed.
         return set()
 
-
-# class TextField(Widget):
-#     """
-#     A Material Design-inspired text input field that correctly handles focus
-#     during UI rebuilds.
-
-#     It manages its state through an `onChanged` callback, implementing two-way
-#     data binding with the parent state.
-#     """
-#     shared_styles: Dict[Tuple, str] = {}
-
-#     def __init__(self,
-#                  key: Key, # A Key is MANDATORY for focus to be preserved
-#                  value: str,
-#                  onChanged: Callable[[str], None],
-#                  onChangedName: Optional[str] = None,
-#                  label: Optional[str] = None,
-#                  placeholder: Optional[str] = None,
-#                  enabled: bool = True,
-#                  # You can add more styling properties like these:
-#                  # errorText: Optional[str] = None,
-#                  # style: Optional[TextStyle] = None,
-#                  # decoration: Optional[BoxDecoration] = None,
-#                  ):
-        
-#         # TextField has no children in the traditional sense
-#         super().__init__(key=key, children=[])
-
-#         if not isinstance(key, Key):
-#              raise TypeError("TextField requires a unique Key to preserve focus during rebuilds.")
-
-#         self.value = value
-#         self.onChanged = onChanged
-#         self.onChangedName = onChangedName or (onChanged.__name__ if onChanged else None)
-#         if not self.onChangedName:
-#             raise ValueError("TextField's onChanged callback needs a name (use onChangedName or a named function).")
-
-#         self.label = label
-#         self.placeholder = placeholder
-#         self.enabled = enabled
-        
-#         # --- CSS Class Management ---
-#         # The key for a TextField's style is often simple, as many visual states
-#         # (:focus, :disabled) are handled by CSS pseudo-classes.
-#         # We can add more properties to the key if needed (e.g., colors, border styles).
-#         self.style_key = ("m3-textfield-style",) # A simple, shared key for all instances
-
-#         if self.style_key not in TextField.shared_styles:
-#             self.css_class = f"shared-textfield-{len(TextField.shared_styles)} textfield-container"
-#             TextField.shared_styles[self.style_key] = self.css_class
-#         else:
-#             self.css_class = TextField.shared_styles[self.style_key]
-
-#         # Dynamically add state classes for the current render
-#         self.current_css_class = f"{self.css_class} {'disabled' if not self.enabled else ''}"
-
-#     def render_props(self) -> Dict[str, Any]:
-#         """Return properties needed by the Reconciler to generate HTML and JS."""
-#         return {
-#             'value': self.value,
-#             'onChangedName': self.onChangedName,
-#             'onChanged': self.onChanged,
-#             'label': self.label,
-#             'placeholder': self.placeholder,
-#             'enabled': self.enabled,
-#             'css_class': self.current_css_class,
-#         }
-    
-#     def generate_required_css_classes(self) -> Set[str]:
-#         return {self.css_class}
-
-#     @staticmethod
-#     def _generate_html_stub(widget_instance: 'TextField', html_id: str, props: Dict) -> str:
-#         """
-#         Custom stub generator for TextField. It creates a container with a
-#         label and an input element.
-#         """
-#         container_id = html_id
-#         input_id = f"{html_id}_input"
-        
-#         css_class = props.get('css_class', '')
-#         label_text = props.get('label', '')
-        
-#         # The oninput event calls our new global JS function `handleInput`
-#         on_input_handler = f"handleInput('{props.get('onChangedName', '')}', this.value)"
-        
-#         # The placeholder=" " is a trick to make the :placeholder-shown selector work
-#         # reliably for the floating label animation.
-#         return f"""
-#         <div id="{container_id}" class="textfield-container {css_class}">
-#             <input 
-#                 id="{input_id}" 
-#                 class="textfield-input" 
-#                 type="text" 
-#                 value="{html.escape(str(props.get('value', '')), quote=True)}"
-#                 placeholder=" "
-#                 oninput="{on_input_handler}"
-#                 {'disabled' if not props.get('enabled', True) else ''}
-#             >
-#             <label for="{input_id}" class="textfield-label">{html.escape(label_text)}</label>
-#             <div class="textfield-outline"></div>
-#         </div>
-#         """
-
-#     @staticmethod
-#     def generate_css_rule(style_key: Tuple, css_class: str) -> str:
-#         """Generates the complex CSS for a Material Design-style text field."""
-        
-#         # Define some M3 colors for styling
-#         primary_color = Colors.primary or '#6750A4'
-#         outline_color = Colors.outline or '#79747E'
-#         on_surface_color = Colors.onSurface or '#1C1B1F'
-#         on_surface_variant_color = Colors.onSurfaceVariant or '#49454F'
-        
-#         return f"""
-#         /* --- Container --- */
-#         .textfield-container.{css_class} {{
-#             position: relative;
-#             padding-top: 8px; /* Space for the label to float up into */
-#             margin: 8px 0;
-#         }}
-
-#         /* --- Input Element --- */
-#         .textfield-input {{
-#             width: 100%;
-#             height: 56px; /* M3 height */
-#             padding: 24px 16px 8px 16px; /* M3 padding: top, horiz, bottom */
-#             font-size: 16px;
-#             color: {on_surface_color};
-#             background-color: {Colors.surfaceContainerHighest or '#E6E0E9'};
-#             border: none;
-#             outline: none;
-#             border-radius: 4px 4px 0 0; /* M3 top corners */
-#             box-sizing: border-box;
-#             transition: background-color 0.2s;
-#         }}
-
-#         /* --- Label --- */
-#         .textfield-label {{
-#             position: absolute;
-#             left: 16px;
-#             top: 26px; /* Vertically centered in the input area */
-#             font-size: 16px;
-#             color: {on_surface_variant_color};
-#             pointer-events: none;
-#             transform-origin: left top;
-#             transform: translateY(-50%);
-#             transition: transform 0.2s, color 0.2s, font-size 0.2s;
-#         }}
-
-#         /* --- Outline / Border --- */
-#         .textfield-outline {{
-#             position: absolute;
-#             bottom: 0;
-#             left: 0;
-#             right: 0;
-#             height: 1px;
-#             background-color: {outline_color};
-#             transition: background-color 0.2s, height 0.2s;
-#         }}
-        
-#         /* --- FLOATING LABEL & FOCUS STYLES (The Magic) --- */
-        
-#         /* When the input is focused OR has text in it (because placeholder is not shown)... */
-#         .textfield-input:focus ~ .textfield-label,
-#         .textfield-input:not(:placeholder-shown) ~ .textfield-label {{
-#             transform: translateY(-190%) scale(0.75); /* Move up and shrink */
-#             font-size: 12px; /* Redundant but good fallback */
-#             color: {primary_color};
-#         }}
-
-#         /* We use :focus-within on the container to style the outline. */
-#         /* This is more robust than relying on JS to add a 'focused' class. */
-#         .textfield-container.{css_class}:focus-within .textfield-outline {{
-#             height: 2px;
-#             background-color: {primary_color};
-#         }}
-        
-#         /* --- Disabled State --- */
-#         .textfield-container.disabled .textfield-input {{
-#             background-color: rgba(0,0,0,0.06);
-#             color: rgba(0,0,0,0.38);
-#         }}
-#         .textfield-container.disabled .textfield-label {{
-#             color: rgba(0,0,0,0.38);
-#         }}
-#         .textfield-container.disabled .textfield-outline {{
-#             background-color: rgba(0,0,0,0.12);
-#         }}
-#         """
 
 
 
