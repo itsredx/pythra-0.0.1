@@ -5317,10 +5317,19 @@ class TextField(Widget):
             'errorText': '' if not self.decoration.errorText or None else self.decoration.errorText,
             'enabled': self.enabled,
             'obscureText': self.obscureText,
-            'css_class': self.current_css_class,
+            'css_class': self.get_shared_css_class()#self.current_css_class,
         }
     
+    
+    # OVERRIDE THE NEW METHODS
+    def get_static_css_classes(self) -> Set[str]:
+        return {"textfield-root-container"}
+
+    def get_shared_css_class(self) -> Optional[str]:
+        return self.css_class
+
     def get_required_css_classes(self) -> Set[str]:
+        static = self.get_static_css_classes()
         return {self.css_class}
 
 
@@ -5409,6 +5418,7 @@ class TextField(Widget):
         # --- 3. Generate CSS rules using the extracted variables ---
         return f"""
         /* === Styles for {css_class} === */
+
 
         .textfield-root-container.{css_class} {{
             display: flex; flex-direction: column; margin: 0px;
