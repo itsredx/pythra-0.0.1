@@ -30,6 +30,7 @@ class StatefulWidget(Widget):
         self.framework: Optional['Framework'] = self._framework_ref() if self._framework_ref else None
         self._state = self.createState() # Create the associated State object
         self._state._set_widget(self) # Link State back to this widget instance
+        self._state.initState() # <-- CALL THE NEW LIFECYCLE HOOK
 
     def createState(self) -> 'State': # Hint uses forward reference 'State'
         """Create the mutable state for this widget."""
@@ -79,6 +80,25 @@ class State:
         if not self.framework:
              # This check is now more robust
              print(f"Warning: Framework not found on widget {widget} during State linking.")
+
+    def initState(self):
+        """
+        Called once when this state object is inserted into the tree.
+        
+        This is the right place for one-time initialization, such as
+        subscribing to controllers or streams.
+        """
+        pass # Default implementation does nothing
+
+    def dispose(self):
+        """
+        Called when this state object is removed from the tree permanently.
+        
+        Subclasses should override this method to release any resources,
+        such as unsubscribing from controllers or streams, to prevent
+        memory leaks.
+        """
+        pass # Default implementation does nothing
 
 
     def get_widget(self) -> Optional['StatefulWidget']: # Hint uses forward reference
