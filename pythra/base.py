@@ -131,6 +131,19 @@ class Widget:
         """
         return set()
 
+    def get_static_css_classes(self) -> Set[str]:
+        """
+        Returns a set of static CSS classes that are part of this widget's
+        fundamental structure and should never be removed on update.
+        """
+        return set()
+
+    def get_shared_css_class(self) -> Optional[str]:
+        """
+        Returns the single, dynamically generated shared style class, if any.
+        """
+        return getattr(self, 'css_class', None)
+
     def _get_render_safe_prop(self, prop_value):
         """
         Convert a property to a format safe for inclusion in `render_props()`.
