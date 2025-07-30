@@ -8,6 +8,7 @@ import string
 from PySide6.QtCore import QTimer, QCoreApplication
 from components.drawer import DrawerState, Drawer
 from components.control import ControlsState, Controls
+from components.search_field import SearchComponent, _SearchComponentState
 
 from media_scanner import scan_media_library
 from song_utils import group_songs
@@ -74,32 +75,332 @@ import math  # For the StarClipper
 class PlayerAppState(State):
     def __init__(self):
         super().__init__()
-        self.items = [
-            {"id": 1, "name": "Apple 🍎"},
-            {"id": 2, "name": "Banana 🍌"},
-            {"id": 3, "name": "Cherry 🍒"},
-            {"id": 4, "name": "Apple 🍎"},
-            {"id": 5, "name": "Shoma (feat. Yng Bun)"},
-            {"id": 6, "name": "Banana 🍌"},
-            {"id": 7, "name": "Cherry 🍒"},
-            {"id": 8, "name": "Apple 🍎"},
-            {"id": 9, "name": "Apple 🍎"},
-            {"id": 10, "name": "Banana 🍌"},
-            {"id": 11, "name": "Cherry 🍒"},
-            {"id": 12, "name": "Apple 🍎"},
-            {"id": 13, "name": "Apple 🍎"},
-            {"id": 14, "name": "Banana 🍌"},
-            {"id": 15, "name": "Cherry 🍒"},
-            {"id": 16, "name": "Apple 🍎"},
-            {"id": 17, "name": "Apple 🍎"},
-            {"id": 18, "name": "Banana 🍌"},
-            {"id": 19, "name": "Cherry 🍒"},
-            {"id": 20, "name": "Apple 🍎"},
-        ]
+        
 
-        self.search_controller = TextEditingController()
-        self.search_controller.add_listener(self.on_search_updates)
+        # self.search_controller = TextEditingController()
+        # self.search_controller.add_listener(self.on_search_updates)
         self.value_entered = False
+
+        self.search_widget = SearchComponent(key=Key("my_search_field_widget"))
+
+        self.control_widget = Container(
+            width="100%",
+            height=112,
+            padding=EdgeInsets.all(14),
+            # color=Colors.green,
+            # padding=EdgeInsets.all(9),
+            decoration=BoxDecoration(
+                color=Colors.hex("#484848"),
+                borderRadius=BorderRadius.circular(18.0),
+            ),
+            child=Column(
+                mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
+                crossAxisAlignment=CrossAxisAlignment.START,
+                children=[
+                    Row(
+                        children=[
+                            Text(
+                                "01:35",
+                                style=TextStyle(
+                                    color=Colors.hex("#D9D9D9"),
+                                    fontSize=12.0,
+                                    fontFamily="verdana",
+                                ),
+                            ),
+                            SizedBox(width=8),
+                            Container(
+                                width="100%",
+                                height=9,
+                                color=Colors.hex("#D9D9D9"),
+                                decoration=BoxDecoration(
+                                    borderRadius=BorderRadius.all(3)
+                                ),
+                                child=Container(
+                                    width="66%",
+                                    height=9,
+                                    color=Colors.hex("#363636"),
+                                    decoration=BoxDecoration(
+                                        borderRadius=BorderRadius.all(3)
+                                    ),
+                                ),
+                            ),
+                            SizedBox(width=8),
+                            Text(
+                                "02:23",
+                                style=TextStyle(
+                                    color=Colors.hex("#D9D9D9"),
+                                    fontSize=12.0,
+                                    fontFamily="verdana",
+                                ),
+                            ),
+                        ]
+                    ),
+                    Row(
+                        children=[
+                            Row(
+                                children=[
+                                    ElevatedButton(
+                                        child=Container(
+                                            width=24,
+                                            height=24,
+                                            color=Colors.hex("#363636"),
+                                            padding=EdgeInsets.all(4),
+                                            child=Icon(
+                                                Icons.shuffle_rounded,
+                                                color=Colors.hex("#D9D9D9"),
+                                                size=16,
+                                                fill=True,
+                                                weight=700,
+                                            ),
+                                            decoration=BoxDecoration(
+                                                borderRadius=BorderRadius.all(4)
+                                            ),
+                                        ),
+                                        style=ButtonStyle(
+                                            padding=EdgeInsets.all(0),
+                                            margin=EdgeInsets.all(0),
+                                            shape=BorderRadius.circular(4.0),
+                                            backgroundColor=Colors.transparent,
+                                        ),
+                                    ),
+                                    SizedBox(width=16),
+                                    ElevatedButton(
+                                        child=Container(
+                                            width=24,
+                                            height=24,
+                                            color=Colors.hex("#363636"),
+                                            padding=EdgeInsets.all(4),
+                                            child=Icon(
+                                                Icons.skip_previous_rounded,
+                                                color=Colors.hex("#D9D9D9"),
+                                                size=16,
+                                                fill=True,
+                                                weight=700,
+                                            ),
+                                            decoration=BoxDecoration(
+                                                borderRadius=BorderRadius.all(4)
+                                            ),
+                                        ),
+                                        style=ButtonStyle(
+                                            padding=EdgeInsets.all(0),
+                                            margin=EdgeInsets.all(0),
+                                            shape=BorderRadius.circular(4.0),
+                                            backgroundColor=Colors.transparent,
+                                        ),
+                                    ),
+                                    SizedBox(width=16),
+                                    ElevatedButton(
+                                        child=Container(
+                                            width=48,
+                                            height=48,
+                                            color=Colors.gradient(
+                                                "to bottom right",
+                                                Colors.red,
+                                                Colors.blue,
+                                            ),
+                                            padding=EdgeInsets.all(2),
+                                            child=Container(
+                                                width=44,
+                                                height=44,
+                                                color=Colors.hex(
+                                                    "#767676"
+                                                ),  # Colors.hex("#D9D9D9"),
+                                                padding=EdgeInsets.all(10),
+                                                child=Container(
+                                                    width=24,
+                                                    height=24,
+                                                    color=Colors.hex(
+                                                        "#363636"
+                                                    ),  # Colors.gradient("to bottom right", Colors.red, Colors.blue), #,
+                                                    padding=EdgeInsets.all(4),
+                                                    child=Icon(
+                                                        Icons.play_arrow_rounded,
+                                                        color=Colors.hex("#D9D9D9"),
+                                                        size=16,
+                                                        fill=True,
+                                                        weight=700,
+                                                    ),
+                                                    decoration=BoxDecoration(
+                                                        borderRadius=BorderRadius.all(4)
+                                                    ),
+                                                ),
+                                                decoration=BoxDecoration(
+                                                    borderRadius=BorderRadius.all(14)
+                                                ),
+                                            ),
+                                            decoration=BoxDecoration(
+                                                borderRadius=BorderRadius.all(16)
+                                            ),
+                                        ),
+                                        style=ButtonStyle(
+                                            padding=EdgeInsets.all(0),
+                                            margin=EdgeInsets.all(0),
+                                            shape=BorderRadius.circular(16.0),
+                                            backgroundColor=Colors.transparent,
+                                        ),
+                                    ),
+                                    SizedBox(width=16),
+                                    ElevatedButton(
+                                        child=Container(
+                                            width=24,
+                                            height=24,
+                                            color=Colors.hex("#363636"),
+                                            padding=EdgeInsets.all(4),
+                                            child=Icon(
+                                                Icons.skip_next_rounded,
+                                                color=Colors.hex("#D9D9D9"),
+                                                size=16,
+                                                fill=True,
+                                                weight=700,
+                                            ),
+                                            decoration=BoxDecoration(
+                                                borderRadius=BorderRadius.all(4)
+                                            ),
+                                        ),
+                                        style=ButtonStyle(
+                                            padding=EdgeInsets.all(0),
+                                            margin=EdgeInsets.all(0),
+                                            shape=BorderRadius.circular(4.0),
+                                            backgroundColor=Colors.transparent,
+                                        ),
+                                    ),
+                                    SizedBox(width=16),
+                                    ElevatedButton(
+                                        child=Container(
+                                            width=24,
+                                            height=24,
+                                            color=Colors.hex("#363636"),
+                                            padding=EdgeInsets.all(4),
+                                            child=Icon(
+                                                Icons.repeat_rounded,
+                                                color=Colors.hex("#D9D9D9"),
+                                                size=16,
+                                                fill=True,
+                                                weight=700,
+                                            ),
+                                            decoration=BoxDecoration(
+                                                borderRadius=BorderRadius.all(4)
+                                            ),
+                                        ),
+                                        style=ButtonStyle(
+                                            padding=EdgeInsets.all(0),
+                                            margin=EdgeInsets.all(0),
+                                            shape=BorderRadius.circular(4.0),
+                                            backgroundColor=Colors.transparent,
+                                        ),
+                                    ),
+                                    SizedBox(width=16),
+                                ]
+                            ),
+                            Row(
+                                mainAxisAlignment=MainAxisAlignment.END,
+                                children=[
+                                    ElevatedButton(
+                                        child=Container(
+                                            width=24,
+                                            height=24,
+                                            color=Colors.hex("#363636"),
+                                            padding=EdgeInsets.all(4),
+                                            child=Icon(
+                                                Icons.volume_up_rounded,
+                                                color=Colors.hex("#D9D9D9"),
+                                                size=16,
+                                                fill=True,
+                                                weight=700,
+                                            ),
+                                            decoration=BoxDecoration(
+                                                borderRadius=BorderRadius.all(4)
+                                            ),
+                                        ),
+                                        style=ButtonStyle(
+                                            padding=EdgeInsets.all(0),
+                                            margin=EdgeInsets.all(0),
+                                            shape=BorderRadius.circular(4.0),
+                                            backgroundColor=Colors.transparent,
+                                        ),
+                                    ),
+                                    SizedBox(width=16),
+                                    ElevatedButton(
+                                        child=Container(
+                                            width=24,
+                                            height=24,
+                                            color=Colors.hex("#363636"),
+                                            padding=EdgeInsets.all(4),
+                                            child=Icon(
+                                                Icons.open_in_full_rounded,
+                                                color=Colors.hex("#D9D9D9"),
+                                                size=16,
+                                                fill=True,
+                                                weight=700,
+                                            ),
+                                            decoration=BoxDecoration(
+                                                borderRadius=BorderRadius.all(4)
+                                            ),
+                                        ),
+                                        style=ButtonStyle(
+                                            padding=EdgeInsets.all(0),
+                                            margin=EdgeInsets.all(0),
+                                            shape=BorderRadius.circular(4.0),
+                                            backgroundColor=Colors.transparent,
+                                        ),
+                                    ),
+                                    SizedBox(width=16),
+                                    ElevatedButton(
+                                        child=Container(
+                                            width=24,
+                                            height=24,
+                                            color=Colors.hex("#363636"),
+                                            padding=EdgeInsets.all(4),
+                                            child=Icon(
+                                                Icons.open_in_new_rounded,
+                                                color=Colors.hex("#D9D9D9"),
+                                                size=16,
+                                                fill=True,
+                                                weight=700,
+                                            ),
+                                            decoration=BoxDecoration(
+                                                borderRadius=BorderRadius.all(4)
+                                            ),
+                                        ),
+                                        style=ButtonStyle(
+                                            padding=EdgeInsets.all(0),
+                                            margin=EdgeInsets.all(0),
+                                            shape=BorderRadius.circular(4.0),
+                                            backgroundColor=Colors.transparent,
+                                        ),
+                                    ),
+                                    SizedBox(width=16),
+                                    ElevatedButton(
+                                        child=Container(
+                                            width=24,
+                                            height=24,
+                                            color=Colors.hex("#363636"),
+                                            padding=EdgeInsets.all(4),
+                                            child=Icon(
+                                                Icons.expand_less_rounded,
+                                                color=Colors.hex("#D9D9D9"),
+                                                size=16,
+                                                fill=True,
+                                                weight=700,
+                                            ),
+                                            decoration=BoxDecoration(
+                                                borderRadius=BorderRadius.all(4)
+                                            ),
+                                        ),
+                                        style=ButtonStyle(
+                                            padding=EdgeInsets.all(0),
+                                            margin=EdgeInsets.all(0),
+                                            shape=BorderRadius.circular(4.0),
+                                            backgroundColor=Colors.transparent,
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ]
+                    ),
+                ],
+            ),
+        )
 
         # 1) at startup, build your library
         library_path = Path.home() / "Music"
@@ -120,48 +421,31 @@ class PlayerAppState(State):
             self.songs.append(
                 {
                     "title": (
-                        f"{entry["title"][:35]}..."
-                        if len(entry["title"]) >= 36
+                        f"{entry["title"][:30]}..."
+                        if len(entry["title"]) >= 31
                         else entry["title"]
                     ),
                     "artist": (
-                        f"{entry["artist"][:20]}..."
-                        if len(entry["artist"]) >= 21
+                        f"{entry["artist"][:17]}..."
+                        if len(entry["artist"]) >= 18
                         else entry["artist"]
                     ),
                     "album": (
-                        f"{entry.get("album", "")[:20]}"
-                        if len(entry.get("album", "")) >= 21
+                        f"{entry.get("album", "")[:17]}..."
+                        if len(entry.get("album", "")) >= 18
                         else entry.get("album", "")
                     ),
-                    "genre": entry.get("genre", ""),
+                    "genre": (
+                        f"{entry.get("genre", "")[:17]}..."
+                        if len(entry.get("genre", "")) >= 18
+                        else entry.get("genre", "")
+                    ),
                     "duration": f"{int(entry['duration_s']//60)}:{int(entry['duration_s']%60):02d}",
                     "now_playing": False,
                 }
             )
 
-    def on_search_updates(self):
-        print(f"Listener notified! Username is now: {self.search_controller.text}")
-        # We still need to call setState if a listener changes other parts of the UI
-        # For simple text updates, this isn't necessary, but for validation it is.
-        if self.search_controller.text:
-            self.value_entered = True
-            print("Value in: ", self.value_entered)
-            self.setState()  # Re-render to remove the error message
-        else:
-            self.value_entered = False
-            print("Value in: ", self.value_entered)
-            self.setState()
-
-    def clear_search(self):
-        self.search_controller.clear()
-        self.setState()
-
-    # --- Build Method ---TODO SINGLECHILDSCROL
-    def build(self) -> Widget:
-        # print(f"\n--- Building PlayerApp UI ---")
-
-        search_field_decoration = InputDecoration(
+        self.search_field_decoration = InputDecoration(
             hintText="Search",
             fillColor="#363636",  # Use a different color on focus
             border=BorderSide(width=1, color=Colors.grey),  # Thinner, grey border
@@ -173,9 +457,9 @@ class PlayerAppState(State):
         grouped = group_songs(self.songs, key="title")
 
         # 4) build a flat widget list: one heading + its items
-        widgets = []
+        self.widgets = []
         for grp in grouped:
-            widgets.append(
+            self.widgets.append(
                 Container(
                     key=Key(f"heading_textbutton_container_{grp['heading']}"),
                     margin=EdgeInsets.only(top=4, bottom=4),
@@ -203,7 +487,7 @@ class PlayerAppState(State):
                 )
             )
             for i, song in enumerate(grp["items"]):
-                widgets.append(
+                self.widgets.append(
                     ElevatedButton(
                         key=Key(f"{grp['heading']}_elevated_btn_item_{i}"),
                         child=Container(
@@ -292,7 +576,12 @@ class PlayerAppState(State):
                                                         mainAxisAlignment=MainAxisAlignment.START,
                                                         children=[
                                                             Text(
-                                                                song["artist"],
+                                                                (
+                                                                    "Unknown Artist"
+                                                                    if song["artist"]
+                                                                    == "<unknown>"
+                                                                    else song["artist"]
+                                                                ),
                                                                 key=Key(
                                                                     f"{grp['heading']}_artist_text_item_{i}"
                                                                 ),
@@ -316,13 +605,13 @@ class PlayerAppState(State):
                                                     key=Key(
                                                         f"{grp['heading']}_artist_padding_right_item_{i}"
                                                     ),
-                                                    width=90,
+                                                    width=80,
                                                 ),
                                                 Container(
                                                     key=Key(
                                                         f"{grp['heading']}_album_container_item_{i}"
                                                     ),
-                                                    width=150,
+                                                    width=160,
                                                     color=Colors.transparent,
                                                     height=28,
                                                     child=Row(
@@ -332,7 +621,12 @@ class PlayerAppState(State):
                                                         mainAxisAlignment=MainAxisAlignment.START,
                                                         children=[
                                                             Text(
-                                                                song["album"],
+                                                                (
+                                                                    "Unknown Album"
+                                                                    if song["album"]
+                                                                    == "audio"
+                                                                    else song["album"]
+                                                                ),
                                                                 key=Key(
                                                                     f"{grp['heading']}_album_text_item_{i}"
                                                                 ),
@@ -356,13 +650,13 @@ class PlayerAppState(State):
                                                     key=Key(
                                                         f"{grp['heading']}_album_right_padding_item_{i}"
                                                     ),
-                                                    width=90,
+                                                    width=80,
                                                 ),
                                                 Container(
                                                     key=Key(
                                                         f"{grp['heading']}_genre_container_item_{i}"
                                                     ),
-                                                    width=100,
+                                                    width=150,
                                                     child=Row(
                                                         key=Key(
                                                             f"{grp['heading']}_genre_container_row_item_{i}"
@@ -370,7 +664,12 @@ class PlayerAppState(State):
                                                         mainAxisAlignment=MainAxisAlignment.START,
                                                         children=[
                                                             Text(
-                                                                song["genre"],
+                                                                (
+                                                                    "Unknown Genre"
+                                                                    if song["genre"]
+                                                                    == "<unknown>"
+                                                                    else song["genre"]
+                                                                ),
                                                                 key=Key(
                                                                     f"{grp['heading']}_genre_text_item_{i}"
                                                                 ),
@@ -390,7 +689,7 @@ class PlayerAppState(State):
                                                     key=Key(
                                                         f"{grp['heading']}_genre_right_margin_item_{i}"
                                                     ),
-                                                    width=80,
+                                                    width=30,
                                                 ),
                                                 Container(
                                                     key=Key(
@@ -433,6 +732,112 @@ class PlayerAppState(State):
                     )
                     # for item in self.items
                 )
+
+        self.clip_path = ClipPath(
+            key=Key("Image_path_border"),
+            viewBox=(
+                290,
+                347,
+            ),
+            points=[
+                (0, 343),
+                (72, 343),
+                (72, 290),
+                (290, 290),
+                (290, 0),
+                (0, 0),
+                # (0, 50),
+            ],
+            radius=15.0,
+            child=Container(
+                key=Key("Image_path_border_container"),
+                width="100%",
+                height="100%",
+                padding=EdgeInsets.all(5),
+                decoration=BoxDecoration(
+                    color=Colors.gradient(
+                        "to bottom",
+                        Colors.red,
+                        Colors.blue,
+                    ),
+                ),
+                child=ClipPath(
+                    key=Key("Image_path_content_path"),
+                    viewBox=(
+                        280,
+                        337,
+                    ),
+                    points=[
+                        (0, 333),
+                        (62, 333),
+                        (62, 280),
+                        (280, 280),
+                        (280, 0),
+                        (0, 0),
+                        # (0, 50),
+                    ],
+                    radius=10.0,
+                    child=Container(
+                        key=Key("Image_path_content_container"),
+                        width="100%",
+                        height=330,
+                        padding=EdgeInsets.all(9),
+                        decoration=BoxDecoration(
+                            color=Colors.hex("#363636"),
+                        ),
+                        child=Column(
+                            key=Key("Image_content_root_column"),
+                            mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
+                            crossAxisAlignment=CrossAxisAlignment.START,
+                            children=[
+                                Container(
+                                    key=Key("Song_artwork_mage_container"),
+                                    width=262,
+                                    height=262,
+                                    # padding=EdgeInsets.all(5),
+                                    child=Image(
+                                        AssetImage("artwork.jpeg"),
+                                        key=Key("Song_artwork_mage"),
+                                        width=261,
+                                        height=261,
+                                        borderRadius=BorderRadius.all(6),
+                                    ),
+                                ),
+                                # SizedBox(height=9),
+                                Image(
+                                    AssetImage("avatar.jpg"),
+                                    key=Key("Song_artist_mage"),
+                                    width=42,
+                                    height=42,
+                                    borderRadius=BorderRadius.all(5),
+                                ),
+                            ],
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+    def on_search_updates(self):
+        print(f"Listener notified! Username is now: {self.search_controller.text}")
+        # We still need to call setState if a listener changes other parts of the UI
+        # For simple text updates, this isn't necessary, but for validation it is.
+        if self.search_controller.text:
+            self.value_entered = True
+            print("Value in: ", self.value_entered)
+            self.setState()  # Re-render to remove the error message
+        else:
+            self.value_entered = False
+            print("Value in: ", self.value_entered)
+            self.setState()
+
+    def clear_search(self):
+        self.search_controller.clear()
+        self.setState()
+
+    # --- Build Method ---TODO SINGLECHILDSCROL
+    def build(self) -> Widget:
+        # print(f"\n--- Building PlayerApp UI ---")
 
         return Container(
             key=Key("player_app_root_container"),
@@ -522,68 +927,69 @@ class PlayerAppState(State):
                                                     key=Key("search_field_margin"),
                                                     height=15,
                                                 ),
-                                                TextField(
-                                                    key=Key(
-                                                        "search_field"
-                                                    ),  # Another unique key
-                                                    controller=self.search_controller,
-                                                    decoration=search_field_decoration,
-                                                    # enabled= False,
-                                                    # obscureText= True,
-                                                    # You would add a property to make this a password type input
-                                                ),
-                                                Container(
-                                                    key=Key("search_icon_container"),
-                                                    margin=EdgeInsets.only(
-                                                        top=-26, left=262, right=12
-                                                    ),
-                                                    child=Icon(
-                                                        key=Key("search_icon"),
-                                                        icon=Icons.search_rounded,
-                                                        size=16,
-                                                        color=Colors.hex("#D9D9D9"),
-                                                    ),
-                                                ),
-                                                (
-                                                    Container(
-                                                        key=Key("clear_icon_container"),
-                                                        margin=EdgeInsets.only(
-                                                            top=-20, left=238
-                                                        ),
-                                                        child=ElevatedButton(
-                                                            key=Key("clear_btn"),
-                                                            child=Icon(
-                                                                key=Key("clear_icon"),
-                                                                icon=Icons.close_rounded,
-                                                                size=16,
-                                                                color=Colors.hex(
-                                                                    "#D9D9D9"
-                                                                ),
-                                                            ),
-                                                            onPressed=self.clear_search,
-                                                            style=ButtonStyle(
-                                                                padding=EdgeInsets.all(
-                                                                    0
-                                                                ),
-                                                                margin=EdgeInsets.all(
-                                                                    0
-                                                                ),
-                                                                shape=BorderRadius.circular(
-                                                                    4.0
-                                                                ),
-                                                                backgroundColor=Colors.transparent,
-                                                                elevation=0,
-                                                            ),
-                                                        ),
-                                                    )
-                                                    if self.value_entered
-                                                    else SizedBox(
-                                                        key=Key(
-                                                            "clear_icon_placeholder"
-                                                        ),
-                                                        width=0,
-                                                    )
-                                                ),
+                                                self.search_widget,
+                                                # TextField(
+                                                #     key=Key(
+                                                #         "search_field"
+                                                #     ),  # Another unique key
+                                                #     controller=self.search_controller,
+                                                #     decoration=self.search_field_decoration,
+                                                #     # enabled= False,
+                                                #     # obscureText= True,
+                                                #     # You would add a property to make this a password type input
+                                                # ),
+                                                # Container(
+                                                #     key=Key("search_icon_container"),
+                                                #     margin=EdgeInsets.only(
+                                                #         top=-26, left=262, right=12
+                                                #     ),
+                                                #     child=Icon(
+                                                #         key=Key("search_icon"),
+                                                #         icon=Icons.search_rounded,
+                                                #         size=16,
+                                                #         color=Colors.hex("#D9D9D9"),
+                                                #     ),
+                                                # ),
+                                                # (
+                                                #     Container(
+                                                #         key=Key("clear_icon_container"),
+                                                #         margin=EdgeInsets.only(
+                                                #             top=-20, left=238
+                                                #         ),
+                                                #         child=ElevatedButton(
+                                                #             key=Key("clear_btn"),
+                                                #             child=Icon(
+                                                #                 key=Key("clear_icon"),
+                                                #                 icon=Icons.close_rounded,
+                                                #                 size=16,
+                                                #                 color=Colors.hex(
+                                                #                     "#D9D9D9"
+                                                #                 ),
+                                                #             ),
+                                                #             onPressed=self.clear_search,
+                                                #             style=ButtonStyle(
+                                                #                 padding=EdgeInsets.all(
+                                                #                     0
+                                                #                 ),
+                                                #                 margin=EdgeInsets.all(
+                                                #                     0
+                                                #                 ),
+                                                #                 shape=BorderRadius.circular(
+                                                #                     4.0
+                                                #                 ),
+                                                #                 backgroundColor=Colors.transparent,
+                                                #                 elevation=0,
+                                                #             ),
+                                                #         ),
+                                                #     )
+                                                #     if self.value_entered
+                                                #     else SizedBox(
+                                                #         key=Key(
+                                                #             "clear_icon_placeholder"
+                                                #         ),
+                                                #         width=0,
+                                                #     )
+                                                # ),
                                                 #
                                                 SizedBox(
                                                     key=Key(
@@ -1014,116 +1420,7 @@ class PlayerAppState(State):
                                                             4
                                                         ),
                                                     ),
-                                                    child=ClipPath(
-                                                        key=Key("Image_path_border"),
-                                                        viewBox=(
-                                                            290,
-                                                            347,
-                                                        ),
-                                                        points=[
-                                                            (0, 343),
-                                                            (72, 343),
-                                                            (72, 290),
-                                                            (290, 290),
-                                                            (290, 0),
-                                                            (0, 0),
-                                                            # (0, 50),
-                                                        ],
-                                                        radius=15.0,
-                                                        child=Container(
-                                                            key=Key(
-                                                                "Image_path_border_container"
-                                                            ),
-                                                            width="100%",
-                                                            height="100%",
-                                                            padding=EdgeInsets.all(5),
-                                                            decoration=BoxDecoration(
-                                                                color=Colors.gradient(
-                                                                    "to bottom",
-                                                                    Colors.red,
-                                                                    Colors.blue,
-                                                                ),
-                                                            ),
-                                                            child=ClipPath(
-                                                                key=Key(
-                                                                    "Image_path_content_path"
-                                                                ),
-                                                                viewBox=(
-                                                                    280,
-                                                                    337,
-                                                                ),
-                                                                points=[
-                                                                    (0, 333),
-                                                                    (62, 333),
-                                                                    (62, 280),
-                                                                    (280, 280),
-                                                                    (280, 0),
-                                                                    (0, 0),
-                                                                    # (0, 50),
-                                                                ],
-                                                                radius=10.0,
-                                                                child=Container(
-                                                                    key=Key(
-                                                                        "Image_path_content_container"
-                                                                    ),
-                                                                    width="100%",
-                                                                    height=330,
-                                                                    padding=EdgeInsets.all(
-                                                                        9
-                                                                    ),
-                                                                    decoration=BoxDecoration(
-                                                                        color=Colors.hex(
-                                                                            "#363636"
-                                                                        ),
-                                                                    ),
-                                                                    child=Column(
-                                                                        key=Key(
-                                                                            "Image_content_root_column"
-                                                                        ),
-                                                                        mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
-                                                                        crossAxisAlignment=CrossAxisAlignment.START,
-                                                                        children=[
-                                                                            Container(
-                                                                                key=Key(
-                                                                                    "Song_artwork_mage_container"
-                                                                                ),
-                                                                                width=262,
-                                                                                height=262,
-                                                                                # padding=EdgeInsets.all(5),
-                                                                                child=Image(
-                                                                                    AssetImage(
-                                                                                        "artwork.jpeg"
-                                                                                    ),
-                                                                                    key=Key(
-                                                                                        "Song_artwork_mage"
-                                                                                    ),
-                                                                                    width=261,
-                                                                                    height=261,
-                                                                                    borderRadius=BorderRadius.all(
-                                                                                        6
-                                                                                    ),
-                                                                                ),
-                                                                            ),
-                                                                            # SizedBox(height=9),
-                                                                            Image(
-                                                                                AssetImage(
-                                                                                    "avatar.jpg"
-                                                                                ),
-                                                                                key=Key(
-                                                                                    "Song_artist_mage"
-                                                                                ),
-                                                                                width=42,
-                                                                                height=42,
-                                                                                borderRadius=BorderRadius.all(
-                                                                                    5
-                                                                                ),
-                                                                            ),
-                                                                        ],
-                                                                    ),
-                                                                ),
-                                                            ),
-                                                        ),
-                                                    ),
+                                                    child=self.clip_path,
                                                 ),
                                                 Container(
                                                     key=Key(
@@ -1801,39 +2098,6 @@ class PlayerAppState(State):
                                                             ),
                                                             height=30,
                                                         ),
-                                                        # Row(
-                                                        #     key=Key(
-                                                        #         "sort_identifier_row"
-                                                        #     ),
-                                                        #     mainAxisAlignment=MainAxisAlignment.START,
-                                                        #     children=[
-                                                        #         TextButton(
-                                                        #             key=Key(
-                                                        #                 "sort_identifier_text_btn"
-                                                        #             ),
-                                                        #             child=Text(
-                                                        #                 "Juice WRLD",
-                                                        #                 key=Key(
-                                                        #                     "sort_identifier_text"
-                                                        #                 ),
-                                                        #                 style=TextStyle(
-                                                        #                     color=Colors.hex(
-                                                        #                         "#FF94DA"
-                                                        #                     ),
-                                                        #                     fontSize=16.0,
-                                                        #                     fontFamily="verdana",
-                                                        #                 ),
-                                                        #             ),
-                                                        #             style=ButtonStyle(
-                                                        #                 backgroundColor=Colors.transparent,
-                                                        #             ),
-                                                        #         )
-                                                        #     ],
-                                                        # ),
-                                                        # SizedBox(
-                                                        #     key=Key("list_top_padding"),
-                                                        #     height=10,
-                                                        # ),
                                                         Container(
                                                             key=Key(
                                                                 "list_container_path"
@@ -1858,28 +2122,12 @@ class PlayerAppState(State):
                                                                     radius=6,
                                                                 ),
                                                                 autoHide=False,
-                                                                child=VirtualListView(
+                                                                child=ListView(
                                                                     key=Key(
                                                                         "item_list_column"
                                                                     ),
-                                                                    item_count=len(
-                                                                        widgets
-                                                                    ),
-                                                                    estimated_height=50,
-                                                                    item_builder=lambda i: widgets[
-                                                                        i
-                                                                    ],
-                                                                    padding=EdgeInsets.all(
-                                                                        0
-                                                                    ),
-                                                                    scroll_direction=Axis.VERTICAL,
+                                                                    children=self.widgets,
                                                                 ),
-                                                                # ListView(
-                                                                #     key=Key(
-                                                                #         "item_list_column"
-                                                                #     ),
-                                                                #     children=widgets,
-                                                                # ),
                                                             ),
                                                         ),
                                                         # SizedBox(height=10),
@@ -1912,7 +2160,7 @@ class PlayerAppState(State):
                                         color=Colors.hex("#484848"),
                                         borderRadius=BorderRadius.circular(18.0),
                                     ),
-                                    # child=Controls(),
+                                    child=self.control_widget,  # Controls(),
                                 ),
                             ],
                         ),

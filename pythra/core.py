@@ -179,97 +179,104 @@ class Framework:
             self._reconciliation_requested = True
             QTimer.singleShot(0, self._process_reconciliation)
 
+
     def _process_reconciliation(self):
-        """Performs a full reconciliation cycle for all active UI contexts."""
+        """
+        Performs a targeted, high-performance reconciliation cycle for only the
+        widgets whose state has changed.
+        """
         self._reconciliation_requested = False
         if not self.window:
             print("Error: Window not available for reconciliation.")
             return
 
-        print("\n--- Framework: Processing Reconciliation Cycle ---")
+        print("\n--- Framework: Processing Granular Reconciliation Cycle ---")
         start_time = time.time()
 
-        # 1. Build the full widget tree based on the current application state.
-        built_tree_root = self._build_widget_tree(self.root_widget)
+        # Get the full map of the currently rendered UI for the main context.
+        main_context_map = self.reconciler.get_map_for_context("main")
 
-        # 2. <<< THE FIX >>>
-        # If the root is a StatefulWidget, "look through" it to get the renderable child tree.
-        main_tree_to_reconcile = built_tree_root
-        if isinstance(built_tree_root, StatefulWidget):
-            children = built_tree_root.get_children()
-            main_tree_to_reconcile = children[0] if children else None
+        # --- NEW ARCHITECTURE: SURGICAL UPDATES ---
+        all_patches = []
+        all_new_callbacks = {}
+        all_active_css_details = {} # To track if CSS might have changed
 
-        # 3. Reconcile the main renderable tree.
-        old_main_map = self.reconciler.get_map_for_context("main")
-        main_result = self.reconciler.reconcile(
-            old_main_map, main_tree_to_reconcile, "root-container"
-        )
+        # Process each pending state update individually.
+        for state_instance in self._pending_state_updates:
+            widget_to_rebuild = state_instance.get_widget()
+            if not widget_to_rebuild:
+                print(f"Warning: Widget for state {state_instance} lost. Skipping update.")
+                continue
 
-        # 4. Handle Declarative Overlays (Dialogs, SnackBars, etc.)
-        # We check for overlays on the full built tree root (the Scaffold/StatefulWidget instance).
-        scaffold_instance = built_tree_root
+            widget_key = widget_to_rebuild.get_unique_id()
+            old_widget_data = main_context_map.get(widget_key)
 
-        # Reconcile Dialog
-        dialog_widget = (
-            getattr(scaffold_instance, "dialog", None) if scaffold_instance else None
-        )
-        built_dialog_widget = self._build_widget_tree(
-            dialog_widget
-        )  # Build subtree for the dialog
-        old_dialog_map = self.reconciler.get_map_for_context("dialog")
-        dialog_result = self.reconciler.reconcile(
-            old_dialog_map, built_dialog_widget, "overlay-container"
-        )
+            if not old_widget_data:
+                print(f"Error: Could not find previous state for widget {widget_key}. A full rebuild may be required.")
+                continue # Skip this update to prevent errors
 
-        # Reconcile SnackBar
-        snackbar_widget = (
-            getattr(scaffold_instance, "snackBar", None) if scaffold_instance else None
-        )
-        built_snackbar_widget = self._build_widget_tree(
-            snackbar_widget
-        )  # Build subtree for the snackbar
-        old_snackbar_map = self.reconciler.get_map_for_context("snackbar")
-        snackbar_result = self.reconciler.reconcile(
-            old_snackbar_map, built_snackbar_widget, "overlay-container"
-        )
+            parent_html_id = old_widget_data["parent_html_id"]
 
-        # 5. Combine results from all reconciliation contexts.
-        all_patches = (
-            main_result.patches + dialog_result.patches + snackbar_result.patches
-        )
-        all_css_details = {
-            **main_result.active_css_details,
-            **dialog_result.active_css_details,
-            **snackbar_result.active_css_details,
-        }
-        all_callbacks = {
-            **main_result.registered_callbacks,
-            **dialog_result.registered_callbacks,
-            **snackbar_result.registered_callbacks,
-        }
+            print(f"Reconciling subtree for: {widget_to_rebuild.__class__.__name__} (Key: {widget_key})")
 
-        # 6. Update the framework's state maps and register callbacks.
-        self.reconciler.context_maps["main"] = main_result.new_rendered_map
-        self.reconciler.context_maps["dialog"] = dialog_result.new_rendered_map
-        self.reconciler.context_maps["snackbar"] = snackbar_result.new_rendered_map
+            # 1. Build ONLY the subtree for the dirty widget.
+            # This is fast because it doesn't traverse the whole application.
+            new_subtree = self._build_widget_tree(widget_to_rebuild)
 
-        for cb_id, cb_func in all_callbacks.items():
+            # 2. Reconcile ONLY that specific subtree.
+            subtree_result = self.reconciler.reconcile(
+                previous_map=main_context_map,
+                new_widget_root=new_subtree,
+                parent_html_id=parent_html_id,
+                old_root_key=widget_key, # Tell the reconciler exactly where to start
+                is_partial_reconciliation=True # CRITICAL: Prevents deleting the rest of the app
+            )
+
+            # 3. Aggregate the patches, callbacks, and CSS details from this subtree.
+            all_patches.extend(subtree_result.patches)
+            all_new_callbacks.update(subtree_result.registered_callbacks)
+            all_active_css_details.update(subtree_result.active_css_details)
+
+            # 4. CRITICAL: Update the main context map in-place with the changes.
+            # This keeps the framework's "memory" of the UI consistent.
+            main_context_map.update(subtree_result.new_rendered_map)
+
+        # --- Optimized CSS and Script Generation ---
+
+        # Register any new callbacks that might have been created in the rebuild.
+        for cb_id, cb_func in all_new_callbacks.items():
             self.api.register_callback(cb_id, cb_func)
 
-        # 7. Generate payloads from the combined results.
-        css_rules = self._generate_css_from_details(all_css_details)
-        css_update_script = self._generate_css_update_script(css_rules)
-        dom_patch_script = self._generate_dom_patch_script(all_patches, self._result.js_initializers)
+        # Implement CSS memoization check
+        # NOTE: self._last_css_keys should be initialized to set() in Framework.__init__
+        new_css_keys = set(all_active_css_details.keys())
+        css_update_script = ""
+        if not hasattr(self, '_last_css_keys') or self._last_css_keys != new_css_keys:
+             print("Framework: CSS classes may have changed. Regenerating stylesheet.")
+             # We need to generate CSS from the *entire* app's styles, not just the subtree.
+             # We can get this by iterating over the updated main_context_map.
+             full_css_details = {
+                 data['props']['css_class']: (type(data['widget_instance']).generate_css_rule, data['widget_instance'].style_key)
+                 for data in main_context_map.values()
+                 if 'css_class' in data['props'] and hasattr(data['widget_instance'], 'style_key')
+             }
+             css_rules = self._generate_css_from_details(full_css_details)
+             css_update_script = self._generate_css_update_script(css_rules)
+             self._last_css_keys = new_css_keys
+        else:
+             print("Framework: CSS classes are unchanged. Skipping CSS generation.")
 
-        # 8. Execute JS to apply updates to the UI.
+        # Generate the DOM patch script from our aggregated patches.
+        # No new JS initializers are expected during a partial update.
+        dom_patch_script = self._generate_dom_patch_script(all_patches, js_initializers=[])
+
         combined_script = (css_update_script + "\n" + dom_patch_script).strip()
         if combined_script:
-            print(
-                f"Framework: Executing {len(all_patches)} DOM patches and CSS update."
-            )
+            print(f"Framework: Executing {len(all_patches)} DOM patches.")
+            print("Patches:", all_patches)
             self.window.evaluate_js(self.id, combined_script)
         else:
-            print("Framework: No DOM or CSS changes detected.")
+            print("Framework: No DOM changes detected.")
 
         self._pending_state_updates.clear()
         print(
@@ -654,6 +661,28 @@ class Framework:
                     if (el && p) p.insertBefore(el, {before_id_js});
                 """
 
+            # --- ADD THIS NEW BLOCK ---
+            elif action == "REPLACE":
+                new_html_stub = data["new_html"]
+                new_props = data["new_props"]
+                
+                # Use a robust replacement method. `outerHTML` is simple and effective.
+                # It replaces the entire element, including the element itself.
+                escaped_html = json.dumps(new_html_stub)[1:-1].replace("`", "\\`")
+
+                command_js = f"""
+                    var oldEl = document.getElementById('{target_id}');
+                    if (oldEl) {{
+                        oldEl.outerHTML = `{escaped_html}`;
+                        // After replacement, we may need to apply props to the NEW element.
+                        // The new element's ID is embedded in the escaped_html, so we need to find it.
+                        // NOTE: This part is tricky. A simpler way for now is to bake initial props
+                        // into the HTML stub (like inline styles), which our stub generator does.
+                        // Complex JS initializers (like SimpleBar) would need more handling here.
+                    }}
+                """
+            # --- END OF NEW BLOCK ---
+
             elif action == "SVG_INSERT":
                 parent_id = data.get("parent_html_id")  # e.g., 'svg-defs'
                 html_stub = data.get("html")
@@ -954,29 +983,65 @@ class Framework:
             #     # For TextField, we target the inner <input> element directly.
             #     input_element_selector = f"document.getElementById('{target_id}_input')"
             #     js_prop_updates.append(f"var inputEl = {input_element_selector}; if(inputEl) inputEl.value = {json.dumps(value)};")
+            # print("Props:", props)
 
             if key == "data":
                 js_prop_updates.append(
                     f"{element_var}.textContent = {json.dumps(str(value))};"
                 )
                 # print("data: ",value)
+            # --- THIS IS THE NEW, INTELLIGENT CLASS UPDATE LOGIC ---
             elif key == "css_class":
-                js_prop_updates.append(
-                    f"{element_var}.className = {json.dumps(value)};"
-                )
+                # We need the old shared class to remove it. This must be passed in the patch.
+                # Let's assume the patch data for an UPDATE now contains:
+                # data['props']['css_class'] -> new_class
+                # data['old_props']['css_class'] -> old_class
+                
+                old_class = props.get("old_shared_class") # We'll need to add this to the patch
+                new_class = value # The new shared class
+
+                # This JS is robust: it works even if classes are None or the same.
+                js_prop_updates.append(f"""
+                    if ("{old_class}" !== "{new_class}") {{
+                        if ("{old_class}" && {element_var}.classList.contains("{old_class}")) {{
+                            {element_var}.classList.remove("{old_class}");
+                        }}
+                        if ("{new_class}") {{
+                            {element_var}.classList.add("{new_class}");
+                        }}
+                    }}
+                """)
+            # --- END OF NEW LOGIC ---
             elif key == "src":
                 js_prop_updates.append(f"{element_var}.src = {json.dumps(value)};")
             elif key == "tooltip":
                 js_prop_updates.append(f"{element_var}.title = {json.dumps(value)};")
-
-            elif key == "value" and "textfield-root-container" in props.get(
+            
+            elif key == "value" and "textfield" in props.get(
                 "css_class", ""
             ):
                 # This is a value update for a TextField. Target the inner input.
+                
                 input_id = f"{target_id}_input"
-                js_prop_updates.append(
-                    f"var inputEl = document.getElementById('{input_id}'); if (inputEl && inputEl.value !== {json.dumps(str(value))}) inputEl.value = {json.dumps(str(value))};"
-                )
+                # --- ADD DETAILED LOGGING ---
+                js_prop_updates.append(f"""
+                    var inputEl = document.getElementById('{input_id}');
+                    if (inputEl) {{
+                        console.log('--- TextField Update Patch ---');
+                        console.log('Target Input ID:', '{input_id}');
+                        console.log('Current Browser Value:', inputEl.value);
+                        console.log('New Value from Python:', {json.dumps(str(value))});
+                        if (inputEl.value !== {json.dumps(str(value))}) {{
+                            console.log('Values are different. Applying update.');
+                            inputEl.value = {json.dumps(str(value))};
+                        }} else {{
+                            console.log('Values are the same. Skipping update to prevent cursor jump.');
+                        }}
+                    }} else {{
+                        console.error('Could not find input element with ID:', '{input_id}');
+                    }}
+                """)
+                # --- END OF LOGGING ---
 
             elif key == "errorText" and "textfield-root-container" in props.get(
                 "css_class", ""

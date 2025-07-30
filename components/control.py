@@ -308,7 +308,7 @@ class ControlsState(State):
                                             color=Colors.hex("#363636"),
                                             padding=EdgeInsets.all(4),
                                             child=Icon(
-                                                Icons.fullscreen_rounded,
+                                                Icons.open_in_full_rounded,
                                                 color=Colors.hex("#D9D9D9"),
                                                 size=16,
                                                 fill=True,
@@ -333,7 +333,7 @@ class ControlsState(State):
                                             color=Colors.hex("#363636"),
                                             padding=EdgeInsets.all(4),
                                             child=Icon(
-                                                Icons.close_fullscreen_rounded,
+                                                Icons.open_in_new_rounded,
                                                 color=Colors.hex("#D9D9D9"),
                                                 size=16,
                                                 fill=True,
