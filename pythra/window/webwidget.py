@@ -229,11 +229,16 @@ class WebWindow(QWidget):
         self.debug_window.close() if self.debug_window else print("closed")
 
     def evaluate_js(self, window_id, *scripts):
+        # Define a dummy callback function to make the call non-blocking.
+        def dummy_callback(result):
+            # We can log the result here for debugging if needed.
+            # print(f"JS execution finished with result: {result}")
+            pass
         if window_id in window_manager.windows:
             window = window_manager.windows[window_id]
             if hasattr(window, "webview") and window.webview:
                 for script in scripts:
-                    window.webview.page().runJavaScript(script)
+                    window.webview.page().runJavaScript(script, dummy_callback)
             else:
                 print(f"Window {window_id} does not have a webview.")
         else:
