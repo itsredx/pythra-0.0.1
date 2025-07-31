@@ -1,5 +1,11 @@
 # pythra/core.py
 
+# --- ADD THESE IMPORTS AT THE TOP OF THE FILE ---
+import cProfile
+import pstats
+import io
+# --- END OF IMPORTS ---
+
 import os
 import time
 import json
@@ -185,6 +191,12 @@ class Framework:
         Performs a targeted, high-performance reconciliation cycle for only the
         widgets whose state has changed.
         """
+
+        # --- PROFILER SETUP ---
+        profiler = cProfile.Profile()
+        profiler.enable()
+        # --- END PROFILER SETUP ---
+
         self._reconciliation_requested = False
         if not self.window:
             print("Error: Window not available for reconciliation.")
@@ -282,6 +294,18 @@ class Framework:
         print(
             f"--- Framework: Reconciliation Complete (Total: {time.time() - start_time:.4f}s) ---"
         )
+
+        # --- PROFILER REPORTING ---
+        profiler.disable()
+        s = io.StringIO()
+        # Sort stats by 'cumulative time' to see the biggest bottlenecks at the top
+        ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
+        ps.print_stats(20) # Print the top 20 most time-consuming functions
+
+        print("\n--- cProfile Report ---")
+        print(s.getvalue())
+        print("--- End of Report ---\n")
+        # --- END PROFILER REPORTING ---
 
     # --- Widget Tree Building ---
     def _build_widget_tree(self, widget: Optional[Widget]) -> Optional[Widget]:
