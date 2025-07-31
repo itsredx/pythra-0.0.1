@@ -1098,6 +1098,18 @@ class Framework:
             elif key == "clip_path_string":
                 style_updates["clip-path"] = value
 
+        # Handle the 'style' dictionary passed from render_props
+        if "style" in props and isinstance(props["style"], dict):
+            for style_key, style_value in props["style"].items():
+                # Convert camelCase to kebab-case for CSS
+                css_prop_kebab = "".join(
+                    ["-" + c.lower() if c.isupper() else c for c in style_key]
+                ).lstrip("-")
+                js_prop_updates.append(
+                    f"{element_var}.style.setProperty('{css_prop_kebab}', {json.dumps(style_value)});"
+                )
+        # --- END OF ADDITION ---
+
         # --- NEW: Apply _style_override from the widget instance ---
         # We need the widget instance to get the override
         # This assumes the reconciler includes it in the patch data (we'll ensure this next)

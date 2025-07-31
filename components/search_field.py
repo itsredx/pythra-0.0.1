@@ -121,21 +121,27 @@ class _SearchComponentState(State):
                         key=Key("search_icons_row"),
                         mainAxisAlignment=MainAxisAlignment.END,
                         children=[
-                            (
-                                ElevatedButton(
+                            
+                                Container(
+                                    height=16,
+                                    width=16,
+                                    key=Key("clear_icons_container"),
+                                    margin=EdgeInsets.only(left=-20, right=5), 
+                                    visible=self.is_field_populated,
+                                    child=ElevatedButton(
                                     key=Key("clear_search_button"), # Stable key
                                     child=Icon(key=Key("clear_icon"), icon=Icons.close_rounded, color=Colors.hex("#D9D9D9"), size=16),
                                     onPressed=self.clear_search,
-                                    style=ButtonStyle(padding=EdgeInsets.all(0), margin=EdgeInsets.only(left=-38, right=22), backgroundColor=Colors.transparent, elevation=0)
-                                )
-                                if self.is_field_populated
-                                else SizedBox(key=Key("clear_button_placeholder")) # Stable key for the "else" case
-                            ),
+                                    style=ButtonStyle(padding=EdgeInsets.all(0), margin=EdgeInsets.all(0), 
+                                    backgroundColor=Colors.transparent, elevation=0)
+                                ),),
+                                # if self.is_field_populated
+                                # else SizedBox(key=Key("clear_button_placeholder")) # Stable key for the "else" case,
                             ElevatedButton(
                                     key=Key("search_icon_button"), # Stable key
                                     child=Icon(key=Key("search_icon"), icon=Icons.search_rounded, color=Colors.hex("#D9D9D9"), size=16),
                                     onPressed=self.search,
-                                    style=ButtonStyle(padding=EdgeInsets.all(0), margin=EdgeInsets.all(0),backgroundColor=Colors.transparent, elevation=0)
+                                    style=ButtonStyle(padding=EdgeInsets.all(0), margin=EdgeInsets.only(left=2,), backgroundColor=Colors.transparent, elevation=0)
                                 )
                             
                         ]

@@ -43,6 +43,7 @@ class Container(Widget):
     # Key: A hashable tuple representing a unique combination of style properties.
     # Value: A generated unique CSS class name (e.g., "shared-container-0").
     shared_styles: Dict[Tuple, str] = {}
+    visible_bool: bool = True
 
     def __init__(self,
                  child: Optional[Widget] = None,
@@ -56,7 +57,8 @@ class Container(Widget):
                  margin: Optional[EdgeInsets] = None,
                  transform: Optional[str] = None,
                  alignment: Optional[Alignment] = None,
-                 clipBehavior: Optional[ClipBehavior] = None):
+                 clipBehavior: Optional[ClipBehavior] = None,
+                 visible: bool = True):
 
         super().__init__(key=key, children=[child] if child else [])
 
@@ -71,6 +73,7 @@ class Container(Widget):
         self.transform = transform
         self.alignment = alignment
         self.clipBehavior = clipBehavior
+        self.visible = visible
 
         # --- CSS Class Management ---
         # 1. Create a unique, hashable key from all style properties.
@@ -79,9 +82,10 @@ class Container(Widget):
         self.style_key = tuple(make_hashable(prop) for prop in (
             self.padding, self.color, self.decoration, self.width, self.height,
             self.constraints, self.margin, self.transform, self.alignment,
-            self.clipBehavior
+            self.clipBehavior,
         ))
 
+        Container.visible_bool = self.visible
         # print(self.style_key)
 
         # 2. Check the cache. If this style combination is new, create a new class.
@@ -99,7 +103,16 @@ class Container(Widget):
         """
         # This simplification is key. The DOM element only needs its class.
         # The complex style logic lives entirely in the CSS generation.
-        return {'css_class': self.css_class}
+        # --- NEW LOGIC ---
+        instance_styles = {}
+        if not self.visible:
+            instance_styles['display'] = 'none'
+        else: instance_styles['display'] = 'block'
+
+        return {
+            'css_class': self.css_class,
+            'style': instance_styles # Pass the dynamic styles here
+            }
 
     def get_required_css_classes(self) -> Set[str]:
         """Return the shared class name needed for this instance."""
@@ -118,6 +131,9 @@ class Container(Widget):
              clipBehavior) = style_key
 
             styles = ["box-sizing: border-box;"]
+
+            # if not visible:
+            #     styles.append("display: none;")
 
             # 2. Reconstruct style objects from their tuple representations and generate CSS.
 
