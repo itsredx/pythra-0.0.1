@@ -96,6 +96,13 @@ class Reconciler:
         if context_key in self.context_maps:
             del self.context_maps[context_key]
 
+    def clear_all_contexts(self):
+        """Resets all stored render maps."""
+        print("Reconciler: Clearing all contexts.")
+        self.context_maps.clear()
+        # Re-initialize the main context
+        self.context_maps['main'] = {}
+
     def reconcile(
         self,
         previous_map: Dict,

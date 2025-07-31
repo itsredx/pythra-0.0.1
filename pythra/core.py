@@ -88,6 +88,40 @@ class Framework:
         """Sets the root widget for the application."""
         self.root_widget = widget
 
+    # We will refactor the rendering logic out of `run` into its own method
+    def _perform_initial_render(self, root_widget: Widget, title: str):
+        """Builds, reconciles, and generates the initial HTML, CSS, and JS."""
+        print("\n>>> Framework: Performing Initial Render <<<")
+
+        # 1. Build the full widget tree
+        built_tree_root = self._build_widget_tree(root_widget)
+        initial_tree_to_reconcile = built_tree_root
+        if isinstance(built_tree_root, StatefulWidget):
+            children = built_tree_root.get_children()
+            initial_tree_to_reconcile = children[0] if children else None
+
+        # 2. Perform initial reconciliation
+        result = self.reconciler.reconcile(
+            previous_map={},
+            new_widget_root=initial_tree_to_reconcile,
+            parent_html_id="root-container",
+        )
+        self._result = result # Store the result
+
+        # 3. Update framework state from the result
+        self.reconciler.context_maps["main"] = result.new_rendered_map
+        for cb_id, cb_func in result.registered_callbacks.items():
+            self.api.register_callback(cb_id, cb_func)
+
+        # 4. Generate initial HTML, CSS, and JS
+        root_key = initial_tree_to_reconcile.get_unique_id() if initial_tree_to_reconcile else None
+        html_content = self._generate_html_from_map(root_key, result.new_rendered_map)
+        css_rules = self._generate_css_from_details(result.active_css_details)
+        js_script = self._generate_initial_js_script(result.js_initializers)
+
+        # 5. Write files
+        self._write_initial_files(title, html_content, css_rules, js_script)
+
     def run(
         self,
         title: str = config.get("app_name"),
@@ -103,53 +137,56 @@ class Framework:
         if not self.root_widget:
             raise ValueError("Root widget not set. Use set_root() before run().")
 
-        print("\n>>> Framework: Performing Initial Render <<<")
+        # print("\n>>> Framework: Performing Initial Render <<<")
 
-        # 1. Build the full widget tree, which will include the StatefulWidget at the root.
-        built_tree_root = self._build_widget_tree(self.root_widget)
+        # # 1. Build the full widget tree, which will include the StatefulWidget at the root.
+        # built_tree_root = self._build_widget_tree(self.root_widget)
 
-        # 2. <<< THE FIX >>>
-        # If the root is a StatefulWidget, we reconcile what it *builds*, not the widget itself.
-        initial_tree_to_reconcile = built_tree_root
-        if isinstance(built_tree_root, StatefulWidget):
-            children = built_tree_root.get_children()
-            initial_tree_to_reconcile = children[0] if children else None
+        # # 2. <<< THE FIX >>>
+        # # If the root is a StatefulWidget, we reconcile what it *builds*, not the widget itself.
+        # initial_tree_to_reconcile = built_tree_root
+        # if isinstance(built_tree_root, StatefulWidget):
+        #     children = built_tree_root.get_children()
+        #     initial_tree_to_reconcile = children[0] if children else None
 
-        # 3. Perform initial reconciliation on the *renderable* tree.
-        result = self.reconciler.reconcile(
-            previous_map={},
-            new_widget_root=initial_tree_to_reconcile,
-            parent_html_id="root-container",
-        )
+        # # 3. Perform initial reconciliation on the *renderable* tree.
+        # result = self.reconciler.reconcile(
+        #     previous_map={},
+        #     new_widget_root=initial_tree_to_reconcile,
+        #     parent_html_id="root-container",
+        # )
 
-        self._result = result
+        # self._result = result
         
 
-        # 4. Update framework state from the initial result.
-        self.reconciler.context_maps["main"] = result.new_rendered_map
-        for cb_id, cb_func in result.registered_callbacks.items():
-            self.api.register_callback(cb_id, cb_func)
+        # # 4. Update framework state from the initial result.
+        # self.reconciler.context_maps["main"] = result.new_rendered_map
+        # for cb_id, cb_func in result.registered_callbacks.items():
+        #     self.api.register_callback(cb_id, cb_func)
 
-        # 5. Generate initial HTML from the map created by the reconciler.
-        root_key = (
-            initial_tree_to_reconcile.get_unique_id()
-            if initial_tree_to_reconcile
-            else None
-        )
-        initial_html_content = self._generate_html_from_map(
-            root_key, result.new_rendered_map
-        )
+        # # 5. Generate initial HTML from the map created by the reconciler.
+        # root_key = (
+        #     initial_tree_to_reconcile.get_unique_id()
+        #     if initial_tree_to_reconcile
+        #     else None
+        # )
+        # initial_html_content = self._generate_html_from_map(
+        #     root_key, result.new_rendered_map
+        # )
 
-        # 6. Generate initial CSS from the details collected by the reconciler.
-        initial_css_rules = self._generate_css_from_details(result.active_css_details)
+        # # 6. Generate initial CSS from the details collected by the reconciler.
+        # initial_css_rules = self._generate_css_from_details(result.active_css_details)
 
-        # 7. Generate the initial JS script for things like responsive clip paths.
-        initial_js_script = self._generate_initial_js_script(result.js_initializers)
+        # # 7. Generate the initial JS script for things like responsive clip paths.
+        # initial_js_script = self._generate_initial_js_script(result.js_initializers)
 
-        # 8. Write files and create the application window.
-        self._write_initial_files(
-            title, initial_html_content, initial_css_rules, initial_js_script
-        )
+        # # 8. Write files and create the application window.
+        # self._write_initial_files(
+        #     title, initial_html_content, initial_css_rules, initial_js_script
+        # )
+
+        # Now `run` just calls the new helper method
+        self._perform_initial_render(self.root_widget, title)
 
         self.window = webwidget.create_window(
             title,
@@ -160,7 +197,8 @@ class Framework:
             height,
             frameless=frameless,
             maximized = maximized,
-            fixed_size = fixed_size
+            fixed_size = fixed_size,
+            hot_restart_handler = self.hot_restart
         )
 
         # 9. Start the application event loop.
@@ -175,7 +213,146 @@ class Framework:
     def minimize(self):
         self.window.minimize() if self.window else print("unable to close window: window is None")
 
+    def _dispose_widget_tree(self, widget: Optional[Widget]):
+        """Recursively disposes of the state of a widget and its children."""
+        if widget is None:
+            return
+        
+        # Dispose of the current widget's state if it's stateful
+        if isinstance(widget, StatefulWidget):
+            state = widget.get_state()
+            if state:
+                state.dispose()
+        
+        # Recurse on all children
+        if hasattr(widget, 'get_children'):
+            for child in widget.get_children():
+                self._dispose_widget_tree(child)
+
     # --- State Update and Reconciliation Cycle ---
+
+    # --- NEW HOT RESTART METHOD ---
+    def hot_restart(self):
+        """
+        Performs a full teardown and rebuild of the application state and UI
+        on the existing window. This is achieved by regenerating the entire HTML
+        body and applying it in one atomic operation, avoiding patch race conditions.
+        """
+        if not self.window or not self.root_widget:
+            print("Hot Restart Error: Application not running.")
+            return
+
+        print("\n🔥 --- Framework: Initiating Hot Restart --- 🔥")
+        start_time = time.time()
+
+        # 1. --- FULL TEARDOWN ---
+        print("Tearing down old state...")
+        self._dispose_widget_tree(self.root_widget) # Dispose old states and listeners
+        self.reconciler.clear_all_contexts()         # Clear reconciler's memory
+        self.api.clear_callbacks()                   # Clear old API callbacks
+
+        # 2. --- CLEAN REBUILD ---
+        # Create a fresh instance of the root widget to get the new code.
+        root_widget_class = self.root_widget.__class__
+        new_root_widget = root_widget_class(key=self.root_widget.key) # Recreate with the same root key
+        self.set_root(new_root_widget)
+
+        print("Rebuilding new widget tree...")
+        built_tree_root = self._build_widget_tree(self.root_widget)
+        tree_to_reconcile = built_tree_root
+        if isinstance(built_tree_root, StatefulWidget):
+            children = built_tree_root.get_children()
+            tree_to_reconcile = children[0] if children else None
+
+        # 3. --- GENERATE NEW UI CONTENT (NO PATCHES) ---
+        # Reconcile against an EMPTY map to populate the new rendered_map and collect details.
+        result = self.reconciler.reconcile(
+            previous_map={},
+            new_widget_root=tree_to_reconcile,
+            parent_html_id="root-container"
+        )
+
+        # Update the framework's internal state with the new data
+        self.reconciler.context_maps["main"] = result.new_rendered_map
+        for cb_id, cb_func in result.registered_callbacks.items():
+            self.api.register_callback(cb_id, cb_func)
+        
+        # 4. --- PREPARE SCRIPTS FOR THE BROWSER ---
+        # Generate the new CSS stylesheet
+        css_rules = self._generate_css_from_details(result.active_css_details)
+        css_update_script = self._generate_css_update_script(css_rules)
+
+        # Generate the new HTML content for the entire root container
+        root_key = tree_to_reconcile.get_unique_id() if tree_to_reconcile else None
+        html_content = self._generate_html_from_map(root_key, result.new_rendered_map)
+        escaped_html = json.dumps(html_content)[1:-1].replace("`", "\\`").replace("${", "\\${")
+
+        # Generate the script for any necessary JS initializers (e.g., ClipPath, SimpleBar)
+        initializer_script_tag = self._generate_initial_js_script(result.js_initializers)
+        
+        # We need to extract just the JS commands from inside the <script> tag
+        # to run them after the innerHTML has been set.
+        import re
+        match = re.search(r"document\.addEventListener\('DOMContentLoaded', \(\) => \{(.+?)\}\);", initializer_script_tag, re.DOTALL)
+        initializers_js = match.group(1).strip() if match else ""
+
+        # --- THIS IS THE FIX ---
+        # Get the source code for our core JS utility functions.
+        js_utilities = self._get_js_utility_functions()
+        # --- END OF FIX ---
+
+        # 5. --- ASSEMBLE AND EXECUTE THE FINAL RESTART SCRIPT ---
+        # This script performs the update in a safe, atomic order.
+        restart_script = f"""
+            // Step 1: Update the styles to the new stylesheet.
+            {css_update_script}
+
+            // Step 2: Atomically replace the entire DOM content of the root container.
+            // This is faster and more reliable than thousands of individual patches.
+            var rootContainer = document.getElementById('root-container');
+            if (rootContainer) {{
+                rootContainer.innerHTML = `{escaped_html}`;
+            }}
+
+            // Step 3: Defer the JavaScript initializers to run AFTER the new DOM
+            // has been fully parsed and is ready.
+            setTimeout(() => {{
+                try {{
+                    // DEFINE THE MISSING FUNCTIONS
+                    {js_utilities}
+                    // NOW, RUN THE INITIALIZERS
+                    {initializers_js}
+                }} catch (e) {{
+                    console.error("Error running Hot Restart initializers:", e);
+                }}
+            }}, 0);
+        """
+        
+        print(f"Applying full UI rebuild for Hot Restart...")
+        self.window.evaluate_js(self.id, restart_script)
+
+        print(f"--- Hot Restart Complete (Total: {time.time() - start_time:.4f}s) ---")
+
+
+
+    # Place this new helper method somewhere in the Framework class
+    def _get_js_utility_functions(self) -> str:
+        """Reads core JS utility files and returns them as a single string."""
+        js_files = [
+            "web/js/pathGenerator.js",
+            "web/js/clipPathUtils.js"
+        ]
+        all_js_code = []
+        for file_path in js_files:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    # We need to remove the 'export' keyword so they become
+                    # simple global functions within our script's scope.
+                    content = f.read().replace('export function', 'function').replace('export class', 'class')
+                    all_js_code.append(content)
+            except FileNotFoundError:
+                print(f"Warning: JS utility file not found: {file_path}")
+        return "\n".join(all_js_code)
 
     def request_reconciliation(self, state_instance: State):
         """Called by State.setState to schedule a UI update."""
@@ -549,7 +726,7 @@ class Framework:
                 """
                 props = data.get("props", {})
                 if 'responsive_clip_path' in props:
-                    print("INITIALIZERS: ", js_initializers)
+                    # print("INITIALIZERS: ", js_initializers)
                     if target_id != new_id:
                         old_id, new_id = new_id, target_id
                     initializer_data = {
@@ -559,7 +736,7 @@ class Framework:
                         'before_id': old_id
                     }
                     # js_initializers.append(initializer_data) if js_initializers else print("no js_initializers found")
-                    print("INITIALIZERS:AFTER: ", js_initializers)
+                    # print("INITIALIZERS:AFTER: ", js_initializers)
                     # target_id = initializer_data["target_id"]
                     clip_data = initializer_data["data"]
                     # print("target id: ", target_id, "Data: ", clip_data, "before_id: ", initializer_data["before_id"] if initializer_data["before_id"] else None)
@@ -632,10 +809,10 @@ class Framework:
                     command_js += f"""
                         var el_{target_id} = document.getElementById('{target_id}');
                         if (el_{target_id} && !el_{target_id}.simplebar) {{
-                            new SimpleBar(el_{target_id}, {options_json});
+                            new SimpleBar(el_{target_id}, {options_json} );
                         }}
                     """
-                    print("new SimpleBar: ", options_json)
+                    # print("new SimpleBar: ", options_json)
 
             elif action == "REMOVE":
                 command_js = f"""
@@ -987,6 +1164,7 @@ class Framework:
 
         return "\n".join(js_commands)
 
+
     def _generate_prop_update_js(
         self, target_id: str, props: Dict, is_insert: bool = False
     ) -> str:
@@ -1117,7 +1295,7 @@ class Framework:
         if widget_instance and hasattr(widget_instance, "_style_override"):
             for style_key, style_value in widget_instance._style_override.items():
                 style_updates[style_key] = style_value
-                print("Style Value Init: ", style_value)
+                # print("Style Value Init: ", style_value)
 
         # Handle style dict passed from widgets like ListTile
         if "style" in props and isinstance(props["style"], dict):
@@ -1153,7 +1331,7 @@ class Framework:
                     f"""
                     const el_{target_id} = document.getElementById('{target_id}');
                     if (el_{target_id} && !el_{target_id}.simplebar) {{ // Check if not already initialized
-                        new SimpleBar(el_{target_id}, {options_json});
+                        new SimpleBar(el_{target_id}, {options_json} );
                         console.log('SimpleBar initialized for #{target_id}');
                     }};
                     
@@ -1353,3 +1531,5 @@ class Framework:
             }}
         </script>
         """
+
+
