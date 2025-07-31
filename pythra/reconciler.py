@@ -515,6 +515,16 @@ class Reconciler:
             if "aspectRatio" in props:
                 inline_styles["aspect-ratio"] = props["aspectRatio"]
 
+        # --- THIS IS THE ARCHITECTURAL FIX ---
+        # Generic handling for a 'style' dictionary from render_props.
+        # This makes the initial render consistent with the update patcher.
+        if "style" in props and isinstance(props["style"], dict):
+            for key, value in props["style"].items():
+                # Convert python camelCase to css kebab-case
+                css_key = "".join(["-" + c.lower() if c.isupper() else c for c in key]).lstrip("-")
+                inline_styles[css_key] = value
+        # --- END OF FIX ---
+
         if inline_styles:
             style_str = "; ".join(
                 f"{k.replace('_','-')}: {v}"

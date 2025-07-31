@@ -1418,6 +1418,7 @@ class BoxDecoration:
                  transform: Optional[str] = None, # Raw CSS transform string
                  # Padding is usually handled by Padding widget, not BoxDecoration
                  # padding: Optional[EdgeInsets] = None,
+                 visible: bool = True,
                  ):
         """
         Initializes the BoxDecoration.
@@ -1432,6 +1433,7 @@ class BoxDecoration:
         self.color = color
         self.border = border
         self.borderRadius = borderRadius
+        self.visible = visible
         # Ensure boxShadow is always a list for consistent handling
         if isinstance(boxShadow, BoxShadow):
             self.boxShadow = [boxShadow]
