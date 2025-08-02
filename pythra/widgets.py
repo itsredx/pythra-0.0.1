@@ -5,9 +5,10 @@ import os
 import html
 from .api import Api
 from .base import *
+from .state import *
 from .styles import *
 from .config import Config
-from .controllers import TextEditingController
+from .controllers import TextEditingController, SliderController
 import weakref
 from typing import Any, Dict, List, Optional, Set, Tuple, Union, Callable
 
@@ -5513,5 +5514,154 @@ class TextField(Widget):
         }}
         .textfield-root-container.{css_class}.disabled .textfield-outline {{
             background-color: {Colors.rgba(0,0,0,0.12)};
+        }}
+        """
+
+
+# In pythra/widgets.py
+
+class Slider(Widget):
+    """
+    A Material Design slider that allows a user to select a value from a range.
+
+    The slider's value is controlled by a `SliderController`. The parent widget
+    is responsible for creating and managing the controller, updating its value,
+    and triggering rebuilds via `setState` in the `onChanged` callback.
+    """
+    shared_styles: Dict[Tuple, str] = {}
+
+    def __init__(self,
+                 key: Key,
+                 controller: SliderController,
+                 onChanged: Callable[[float], None],
+                 min: float = 0.0,
+                 max: float = 1.0,
+                 divisions: Optional[int] = None,
+                 activeColor: Optional[str] = None,
+                 inactiveColor: Optional[str] = None,
+                 thumbColor: Optional[str] = None):
+
+        super().__init__(key=key)
+
+        if not isinstance(controller, SliderController):
+            raise TypeError("Slider widget requires a SliderController instance.")
+        
+        self.controller = controller
+        self.onChanged = onChanged
+        self.min = min
+        self.max = max
+        self.divisions = divisions
+        self.activeColor = activeColor or Colors.primary
+        self.inactiveColor = inactiveColor or Colors.surfaceVariant
+        self.thumbColor = thumbColor or Colors.primary
+        
+        # --- Callback Management ---
+        # The JS callback name is now tied to the controller instance.
+        self.on_drag_update_name = f"slider_update_{id(self.controller)}"
+        
+        # Register an *internal* handler that will process the raw value from JS.
+        # Api.instance().register_callback(self.on_drag_update_name, self._handle_drag_update)
+
+        # --- CSS Style Management ---
+        self.style_key = (self.activeColor, self.inactiveColor, self.thumbColor)
+        
+        if self.style_key not in Slider.shared_styles:
+            self.css_class = f"shared-slider-{len(Slider.shared_styles)}"
+            Slider.shared_styles[self.style_key] = self.css_class
+        else:
+            self.css_class = Slider.shared_styles[self.style_key]
+
+    def _handle_drag_update(self, new_value: float):
+        """
+        Internal handler that receives the raw value from JS, snaps it,
+        and then calls the user-provided `onChanged` callback.
+        """
+        clamped_value = max(self.min, min(self.max, new_value))
+        print("Draged")
+        
+        snapped_value = clamped_value
+        if self.divisions is not None and self.divisions > 0:
+            step = (self.max - self.min) / self.divisions
+            snapped_value = self.min + round((clamped_value - self.min) / step) * step
+            snapped_value = max(self.min, min(self.max, snapped_value))
+            
+        # Call the user's callback. It is the user's responsibility
+        # to update the controller and call setState().
+        if self.onChanged:
+            self.onChanged(clamped_value)
+
+    def render_props(self) -> Dict[str, Any]:
+        """Pass all necessary data to the reconciler and JS engine."""
+        current_value = self.controller.value
+        range_val = self.max - self.min
+        percentage = ((current_value - self.min) / range_val) * 100 if range_val > 0 else 0
+
+        return {
+            "css_class": self.css_class,
+            "init_slider": True,
+            "type": "slider",
+            "onDragName": self.on_drag_update_name,
+            "onDrag": self._handle_drag_update,
+            "slider_options": {
+                "min": self.min,
+                "max": self.max,
+                "onDragName": self.on_drag_update_name
+            },
+            "style": {
+                "--slider-percentage": f"{percentage}%",
+            }
+        }
+
+    def get_required_css_classes(self) -> Set[str]:
+        return {self.css_class}
+
+    @staticmethod
+    def _generate_html_stub(widget_instance: 'Slider', html_id: str, props: Dict) -> str:
+        """Generates the specific HTML structure for the slider."""
+        css_class = props.get('css_class', '')
+        # Ensure the style attribute exists and has the percentage key
+        style_prop = props.get('style', {})
+        percentage_str = style_prop.get('--slider-percentage', '0%')
+        style_attr = f'style="width: 100%; --slider-percentage: {percentage_str};"'
+        
+        return f"""
+        <div id="{html_id}" class="slider-container {css_class}" {style_attr}>
+            <div class="slider-track"></div>
+            <div class="slider-track-active"></div>
+            <div class="slider-thumb"></div>
+        </div>
+        """
+        
+    @staticmethod
+    def generate_css_rule(style_key: Tuple, css_class: str) -> str:
+        """Generates the CSS for the slider's appearance and states."""
+        active_color, inactive_color, thumb_color = style_key
+        
+        return f"""
+        .{css_class}.slider-container {{
+            position: relative; width: 100%; height: 20px;
+            display: flex; align-items: center; cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }}
+        .{css_class} .slider-track, .{css_class} .slider-track-active {{
+            position: absolute; width: 100%; height: 4px;
+            border-radius: 2px; pointer-events: none;
+        }}
+        .{css_class} .slider-track {{ background-color: {inactive_color}; }}
+        .{css_class} .slider-track-active {{
+            background-color: {active_color}; width: var(--slider-percentage, 0%);
+        }}
+        .{css_class} .slider-thumb {{
+            position: absolute; left: var(--slider-percentage, 0%);
+            transform: translateX(-50%); width: 14px; height: 14px;
+            background-color: {thumb_color}; border-radius: 50%;
+            border: 2px solid {thumb_color};
+            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2); pointer-events: none;
+        }}
+        .{css_class}.slider-container:hover .slider-thumb {{ transform: translateX(-50%) scale(1.2); }}
+        .{css_class}.slider-container.active .slider-thumb {{
+            transform: translateX(-50%) scale(1.4);
+            box-shadow: 0 0 0 8px {Colors.rgba(103, 80, 164, 0.15)};
         }}
         """
