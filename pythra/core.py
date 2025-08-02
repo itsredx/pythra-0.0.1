@@ -117,7 +117,7 @@ class Framework:
         root_key = initial_tree_to_reconcile.get_unique_id() if initial_tree_to_reconcile else None
         html_content = self._generate_html_from_map(root_key, result.new_rendered_map)
         css_rules = self._generate_css_from_details(result.active_css_details)
-        js_script = self._generate_initial_js_script(result.js_initializers)
+        js_script = self._generate_initial_js_script(result)
 
         # 5. Write files
         self._write_initial_files(title, html_content, css_rules, js_script)
@@ -288,7 +288,7 @@ class Framework:
         escaped_html = json.dumps(html_content)[1:-1].replace("`", "\\`").replace("${", "\\${")
 
         # Generate the script for any necessary JS initializers (e.g., ClipPath, SimpleBar)
-        initializer_script_tag = self._generate_initial_js_script(result.js_initializers)
+        initializer_script_tag = self._generate_initial_js_script(result)
         
         # We need to extract just the JS commands from inside the <script> tag
         # to run them after the innerHTML has been set.
@@ -340,7 +340,8 @@ class Framework:
         """Reads core JS utility files and returns them as a single string."""
         js_files = [
             "web/js/pathGenerator.js",
-            "web/js/clipPathUtils.js"
+            "web/js/clipPathUtils.js",
+            "web/js/slider.js"  # <-- ADD THIS LINE
         ]
         all_js_code = []
         for file_path in js_files:
@@ -725,6 +726,22 @@ class Framework:
                     }}
                 """
                 props = data.get("props", {})
+
+                # --- ADD THIS ---
+                if props.get("init_slider"):
+                    options_json = json.dumps(props.get("slider_options", {}))
+                    command_js += f"""
+                        setTimeout(() => {{
+                            if (typeof PythraSlider !== 'undefined') {{
+                                if (!window._pythra_instances['{target_id}']) {{
+                                    console.log('Initializing dynamically inserted PythraSlider for #{target_id}');
+                                    window._pythra_instances['{target_id}'] = new PythraSlider('{target_id}', {options_json});
+                                }}
+                            }}
+                        }}, 0);
+                    """
+                # --- END ADDITION ---
+
                 if 'responsive_clip_path' in props:
                     # print("INITIALIZERS: ", js_initializers)
                     if target_id != new_id:
@@ -1185,7 +1202,7 @@ class Framework:
             #     # For TextField, we target the inner <input> element directly.
             #     input_element_selector = f"document.getElementById('{target_id}_input')"
             #     js_prop_updates.append(f"var inputEl = {input_element_selector}; if(inputEl) inputEl.value = {json.dumps(value)};")
-            # print("Props:", props)
+            print("Props:", props)
 
             if key == "data":
                 js_prop_updates.append(
@@ -1279,10 +1296,12 @@ class Framework:
         # Handle the 'style' dictionary passed from render_props
         if "style" in props and isinstance(props["style"], dict):
             for style_key, style_value in props["style"].items():
+                print("style_key: ",style_key,"style_value: ",style_value)
                 # Convert camelCase to kebab-case for CSS
                 css_prop_kebab = "".join(
                     ["-" + c.lower() if c.isupper() else c for c in style_key]
-                ).lstrip("-")
+                ).lstrip("")
+                print("css_prop_kebab: ", css_prop_kebab)
                 js_prop_updates.append(
                     f"{element_var}.style.setProperty('{css_prop_kebab}', {json.dumps(style_value)});"
                 )
@@ -1313,15 +1332,15 @@ class Framework:
 
         return "\n".join(js_prop_updates)
 
-    def _generate_initial_js_script(self, initializers: List[Dict]) -> str:
+    def _generate_initial_js_script(self, result: 'ReconciliationResult') -> str:
         """Generates a script tag to run initializations after the DOM loads."""
-        if not initializers:
+        if not result.js_initializers:
             return ""
 
         js_commands = []
         imports = set()
         # Your initializer logic for ClipPath etc. goes here if needed
-        for init in initializers:
+        for init in result.js_initializers:
             # --- ADD THIS BLOCK FOR SIMPLEBAR ---
             if init["type"] == "SimpleBar":
                 target_id = init["target_id"]
@@ -1338,6 +1357,21 @@ class Framework:
                 """
                 )
             # --- END OF NEW BLOCK ---
+
+             # --- ADD THIS NEW BLOCK for the slider ---
+            if init.get("type") == "_RenderableSlider":
+                
+                target_id = init["target_id"]
+                options_json = json.dumps(init.get("options", {}))
+                # This JS command creates a new instance of our slider engine
+                js_commands.append(f"""
+                    if (typeof PythraSlider !== 'undefined') {{
+                        window._pythra_instances['{target_id}'] = new PythraSlider('{target_id}', {options_json});
+                    }} else {{
+                        console.error('PythraSlider class not found. Make sure slider.js is included.');
+                    }}
+                """)
+            # --- END OF NEW SLIDER BLOCK ---
 
             if init["type"] == "VirtualList":
                 target_id = init["target_id"]
@@ -1415,20 +1449,56 @@ class Framework:
             #             '{scroll_thumb_id}'
             #         );
             #     """)
+        # 2. --- THIS IS THE NEW, SMARTER LOGIC ---
+        #    Iterate through the entire rendered map to find any widget that
+        #    has declared it needs JS initialization via a flag in its render_props.
+        print("mapp: ",result.new_rendered_map.values())
+        for node_data in result.new_rendered_map.values():
+            props = node_data.get("props", {})
+            html_id = node_data.get("html_id")
+            # print(">>>init_slider<<<", html_id)
 
+            # Check for our new Slider's flag
+            if props.get("init_slider"):
+                print(">>>init_slider<<<", html_id)
+                imports.add("import { PythraSlider } from './js/slider.js';")
+                options = props.get("slider_options", {})
+                options_json = json.dumps(options)
+                
+                # Generate the JS command to instantiate the slider engine
+                js_commands.append(f"""
+                    if (typeof PythraSlider !== 'undefined') {{
+                        // Make sure we don't re-initialize if it somehow already exists
+                        if (!window._pythra_instances['{html_id}']) {{
+                            console.log('Initializing PythraSlider for #{html_id}');
+                            window._pythra_instances['{html_id}'] = new PythraSlider('{html_id}', {options_json});
+                        }}
+                    }} else {{
+                        console.error('PythraSlider class not found. Make sure slider.js is included.');
+                    }}
+                """)
+        # --- END OF NEW LOGIC ---
+
+        # 1. Get the combined source code of all utility JS files.
+        js_utilities = self._get_js_utility_functions()
         # Wrap all commands in a DOMContentLoaded listener.
         # We now import BOTH of your utility modules.
         full_script = f"""
         <script type="module">
             // Import JS modules if needed (e.g., for ClipPath)
             // import {{ ... }} from './js/....js';
-            import {{ generateRoundedPath }} from './js/pathGenerator.js';
-            import {{ ResponsiveClipPath }} from './js/clipPathUtils.js';
+            // import {{ generateRoundedPath }} from './js/pathGenerator.js';
+            // import {{ ResponsiveClipPath }} from './js/clipPathUtils.js';
+            import {{ PythraSlider }} from './js/slider.js';
             
 
             document.addEventListener('DOMContentLoaded', () => {{
                 window._pythra_instances = window._pythra_instances || {{}};
                 try {{
+                     // First, DEFINE all our JS classes and functions
+                    {js_utilities}
+
+                    // Then, RUN the initialization commands
                     {''.join(js_commands)}
                 }} catch (e) {{
                     console.error("Error running Pythra initializers:", e);
@@ -1504,6 +1574,7 @@ class Framework:
     <!-- ADD SIMPLEBAR JS -->
     <script src="./js/virtualList.js"></script>
     <script src="./js/scroll-bar/simplebar.min.js"></script>
+    <!-- ADD THE NEW SLIDER JS ENGINE -->
     {initial_js}
 </body>
 </html>"""
@@ -1529,6 +1600,85 @@ class Framework:
                     window.pywebview.on_input_changed(name, value, ()=>{{}});
                 }}
             }}
+        </script>
+        <script>
+        function PythraSlider(elementId, options) {{
+    // The 'this' keyword refers to the new object being created.
+    this.container = document.getElementById(elementId);
+    if (!this.container) {{
+        console.error(`Slider container with ID #${{elementId}} not found.`);
+        return;
+    }}
+
+    console.log(`✅ PythraSlider engine is initializing for #${{elementId}}`);
+
+    this.options = options;
+
+    // Find child elements
+    this.track = this.container.querySelector('.slider-track');
+    this.thumb = this.container.querySelector('.slider-thumb');
+    
+    // Bind 'this' context for event handlers
+    this.handleDragStart = this.handleDragStart.bind(this);
+    this.handleDragMove = this.handleDragMove.bind(this);
+    this.handleDragEnd = this.handleDragEnd.bind(this);
+
+    // Attach initial event listeners
+    this.container.addEventListener('mousedown', this.handleDragStart);
+    this.container.addEventListener('touchstart', this.handleDragStart, {{ passive: false }}); // passive: false to allow preventDefault
+}}
+
+PythraSlider.prototype.handleDragStart = function(event) {{
+    event.preventDefault();
+    this.container.classList.add('active');
+    
+    document.addEventListener('mousemove', this.handleDragMove);
+    document.addEventListener('mouseup', this.handleDragEnd);
+    document.addEventListener('touchmove', this.handleDragMove);
+    document.addEventListener('touchend', this.handleDragEnd);
+
+    this.updatePosition(event);
+}};
+
+PythraSlider.prototype.handleDragMove = function(event) {{
+    this.updatePosition(event);
+}};
+
+PythraSlider.prototype.handleDragEnd = function() {{
+    this.container.classList.remove('active');
+    
+    document.removeEventListener('mousemove', this.handleDragMove);
+    document.removeEventListener('mouseup', this.handleDragEnd);
+    document.removeEventListener('touchmove', this.handleDragMove);
+    document.removeEventListener('touchend', this.handleDragEnd);
+}};
+
+PythraSlider.prototype.updatePosition = function(event) {{
+    if (!this.track) return;
+    const rect = this.track.getBoundingClientRect();
+    const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+    
+    let positionX = clientX - rect.left;
+    let percentage = (positionX / rect.width) * 100;
+    
+    percentage = Math.max(0, Math.min(100, percentage));
+    
+    this.container.style.setProperty('--slider-percentage', `${{percentage}}%`);
+    
+    const range = this.options.max - this.options.min;
+    const newValue = this.options.min + (percentage / 100) * range;
+    
+    if (window.pywebview && this.options.onChangedName) {{
+        window.pywebview.on_drag_update(this.options.onChangedName, newValue);
+    }}
+}};
+
+PythraSlider.prototype.destroy = function() {{
+    if (!this.container) return;
+    this.container.removeEventListener('mousedown', this.handleDragStart);
+    this.container.removeEventListener('touchstart', this.handleDragStart);
+    this.handleDragEnd(); 
+}};
         </script>
         """
 

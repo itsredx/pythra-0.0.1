@@ -47,3 +47,51 @@ class TextEditingController:
 
     def __repr__(self):
         return f"TextEditingController(text='{self.text}')"
+
+
+# class SliderController:
+#     """Manages the value for a Slider widget."""
+#     def __init__(self, value: float = 0.0):
+#         self._value = value
+#         self._listeners: List[Callable] = []
+
+#     @property
+#     def value(self) -> float:
+#         return self._value
+
+#     @value.setter
+#     def value(self, new_value: float):
+#         # Use a tolerance for float comparison
+#         if abs(self._value - new_value) > 1e-9:
+#             self._value = new_value
+#             self._notify_listeners()
+
+#     def addListener(self, listener: Callable):
+#         """Register a closure to be called when the value changes."""
+#         self._listeners.append(listener)
+
+#     def removeListener(self, listener: Callable):
+#         """Remove a previously registered closure."""
+#         if listener in self._listeners:
+#             self._listeners.remove(listener)
+
+#     def _notify_listeners(self):
+#         """Call all registered listeners."""
+#         for listener in self._listeners:
+#             listener()
+
+#     def __repr__(self):
+#         return f"SliderController(value={self._value})"
+
+# In pythra/controllers.py (or a similar file)
+
+class SliderController:
+    """
+    Manages the value of a Slider widget.
+
+    A SliderController is used to read and modify the current value of a Slider.
+    The parent widget that creates the controller is responsible for updating its
+    value within a `setState` call to trigger a rebuild.
+    """
+    def __init__(self, value: float = 0.0):
+        self.value = value

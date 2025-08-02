@@ -97,6 +97,24 @@ class Api(QObject):
         else:
             print(f"Warning: Input callback '{callback_name}' not found.")
 
+     # --- ADD THIS NEW SLOT FOR THE SLIDER ---
+    @Slot(str, float, result=None)
+    def on_drag_update(self, callback_name, value):
+        """
+        Slot to handle 'oninput' events from range sliders.
+        Executes the registered callback with the new float value.
+        """
+        callback = self.callbacks.get(callback_name)
+        print("value: ", value)
+        if callback:
+            try:
+                callback(value)
+            except Exception as e:
+                print(f"Error executing slider callback '{callback_name}': {e}")
+        else:
+            print(f"Warning: Slider callback '{callback_name}' not found.")
+    # --- END OF NEW SLOT ---
+
     @Slot(str, int)
     def send_message(self, message, *args):
         print(f"Frontend message: {message}, ", *args)
@@ -297,6 +315,7 @@ def create_window(
         window.show_max_window()
     else:
         window.show_window()
+        
     return window
 
 

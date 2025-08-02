@@ -4,6 +4,7 @@ from pythra.core import Framework
 from pythra.widgets import *
 from pythra.state import StatefulWidget, State
 from pythra.base import Key
+from pythra.controllers import SliderController
 
 from pythra import (
     Framework, State, StatefulWidget, Key, Container,
@@ -12,6 +13,60 @@ from pythra import (
     ButtonStyle, BoxDecoration, BorderRadius, Alignment, # <-- ADD THESE IMPORTS
     TextEditingController, InputDecoration,
 )
+
+# In your main.py or any component's build method
+
+class MyComponent(StatefulWidget):
+    def __init__(self, key: Key):
+        super().__init__(key=key)
+
+    def createState(self):
+        return MyComponentState()
+
+class MyComponentState(State):
+    def __init__(self):
+        super().__init__()
+        self.slider_controller = SliderController(value=0.5)
+
+    def handle_slider_change(self, new_value):
+        print(f"Slider value changed to: {new_value}")
+        # The Slider's internal state handles the visual update automatically.
+        # We just store the final value.
+        self.slider_controller.value = new_value
+        self.setState()
+        # No need to call setState here unless this value affects other widgets.
+
+    def move_slider(self):
+        # self.slider_controller.value += 0.1
+        # self.setState()
+        pass
+
+    def build(self) -> Widget:
+        return Column(
+            key=Key("my_volume_slider_column"),
+            crossAxisAlignment = CrossAxisAlignment.STRETCH,
+            children=[
+                Text(f"Current Value: {self.slider_controller.value}", key=Key("my_volume_slider_value"),),
+                Slider(
+                    key=Key("my_volume_slider"),
+                    controller=self.slider_controller,
+                    onChanged=self.handle_slider_change,
+                    min=0.0,
+                    max=1.0,
+                    divisions=10, # Creates 10 discrete steps
+                    activeColor=Colors.green,
+                    thumbColor=Colors.white
+                ),
+                SizedBox(height=24),
+                ElevatedButton(
+                        onPressed=self.move_slider,
+                        child=Text("Move"),
+                    ),
+                    SizedBox(height=24),
+            ]
+        )
+
+
 
 class MyForm(StatefulWidget):
     def __init__(self, key: Key):
@@ -27,6 +82,7 @@ class MyFormState(State):
         self.username = ""
         self.password = ""
         self.logged = ""
+        self.my_slider = MyComponent(key=Key("my_slider"))
 
         # --- State now holds controllers, not raw strings ---
         self.username_controller = TextEditingController(text="initial text")
@@ -130,6 +186,8 @@ class MyFormState(State):
                     ),
                     SizedBox(height=24),
                     Text(self.username_controller.text, key=Key("logged")),
+                    SizedBox(height=24),
+                    self.my_slider
                 ]
             )
         )

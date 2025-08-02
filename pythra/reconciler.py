@@ -282,6 +282,20 @@ class Reconciler:
             }
             result.js_initializers.append(initializer_data)
 
+
+        if "type" in new_props and "init_slider" in new_props:
+            print("SLIDER INIT")
+            if html_id != new_id:
+                old_id, new_id = new_id, html_id
+            initializer_data = {
+                "type": "slider",
+                "target_id": html_id,
+                "data": new_props,
+                "before_id": old_id,
+            }
+            result.js_initializers.append(initializer_data)
+        
+
         # --- END NEW ---
         result.new_rendered_map[key] = {
             "html_id": html_id,
@@ -421,14 +435,23 @@ class Reconciler:
             "onTapName": "onTap",
             "onItemTapName": "onItemTap",
             "onChangedName": "onChanged",
+            "onDragName":"onDrag",
         }
+        print("props: ", props)
+        if "onDragName" in props and "onDrag" in props:
+            print(props["onDragName"], " ", props["onDrag"])
+            if (cb_name := props["onDragName"]) and (
+                cb_func := props["onDrag"]
+            ):
+                result.registered_callbacks[cb_name] = cb_func
+                print(f"Callback registerd sucssesfully [{cb_name}] with function [{cb_func}]")
         for prop_name, func_name in callback_props.items():
             if prop_name in props and hasattr(widget, func_name):
                 if (cb_name := props[prop_name]) and (
                     cb_func := getattr(widget, func_name)
                 ):
                     result.registered_callbacks[cb_name] = cb_func
-                    # print(f"Callback registerd sucssesfully [{cb_name}] with function [{cb_func}]")
+                    print(f"Callback registerd sucssesfully [{cb_name}] with function [{cb_func}]")
 
     def _get_widget_render_tag(self, widget: "Widget") -> str:
         widget_type_name = type(widget).__name__
