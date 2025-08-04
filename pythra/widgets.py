@@ -491,13 +491,15 @@ class ElevatedButton(Widget):
                  key: Optional[Key] = None,
                  onPressed: Optional[Callable] = None,
                  onPressedName: Optional[str] = None,
-                 style: Optional[ButtonStyle] = None):
+                 style: Optional[ButtonStyle] = None,
+                 callbackArgs: Optional[List] = None):
 
         super().__init__(key=key, children=[child])
         self.child = child
 
         self.onPressed = onPressed
         self.onPressed_id = onPressedName if onPressedName else (onPressed.__name__ if onPressed else None)
+        self.callbackArgs = callbackArgs
 
         self.style = style or ButtonStyle( # Provide some sensible defaults for ElevatedButton
              backgroundColor=Colors.blue, # Example default
@@ -529,6 +531,7 @@ class ElevatedButton(Widget):
             # 'style_details': self.style.to_dict(), # Or specific props if needed
             'css_class': self.css_class,
             'onPressedName': self.onPressed_id,
+            'onPressedArgs': self.callbackArgs if self.callbackArgs else [],
         }
         return {k: v for k, v in props.items() if v is not None}
 
@@ -5533,7 +5536,9 @@ class Slider(Widget):
     def __init__(self,
                  key: Key,
                  controller: SliderController,
-                 onChanged: Callable[[float], None],
+                 onChanged: Callable[[float], None] = None,
+                 onChangeStart: Callable[[float], None]=None,
+                 onChangeEnd: Callable[[float], None]=None,
                  min: float = 0.0,
                  max: float = 1.0,
                  divisions: Optional[int] = None,
@@ -5548,6 +5553,8 @@ class Slider(Widget):
         
         self.controller = controller
         self.onChanged = onChanged
+        self.onChangeStart = onChangeStart
+        self.onChangeEnd = onChangeEnd
         self.min = min
         self.max = max
         self.divisions = divisions
@@ -5571,11 +5578,14 @@ class Slider(Widget):
         else:
             self.css_class = Slider.shared_styles[self.style_key]
 
-    def _handle_drag_update(self, new_value: float):
+        self.drag_ended: bool = self.controller.isDragEnded
+
+    def _handle_drag_update(self, new_value: float, drag_ended: bool,):
         """
         Internal handler that receives the raw value from JS, snaps it,
         and then calls the user-provided `onChanged` callback.
         """
+        self.controller.isDragEnded = drag_ended
         clamped_value = max(self.min, min(self.max, new_value))
         print("Draged")
         
@@ -5590,9 +5600,14 @@ class Slider(Widget):
         if self.onChanged:
             self.onChanged(clamped_value)
 
+        if self.onChangeEnd and drag_ended:
+            # self.drag_ended = drag_ended
+            self.onChangeEnd(clamped_value)
+
     def render_props(self) -> Dict[str, Any]:
         """Pass all necessary data to the reconciler and JS engine."""
         current_value = self.controller.value
+        isDragEnded = self.controller.isDragEnded
         range_val = self.max - self.min
         percentage = ((current_value - self.min) / range_val) * 100 if range_val > 0 else 0
 
@@ -5602,10 +5617,12 @@ class Slider(Widget):
             "type": "slider",
             "onDragName": self.on_drag_update_name,
             "onDrag": self._handle_drag_update,
+            "isDragEnded" : isDragEnded,
             "slider_options": {
                 "min": self.min,
                 "max": self.max,
-                "onDragName": self.on_drag_update_name
+                "onDragName": self.on_drag_update_name,
+                "isDragEnded" : isDragEnded,
             },
             "style": {
                 "--slider-percentage": f"{percentage}%",
@@ -5623,6 +5640,7 @@ class Slider(Widget):
         style_prop = props.get('style', {})
         percentage_str = style_prop.get('--slider-percentage', '0%')
         style_attr = f'style="width: 100%; --slider-percentage: {percentage_str};"'
+        print("genrating slider html with: ", style_attr)
         
         return f"""
         <div id="{html_id}" class="slider-container {css_class}" {style_attr}>

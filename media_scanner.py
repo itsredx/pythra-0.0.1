@@ -149,6 +149,11 @@ def scan_media_library(
                 final_library.append(song_data)
     
     # 3. Save the updated cache
+    # Assign unique incremental IDs to each song
+    for idx, song in enumerate(final_library, start=1):
+        song["id"] = idx
+
+    # 3. Save the updated cache
     print("Saving updated library cache...")
     try:
         with open(library_cache_file, 'w', encoding='utf-8') as f:

@@ -51,15 +51,60 @@ from pythra import (
     ScrollbarTheme,
     TextEditingController,
     InputDecoration,
+    Slider,
+    SliderController,
     BorderSide,  # <-- ADD THESE IMPORTS
 )
 
 # import math  # For the StarClipper
 
 
+# In your main.py or any component's build method
+
+
+class MyComponent(StatefulWidget):
+    def __init__(self, key: Key):
+        super().__init__(key=key)
+
+    def createState(self):
+        return MyComponentState()
+
+
+class MyComponentState(State):
+    def __init__(self):
+        super().__init__()
+        self.slider_controller = SliderController(value=0.5)
+
+    def handle_slider_change(self, new_value):
+        print(f"Slider value changed to: {new_value}")
+        # The Slider's internal state handles the visual update automatically.
+        # We just store the final value.
+        self.slider_controller.value = new_value
+        self.setState()
+        # No need to call setState here unless this value affects other widgets.
+
+    def move_slider(self):
+        self.slider_controller.value += 0.1
+        self.setState()
+        pass
+
+    def build(self) -> Widget:
+        return Slider(
+            key=Key("my_volume_slider"),
+            controller=self.slider_controller,
+            onChangeEnd=self.handle_slider_change,
+            min=0.0,
+            max=1.0,
+            divisions=10,
+            activeColor=Colors.hex("#363636"),
+            thumbColor=Colors.hex("#FFF"),#FF94DA
+        )
+
+
 class ControlsState(State):
     def __init__(self):
         super().__init__()
+        self.my_slider = MyComponent(key=Key("my_slider"))
 
     def build(self) -> Widget:
         # print(f"\n--- Building Controls UI ---")
@@ -88,24 +133,25 @@ class ControlsState(State):
                                     fontFamily="verdana",
                                 ),
                             ),
-                            SizedBox(width=8),
-                            Container(
-                                width="100%",
-                                height=9,
-                                color=Colors.hex("#D9D9D9"),
-                                decoration=BoxDecoration(
-                                    borderRadius=BorderRadius.all(3)
-                                ),
-                                child=Container(
-                                    width="66%",
-                                    height=9,
-                                    color=Colors.hex("#363636"),
-                                    decoration=BoxDecoration(
-                                        borderRadius=BorderRadius.all(3)
-                                    ),
-                                ),
-                            ),
-                            SizedBox(width=8),
+                            SizedBox(width=12),
+                            # Container(
+                            #     width="100%",
+                            #     height=9,
+                            #     color=Colors.hex("#D9D9D9"),
+                            #     decoration=BoxDecoration(
+                            #         borderRadius=BorderRadius.all(3)
+                            #     ),
+                            #     child=Container(
+                            #         width="66%",
+                            #         height=9,
+                            #         color=Colors.hex("#363636"),
+                            #         decoration=BoxDecoration(
+                            #             borderRadius=BorderRadius.all(3)
+                            #         ),
+                            #     ),
+                            # ),
+                            Container(width="100%", child=self.my_slider),
+                            SizedBox(width=12),
                             Text(
                                 "02:23",
                                 style=TextStyle(
