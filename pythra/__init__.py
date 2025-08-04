@@ -19,7 +19,7 @@ from .base import Widget
 from .base import Key # Prefer placing Key in base.py as it's fundamental
 from .state import State, StatefulWidget, StatelessWidget
 from .icons import Icons, IconData
-from .controllers import TextEditingController
+from .controllers import TextEditingController, SliderController
 
 
 # --- Styling Utilities and Constants ---
@@ -118,6 +118,7 @@ from .widgets import (
     ClipPath,
 
     TextField,
+    Slider,
     
     # Add any other core widgets you want easily accessible...
 )
@@ -162,6 +163,13 @@ __all__ = [
     'SnackBarAction',
     # Overlays/Feedback
     'Dialog', 'BottomSheet', 'SnackBar',
+
+    # --- Path / Painters ---
+    'ClipPath',
+
+    'TextField',
+
+    'Slider',
 ]
 
 

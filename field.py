@@ -36,9 +36,17 @@ class MyComponentState(State):
         self.setState()
         # No need to call setState here unless this value affects other widgets.
 
+    def handle_slider_change_async(self, new_value):
+        print(f"Slider value changed to: {new_value}")
+        # The Slider's internal state handles the visual update automatically.
+        # We just store the final value.
+        self.slider_controller.value = new_value
+        self.setState()
+        # No need to call setState here unless this value affects other widgets.
+
     def move_slider(self):
-        # self.slider_controller.value += 0.1
-        # self.setState()
+        self.slider_controller.value += 0.1
+        self.setState()
         pass
 
     def build(self) -> Widget:
@@ -46,43 +54,42 @@ class MyComponentState(State):
             key=Key("my_volume_slider_column"),
             crossAxisAlignment = CrossAxisAlignment.STRETCH,
             children=[
-                Text(f"Current Value: {self.slider_controller.value}", key=Key("my_volume_slider_value"),),
+                Text(f"Current Value: {self.slider_controller.value:.2f}", key=Key("my_volume_slider_value"),),
                 Slider(
                     key=Key("my_volume_slider"),
                     controller=self.slider_controller,
-                    onChanged=self.handle_slider_change,
+                    # onChanged=self.handle_slider_change_async,
+                    onChangeEnd=self.handle_slider_change,
                     min=0.0,
                     max=1.0,
                     divisions=10, # Creates 10 discrete steps
                     activeColor=Colors.green,
                     thumbColor=Colors.white
                 ),
-                SizedBox(height=24),
+                SizedBox(key=Key("sizedbox-for-mv-slider-btn"),height=24),
                 ElevatedButton(
+                    key=Key("mv-slider-btn"),
                         onPressed=self.move_slider,
                         child=Text("Move"),
                     ),
-                    SizedBox(height=24),
             ]
         )
 
 
-
-class MyForm(StatefulWidget):
+class MyTextField(StatefulWidget):
     def __init__(self, key: Key):
         super().__init__(key=key)
 
     def createState(self):
-        return MyFormState()
+        return MyTextFieldState()
 
-class MyFormState(State):
+class MyTextFieldState(State):
     def __init__(self):
         super().__init__()
         # --- State variables to hold the text field values ---
         self.username = ""
         self.password = ""
         self.logged = ""
-        self.my_slider = MyComponent(key=Key("my_slider"))
 
         # --- State now holds controllers, not raw strings ---
         self.username_controller = TextEditingController(text="initial text")
@@ -119,9 +126,11 @@ class MyFormState(State):
             self.login_error = None
             self.setState() # Re-render to remove the error message
 
-    def attempt_login(self):
+    def attempt_login(self, args):
         username = self.username_controller.text
         password = self.password_controller.text
+        print(args[0], "From attempt_login")
+        print(args[1], "From attempt_login")
         
         print(f"Login attempt: {username} / {password}")
         if len(username) <= 3:
@@ -135,8 +144,7 @@ class MyFormState(State):
 
         print(self.login_error)
 
-
-    def build(self):
+    def build(self) -> Widget:
         username_decoration = InputDecoration(
             label="Username",
             errorText=self.login_error
@@ -149,25 +157,18 @@ class MyFormState(State):
             filled=False
             # You could add a suffix icon to toggle visibility here
         )
-        return Container(
-            key=Key("Build_container"),
-            alignment=Alignment.top_center(),
-            padding=EdgeInsets.all(32),
-            child=Column(
-                key=Key("main__column"),
-                crossAxisAlignment=CrossAxisAlignment.STRETCH,
-                children=[
-                    Text("Login Form",key=Key('Login_header'), style=TextStyle(fontSize=24, fontWeight='bold')),
-                    SizedBox(height=24),
-                    
-                    TextField(
+        return Column(
+            key=Key("my_textfields_column"),
+            crossAxisAlignment = CrossAxisAlignment.STRETCH,
+            children=[
+                TextField(
                         # The Key is CRITICAL for preserving focus!
                         key=Key("username_field"),
                         controller=self.username_controller,
                         decoration= username_decoration,
                     ),
                     
-                    SizedBox(height=16),
+                    SizedBox(key=Key("sizedbox-for-txt-fields"),height=16),
 
                     TextField(
                         key=Key("password_field"), # Another unique key
@@ -178,14 +179,47 @@ class MyFormState(State):
                         # You would add a property to make this a password type input
                     ),
                     
-                    SizedBox(height=24),
+                    SizedBox(key=Key("sizedbox-for-btn"),height=24),
                     
                     ElevatedButton(
+                        key=Key("login-btn"),
                         onPressed=self.attempt_login,
+                        callbackArgs=['clalback', 23],
                         child=Text("Login"),
                     ),
-                    SizedBox(height=24),
+                    SizedBox(key=Key("sizedbox-for-logged-txt"),height=24),
                     Text(self.username_controller.text, key=Key("logged")),
+            ]
+        )
+
+
+class MyForm(StatefulWidget):
+    def __init__(self, key: Key):
+        super().__init__(key=key)
+
+    def createState(self):
+        return MyFormState()
+
+class MyFormState(State):
+    def __init__(self):
+        super().__init__()
+        self.my_textfield = MyTextField(key=Key("my_textfields"))
+        self.my_slider = MyComponent(key=Key("my_slider"))
+
+
+    def build(self):
+        
+        return Container(
+            key=Key("Build_container"),
+            alignment=Alignment.top_center(),
+            padding=EdgeInsets.all(32),
+            child=Column(
+                key=Key("main__column"),
+                crossAxisAlignment=CrossAxisAlignment.STRETCH,
+                children=[
+                    Text("Login Form",key=Key('Login_header'), style=TextStyle(fontSize=24, fontWeight='bold')),
+                    SizedBox(height=24),
+                    self.my_textfield,
                     SizedBox(height=24),
                     self.my_slider
                 ]

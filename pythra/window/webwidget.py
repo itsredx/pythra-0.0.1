@@ -64,8 +64,11 @@ class Api(QObject):
         self.callbacks.clear()
 
     @Slot(str, int, result=str)
+    @Slot(str, str, result=str)
+    @Slot(str, list, result=str)
     def on_pressed(self, callback_name, *args):
         if callback_name in self.callbacks:
+            for x in args[0]: f"webwiget arg: {x}"
             self.callbacks[callback_name](*args)
 
             return f"Callback '{callback_name}' executed successfully."
@@ -98,17 +101,17 @@ class Api(QObject):
             print(f"Warning: Input callback '{callback_name}' not found.")
 
      # --- ADD THIS NEW SLOT FOR THE SLIDER ---
-    @Slot(str, float, result=None)
-    def on_drag_update(self, callback_name, value):
+    @Slot(str, float, bool, result=None)
+    def on_drag_update(self, callback_name, value, drag_ended):
         """
         Slot to handle 'oninput' events from range sliders.
         Executes the registered callback with the new float value.
         """
         callback = self.callbacks.get(callback_name)
-        print("value: ", value)
+        print("callback drag_ended: ", drag_ended)
         if callback:
             try:
-                callback(value)
+                callback(value, drag_ended)
             except Exception as e:
                 print(f"Error executing slider callback '{callback_name}': {e}")
         else:

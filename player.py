@@ -71,6 +71,9 @@ from pythra import (
 import math  # For the StarClipper
 
 
+def play_music(args):
+    print("play:", args)
+
 # --- Application State ---
 class PlayerAppState(State):
     def __init__(self):
@@ -83,324 +86,325 @@ class PlayerAppState(State):
 
         self.search_widget = SearchComponent(key=Key("my_search_field_widget"))
 
-        self.control_widget = Container(
-            width="100%",
-            height=112,
-            padding=EdgeInsets.all(14),
-            # color=Colors.green,
-            # padding=EdgeInsets.all(9),
-            decoration=BoxDecoration(
-                color=Colors.hex("#484848"),
-                borderRadius=BorderRadius.circular(18.0),
-            ),
-            child=Column(
-                mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
-                crossAxisAlignment=CrossAxisAlignment.START,
-                children=[
-                    Row(
-                        children=[
-                            Text(
-                                "01:35",
-                                style=TextStyle(
-                                    color=Colors.hex("#D9D9D9"),
-                                    fontSize=12.0,
-                                    fontFamily="verdana",
-                                ),
-                            ),
-                            SizedBox(width=8),
-                            Container(
-                                width="100%",
-                                height=9,
-                                color=Colors.hex("#D9D9D9"),
-                                decoration=BoxDecoration(
-                                    borderRadius=BorderRadius.all(3)
-                                ),
-                                child=Container(
-                                    width="66%",
-                                    height=9,
-                                    color=Colors.hex("#363636"),
-                                    decoration=BoxDecoration(
-                                        borderRadius=BorderRadius.all(3)
-                                    ),
-                                ),
-                            ),
-                            SizedBox(width=8),
-                            Text(
-                                "02:23",
-                                style=TextStyle(
-                                    color=Colors.hex("#D9D9D9"),
-                                    fontSize=12.0,
-                                    fontFamily="verdana",
-                                ),
-                            ),
-                        ]
-                    ),
-                    Row(
-                        children=[
-                            Row(
-                                children=[
-                                    ElevatedButton(
-                                        child=Container(
-                                            width=24,
-                                            height=24,
-                                            color=Colors.hex("#363636"),
-                                            padding=EdgeInsets.all(4),
-                                            child=Icon(
-                                                Icons.shuffle_rounded,
-                                                color=Colors.hex("#D9D9D9"),
-                                                size=16,
-                                                fill=True,
-                                                weight=700,
-                                            ),
-                                            decoration=BoxDecoration(
-                                                borderRadius=BorderRadius.all(4)
-                                            ),
-                                        ),
-                                        style=ButtonStyle(
-                                            padding=EdgeInsets.all(0),
-                                            margin=EdgeInsets.all(0),
-                                            shape=BorderRadius.circular(4.0),
-                                            backgroundColor=Colors.transparent,
-                                        ),
-                                    ),
-                                    SizedBox(width=16),
-                                    ElevatedButton(
-                                        child=Container(
-                                            width=24,
-                                            height=24,
-                                            color=Colors.hex("#363636"),
-                                            padding=EdgeInsets.all(4),
-                                            child=Icon(
-                                                Icons.skip_previous_rounded,
-                                                color=Colors.hex("#D9D9D9"),
-                                                size=16,
-                                                fill=True,
-                                                weight=700,
-                                            ),
-                                            decoration=BoxDecoration(
-                                                borderRadius=BorderRadius.all(4)
-                                            ),
-                                        ),
-                                        style=ButtonStyle(
-                                            padding=EdgeInsets.all(0),
-                                            margin=EdgeInsets.all(0),
-                                            shape=BorderRadius.circular(4.0),
-                                            backgroundColor=Colors.transparent,
-                                        ),
-                                    ),
-                                    SizedBox(width=16),
-                                    ElevatedButton(
-                                        child=Container(
-                                            width=48,
-                                            height=48,
-                                            color=Colors.gradient(
-                                                "to bottom right",
-                                                Colors.red,
-                                                Colors.blue,
-                                            ),
-                                            padding=EdgeInsets.all(2),
-                                            child=Container(
-                                                width=44,
-                                                height=44,
-                                                color=Colors.hex(
-                                                    "#767676"
-                                                ),  # Colors.hex("#D9D9D9"),
-                                                padding=EdgeInsets.all(10),
-                                                child=Container(
-                                                    width=24,
-                                                    height=24,
-                                                    color=Colors.hex(
-                                                        "#363636"
-                                                    ),  # Colors.gradient("to bottom right", Colors.red, Colors.blue), #,
-                                                    padding=EdgeInsets.all(4),
-                                                    child=Icon(
-                                                        Icons.play_arrow_rounded,
-                                                        color=Colors.hex("#D9D9D9"),
-                                                        size=16,
-                                                        fill=True,
-                                                        weight=700,
-                                                    ),
-                                                    decoration=BoxDecoration(
-                                                        borderRadius=BorderRadius.all(4)
-                                                    ),
-                                                ),
-                                                decoration=BoxDecoration(
-                                                    borderRadius=BorderRadius.all(14)
-                                                ),
-                                            ),
-                                            decoration=BoxDecoration(
-                                                borderRadius=BorderRadius.all(16)
-                                            ),
-                                        ),
-                                        style=ButtonStyle(
-                                            padding=EdgeInsets.all(0),
-                                            margin=EdgeInsets.all(0),
-                                            shape=BorderRadius.circular(16.0),
-                                            backgroundColor=Colors.transparent,
-                                        ),
-                                    ),
-                                    SizedBox(width=16),
-                                    ElevatedButton(
-                                        child=Container(
-                                            width=24,
-                                            height=24,
-                                            color=Colors.hex("#363636"),
-                                            padding=EdgeInsets.all(4),
-                                            child=Icon(
-                                                Icons.skip_next_rounded,
-                                                color=Colors.hex("#D9D9D9"),
-                                                size=16,
-                                                fill=True,
-                                                weight=700,
-                                            ),
-                                            decoration=BoxDecoration(
-                                                borderRadius=BorderRadius.all(4)
-                                            ),
-                                        ),
-                                        style=ButtonStyle(
-                                            padding=EdgeInsets.all(0),
-                                            margin=EdgeInsets.all(0),
-                                            shape=BorderRadius.circular(4.0),
-                                            backgroundColor=Colors.transparent,
-                                        ),
-                                    ),
-                                    SizedBox(width=16),
-                                    ElevatedButton(
-                                        child=Container(
-                                            width=24,
-                                            height=24,
-                                            color=Colors.hex("#363636"),
-                                            padding=EdgeInsets.all(4),
-                                            child=Icon(
-                                                Icons.repeat_rounded,
-                                                color=Colors.hex("#D9D9D9"),
-                                                size=16,
-                                                fill=True,
-                                                weight=700,
-                                            ),
-                                            decoration=BoxDecoration(
-                                                borderRadius=BorderRadius.all(4)
-                                            ),
-                                        ),
-                                        style=ButtonStyle(
-                                            padding=EdgeInsets.all(0),
-                                            margin=EdgeInsets.all(0),
-                                            shape=BorderRadius.circular(4.0),
-                                            backgroundColor=Colors.transparent,
-                                        ),
-                                    ),
-                                    SizedBox(width=16),
-                                ]
-                            ),
-                            Row(
-                                mainAxisAlignment=MainAxisAlignment.END,
-                                children=[
-                                    ElevatedButton(
-                                        child=Container(
-                                            width=24,
-                                            height=24,
-                                            color=Colors.hex("#363636"),
-                                            padding=EdgeInsets.all(4),
-                                            child=Icon(
-                                                Icons.volume_up_rounded,
-                                                color=Colors.hex("#D9D9D9"),
-                                                size=16,
-                                                fill=True,
-                                                weight=700,
-                                            ),
-                                            decoration=BoxDecoration(
-                                                borderRadius=BorderRadius.all(4)
-                                            ),
-                                        ),
-                                        style=ButtonStyle(
-                                            padding=EdgeInsets.all(0),
-                                            margin=EdgeInsets.all(0),
-                                            shape=BorderRadius.circular(4.0),
-                                            backgroundColor=Colors.transparent,
-                                        ),
-                                    ),
-                                    SizedBox(width=16),
-                                    ElevatedButton(
-                                        child=Container(
-                                            width=24,
-                                            height=24,
-                                            color=Colors.hex("#363636"),
-                                            padding=EdgeInsets.all(4),
-                                            child=Icon(
-                                                Icons.open_in_full_rounded,
-                                                color=Colors.hex("#D9D9D9"),
-                                                size=16,
-                                                fill=True,
-                                                weight=700,
-                                            ),
-                                            decoration=BoxDecoration(
-                                                borderRadius=BorderRadius.all(4)
-                                            ),
-                                        ),
-                                        style=ButtonStyle(
-                                            padding=EdgeInsets.all(0),
-                                            margin=EdgeInsets.all(0),
-                                            shape=BorderRadius.circular(4.0),
-                                            backgroundColor=Colors.transparent,
-                                        ),
-                                    ),
-                                    SizedBox(width=16),
-                                    ElevatedButton(
-                                        child=Container(
-                                            width=24,
-                                            height=24,
-                                            color=Colors.hex("#363636"),
-                                            padding=EdgeInsets.all(4),
-                                            child=Icon(
-                                                Icons.open_in_new_rounded,
-                                                color=Colors.hex("#D9D9D9"),
-                                                size=16,
-                                                fill=True,
-                                                weight=700,
-                                            ),
-                                            decoration=BoxDecoration(
-                                                borderRadius=BorderRadius.all(4)
-                                            ),
-                                        ),
-                                        style=ButtonStyle(
-                                            padding=EdgeInsets.all(0),
-                                            margin=EdgeInsets.all(0),
-                                            shape=BorderRadius.circular(4.0),
-                                            backgroundColor=Colors.transparent,
-                                        ),
-                                    ),
-                                    SizedBox(width=16),
-                                    ElevatedButton(
-                                        child=Container(
-                                            width=24,
-                                            height=24,
-                                            color=Colors.hex("#363636"),
-                                            padding=EdgeInsets.all(4),
-                                            child=Icon(
-                                                Icons.expand_less_rounded,
-                                                color=Colors.hex("#D9D9D9"),
-                                                size=16,
-                                                fill=True,
-                                                weight=700,
-                                            ),
-                                            decoration=BoxDecoration(
-                                                borderRadius=BorderRadius.all(4)
-                                            ),
-                                        ),
-                                        style=ButtonStyle(
-                                            padding=EdgeInsets.all(0),
-                                            margin=EdgeInsets.all(0),
-                                            shape=BorderRadius.circular(4.0),
-                                            backgroundColor=Colors.transparent,
-                                        ),
-                                    ),
-                                ],
-                            ),
-                        ]
-                    ),
-                ],
-            ),
-        )
+        self.control_widget = Controls(key=Key("my_control_widget_with_slider"))
+        # Container(
+        #     width="100%",
+        #     height=112,
+        #     padding=EdgeInsets.all(14),
+        #     # color=Colors.green,
+        #     # padding=EdgeInsets.all(9),
+        #     decoration=BoxDecoration(
+        #         color=Colors.hex("#484848"),
+        #         borderRadius=BorderRadius.circular(18.0),
+        #     ),
+        #     child=Column(
+        #         mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
+        #         crossAxisAlignment=CrossAxisAlignment.START,
+        #         children=[
+        #             Row(
+        #                 children=[
+        #                     Text(
+        #                         "01:35",
+        #                         style=TextStyle(
+        #                             color=Colors.hex("#D9D9D9"),
+        #                             fontSize=12.0,
+        #                             fontFamily="verdana",
+        #                         ),
+        #                     ),
+        #                     SizedBox(width=8),
+        #                     Container(
+        #                         width="100%",
+        #                         height=9,
+        #                         color=Colors.hex("#D9D9D9"),
+        #                         decoration=BoxDecoration(
+        #                             borderRadius=BorderRadius.all(3)
+        #                         ),
+        #                         child=Container(
+        #                             width="66%",
+        #                             height=9,
+        #                             color=Colors.hex("#363636"),
+        #                             decoration=BoxDecoration(
+        #                                 borderRadius=BorderRadius.all(3)
+        #                             ),
+        #                         ),
+        #                     ),
+        #                     SizedBox(width=8),
+        #                     Text(
+        #                         "02:23",
+        #                         style=TextStyle(
+        #                             color=Colors.hex("#D9D9D9"),
+        #                             fontSize=12.0,
+        #                             fontFamily="verdana",
+        #                         ),
+        #                     ),
+        #                 ]
+        #             ),
+        #             Row(
+        #                 children=[
+        #                     Row(
+        #                         children=[
+        #                             ElevatedButton(
+        #                                 child=Container(
+        #                                     width=24,
+        #                                     height=24,
+        #                                     color=Colors.hex("#363636"),
+        #                                     padding=EdgeInsets.all(4),
+        #                                     child=Icon(
+        #                                         Icons.shuffle_rounded,
+        #                                         color=Colors.hex("#D9D9D9"),
+        #                                         size=16,
+        #                                         fill=True,
+        #                                         weight=700,
+        #                                     ),
+        #                                     decoration=BoxDecoration(
+        #                                         borderRadius=BorderRadius.all(4)
+        #                                     ),
+        #                                 ),
+        #                                 style=ButtonStyle(
+        #                                     padding=EdgeInsets.all(0),
+        #                                     margin=EdgeInsets.all(0),
+        #                                     shape=BorderRadius.circular(4.0),
+        #                                     backgroundColor=Colors.transparent,
+        #                                 ),
+        #                             ),
+        #                             SizedBox(width=16),
+        #                             ElevatedButton(
+        #                                 child=Container(
+        #                                     width=24,
+        #                                     height=24,
+        #                                     color=Colors.hex("#363636"),
+        #                                     padding=EdgeInsets.all(4),
+        #                                     child=Icon(
+        #                                         Icons.skip_previous_rounded,
+        #                                         color=Colors.hex("#D9D9D9"),
+        #                                         size=16,
+        #                                         fill=True,
+        #                                         weight=700,
+        #                                     ),
+        #                                     decoration=BoxDecoration(
+        #                                         borderRadius=BorderRadius.all(4)
+        #                                     ),
+        #                                 ),
+        #                                 style=ButtonStyle(
+        #                                     padding=EdgeInsets.all(0),
+        #                                     margin=EdgeInsets.all(0),
+        #                                     shape=BorderRadius.circular(4.0),
+        #                                     backgroundColor=Colors.transparent,
+        #                                 ),
+        #                             ),
+        #                             SizedBox(width=16),
+        #                             ElevatedButton(
+        #                                 child=Container(
+        #                                     width=48,
+        #                                     height=48,
+        #                                     color=Colors.gradient(
+        #                                         "to bottom right",
+        #                                         Colors.red,
+        #                                         Colors.blue,
+        #                                     ),
+        #                                     padding=EdgeInsets.all(2),
+        #                                     child=Container(
+        #                                         width=44,
+        #                                         height=44,
+        #                                         color=Colors.hex(
+        #                                             "#767676"
+        #                                         ),  # Colors.hex("#D9D9D9"),
+        #                                         padding=EdgeInsets.all(10),
+        #                                         child=Container(
+        #                                             width=24,
+        #                                             height=24,
+        #                                             color=Colors.hex(
+        #                                                 "#363636"
+        #                                             ),  # Colors.gradient("to bottom right", Colors.red, Colors.blue), #,
+        #                                             padding=EdgeInsets.all(4),
+        #                                             child=Icon(
+        #                                                 Icons.play_arrow_rounded,
+        #                                                 color=Colors.hex("#D9D9D9"),
+        #                                                 size=16,
+        #                                                 fill=True,
+        #                                                 weight=700,
+        #                                             ),
+        #                                             decoration=BoxDecoration(
+        #                                                 borderRadius=BorderRadius.all(4)
+        #                                             ),
+        #                                         ),
+        #                                         decoration=BoxDecoration(
+        #                                             borderRadius=BorderRadius.all(14)
+        #                                         ),
+        #                                     ),
+        #                                     decoration=BoxDecoration(
+        #                                         borderRadius=BorderRadius.all(16)
+        #                                     ),
+        #                                 ),
+        #                                 style=ButtonStyle(
+        #                                     padding=EdgeInsets.all(0),
+        #                                     margin=EdgeInsets.all(0),
+        #                                     shape=BorderRadius.circular(16.0),
+        #                                     backgroundColor=Colors.transparent,
+        #                                 ),
+        #                             ),
+        #                             SizedBox(width=16),
+        #                             ElevatedButton(
+        #                                 child=Container(
+        #                                     width=24,
+        #                                     height=24,
+        #                                     color=Colors.hex("#363636"),
+        #                                     padding=EdgeInsets.all(4),
+        #                                     child=Icon(
+        #                                         Icons.skip_next_rounded,
+        #                                         color=Colors.hex("#D9D9D9"),
+        #                                         size=16,
+        #                                         fill=True,
+        #                                         weight=700,
+        #                                     ),
+        #                                     decoration=BoxDecoration(
+        #                                         borderRadius=BorderRadius.all(4)
+        #                                     ),
+        #                                 ),
+        #                                 style=ButtonStyle(
+        #                                     padding=EdgeInsets.all(0),
+        #                                     margin=EdgeInsets.all(0),
+        #                                     shape=BorderRadius.circular(4.0),
+        #                                     backgroundColor=Colors.transparent,
+        #                                 ),
+        #                             ),
+        #                             SizedBox(width=16),
+        #                             ElevatedButton(
+        #                                 child=Container(
+        #                                     width=24,
+        #                                     height=24,
+        #                                     color=Colors.hex("#363636"),
+        #                                     padding=EdgeInsets.all(4),
+        #                                     child=Icon(
+        #                                         Icons.repeat_rounded,
+        #                                         color=Colors.hex("#D9D9D9"),
+        #                                         size=16,
+        #                                         fill=True,
+        #                                         weight=700,
+        #                                     ),
+        #                                     decoration=BoxDecoration(
+        #                                         borderRadius=BorderRadius.all(4)
+        #                                     ),
+        #                                 ),
+        #                                 style=ButtonStyle(
+        #                                     padding=EdgeInsets.all(0),
+        #                                     margin=EdgeInsets.all(0),
+        #                                     shape=BorderRadius.circular(4.0),
+        #                                     backgroundColor=Colors.transparent,
+        #                                 ),
+        #                             ),
+        #                             SizedBox(width=16),
+        #                         ]
+        #                     ),
+        #                     Row(
+        #                         mainAxisAlignment=MainAxisAlignment.END,
+        #                         children=[
+        #                             ElevatedButton(
+        #                                 child=Container(
+        #                                     width=24,
+        #                                     height=24,
+        #                                     color=Colors.hex("#363636"),
+        #                                     padding=EdgeInsets.all(4),
+        #                                     child=Icon(
+        #                                         Icons.volume_up_rounded,
+        #                                         color=Colors.hex("#D9D9D9"),
+        #                                         size=16,
+        #                                         fill=True,
+        #                                         weight=700,
+        #                                     ),
+        #                                     decoration=BoxDecoration(
+        #                                         borderRadius=BorderRadius.all(4)
+        #                                     ),
+        #                                 ),
+        #                                 style=ButtonStyle(
+        #                                     padding=EdgeInsets.all(0),
+        #                                     margin=EdgeInsets.all(0),
+        #                                     shape=BorderRadius.circular(4.0),
+        #                                     backgroundColor=Colors.transparent,
+        #                                 ),
+        #                             ),
+        #                             SizedBox(width=16),
+        #                             ElevatedButton(
+        #                                 child=Container(
+        #                                     width=24,
+        #                                     height=24,
+        #                                     color=Colors.hex("#363636"),
+        #                                     padding=EdgeInsets.all(4),
+        #                                     child=Icon(
+        #                                         Icons.open_in_full_rounded,
+        #                                         color=Colors.hex("#D9D9D9"),
+        #                                         size=16,
+        #                                         fill=True,
+        #                                         weight=700,
+        #                                     ),
+        #                                     decoration=BoxDecoration(
+        #                                         borderRadius=BorderRadius.all(4)
+        #                                     ),
+        #                                 ),
+        #                                 style=ButtonStyle(
+        #                                     padding=EdgeInsets.all(0),
+        #                                     margin=EdgeInsets.all(0),
+        #                                     shape=BorderRadius.circular(4.0),
+        #                                     backgroundColor=Colors.transparent,
+        #                                 ),
+        #                             ),
+        #                             SizedBox(width=16),
+        #                             ElevatedButton(
+        #                                 child=Container(
+        #                                     width=24,
+        #                                     height=24,
+        #                                     color=Colors.hex("#363636"),
+        #                                     padding=EdgeInsets.all(4),
+        #                                     child=Icon(
+        #                                         Icons.open_in_new_rounded,
+        #                                         color=Colors.hex("#D9D9D9"),
+        #                                         size=16,
+        #                                         fill=True,
+        #                                         weight=700,
+        #                                     ),
+        #                                     decoration=BoxDecoration(
+        #                                         borderRadius=BorderRadius.all(4)
+        #                                     ),
+        #                                 ),
+        #                                 style=ButtonStyle(
+        #                                     padding=EdgeInsets.all(0),
+        #                                     margin=EdgeInsets.all(0),
+        #                                     shape=BorderRadius.circular(4.0),
+        #                                     backgroundColor=Colors.transparent,
+        #                                 ),
+        #                             ),
+        #                             SizedBox(width=16),
+        #                             ElevatedButton(
+        #                                 child=Container(
+        #                                     width=24,
+        #                                     height=24,
+        #                                     color=Colors.hex("#363636"),
+        #                                     padding=EdgeInsets.all(4),
+        #                                     child=Icon(
+        #                                         Icons.expand_less_rounded,
+        #                                         color=Colors.hex("#D9D9D9"),
+        #                                         size=16,
+        #                                         fill=True,
+        #                                         weight=700,
+        #                                     ),
+        #                                     decoration=BoxDecoration(
+        #                                         borderRadius=BorderRadius.all(4)
+        #                                     ),
+        #                                 ),
+        #                                 style=ButtonStyle(
+        #                                     padding=EdgeInsets.all(0),
+        #                                     margin=EdgeInsets.all(0),
+        #                                     shape=BorderRadius.circular(4.0),
+        #                                     backgroundColor=Colors.transparent,
+        #                                 ),
+        #                             ),
+        #                         ],
+        #                     ),
+        #                 ]
+        #             ),
+        #         ],
+        #     ),
+        # )
 
         # 1) at startup, build your library
         library_path = Path.home() / "Music"
@@ -419,7 +423,9 @@ class PlayerAppState(State):
         self.songs = []
         for entry in raw_library:
             self.songs.append(
-                {
+                {   
+                    "path": entry["path"],
+                    "id" : entry["id"],
                     "title": (
                         f"{entry["title"][:30]}..."
                         if len(entry["title"]) >= 31
@@ -444,6 +450,7 @@ class PlayerAppState(State):
                     "now_playing": False,
                 }
             )
+        # print("songs: ", self.songs)
 
         self.search_field_decoration = InputDecoration(
             hintText="Search",
@@ -490,12 +497,14 @@ class PlayerAppState(State):
                 self.widgets.append(
                     ElevatedButton(
                         key=Key(f"{grp['heading']}_elevated_btn_item_{i}"),
+                        onPressed=play_music,
+                        callbackArgs=[song["title"], song["path"], song["id"], song["sort_id"]],
                         child=Container(
                             key=Key(f"{grp['heading']}_item_{i}"),
                             height=46,
                             color=(
                                 Colors.hex("#363636")
-                                if i % 2 != 0
+                                if song["sort_id"] % 2 != 0
                                 else Colors.transparent
                             ),
                             padding=EdgeInsets.all(9),

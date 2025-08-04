@@ -238,6 +238,11 @@ class Framework:
         on the existing window. This is achieved by regenerating the entire HTML
         body and applying it in one atomic operation, avoiding patch race conditions.
         """
+        # --- PROFILER SETUP ---
+        profiler = cProfile.Profile()
+        profiler.enable()
+        # --- END PROFILER SETUP ---
+
         if not self.window or not self.root_widget:
             print("Hot Restart Error: Application not running.")
             return
@@ -289,12 +294,15 @@ class Framework:
 
         # Generate the script for any necessary JS initializers (e.g., ClipPath, SimpleBar)
         initializer_script_tag = self._generate_initial_js_script(result)
+        initializers_js = initializer_script_tag.replace("<script type=\"module\">", "").replace("import { PythraSlider } from './js/slider.js';", "").replace("</script>","").replace("document.addEventListener('DOMContentLoaded', () => {", "").replace("});//end event listener", "")
+        # print("initializer_script_tag: ", initializer_script_tag)
         
         # We need to extract just the JS commands from inside the <script> tag
         # to run them after the innerHTML has been set.
-        import re
-        match = re.search(r"document\.addEventListener\('DOMContentLoaded', \(\) => \{(.+?)\}\);", initializer_script_tag, re.DOTALL)
-        initializers_js = match.group(1).strip() if match else ""
+        # import re
+        # match = re.search(r"document\.addEventListener\('DOMContentLoaded', \(\) => \{(.+?)\}\);", initializer_script_tag, re.DOTALL)
+        # initializers_js = match.group(1).strip() if match else ""
+        # print("initializers_js: ", initializers_js)
 
         # --- THIS IS THE FIX ---
         # Get the source code for our core JS utility functions.
@@ -321,6 +329,7 @@ class Framework:
                     // DEFINE THE MISSING FUNCTIONS
                     {js_utilities}
                     // NOW, RUN THE INITIALIZERS
+                    console.log(`Tring hot restart`);
                     {initializers_js}
                 }} catch (e) {{
                     console.error("Error running Hot Restart initializers:", e);
@@ -332,6 +341,17 @@ class Framework:
         self.window.evaluate_js(self.id, restart_script)
 
         print(f"--- Hot Restart Complete (Total: {time.time() - start_time:.4f}s) ---")
+        # --- PROFILER REPORTING ---
+        profiler.disable()
+        s = io.StringIO()
+        # Sort stats by 'cumulative time' to see the biggest bottlenecks at the top
+        ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
+        ps.print_stats(20) # Print the top 20 most time-consuming functions
+
+        print("\n--- cProfile Report ---")
+        print(s.getvalue())
+        print("--- End of Report ---\n")
+        # --- END PROFILER REPORTING ---
 
 
 
@@ -1202,7 +1222,7 @@ class Framework:
             #     # For TextField, we target the inner <input> element directly.
             #     input_element_selector = f"document.getElementById('{target_id}_input')"
             #     js_prop_updates.append(f"var inputEl = {input_element_selector}; if(inputEl) inputEl.value = {json.dumps(value)};")
-            print("Props:", props)
+            # print("Props:", props)
 
             if key == "data":
                 js_prop_updates.append(
@@ -1296,15 +1316,23 @@ class Framework:
         # Handle the 'style' dictionary passed from render_props
         if "style" in props and isinstance(props["style"], dict):
             for style_key, style_value in props["style"].items():
-                print("style_key: ",style_key,"style_value: ",style_value)
+                # print("style_key: ",style_key,"style_value: ",style_value)
                 # Convert camelCase to kebab-case for CSS
                 css_prop_kebab = "".join(
                     ["-" + c.lower() if c.isupper() else c for c in style_key]
                 ).lstrip("")
-                print("css_prop_kebab: ", css_prop_kebab)
-                js_prop_updates.append(
-                    f"{element_var}.style.setProperty('{css_prop_kebab}', {json.dumps(style_value)});"
-                )
+                print("css_prop_kebab: ", css_prop_kebab, f"{json.dumps(style_value)}")
+                if css_prop_kebab == "--slider-percentage" and props["isDragEnded"]:
+                    print("drag css", props["isDragEnded"])
+                    js_prop_updates.append(
+                        f"{element_var}.style.setProperty('{css_prop_kebab}', {json.dumps(style_value)});"
+                    )
+                elif css_prop_kebab == "--slider-percentage" and not props["isDragEnded"]:
+                    print("drag css", props["isDragEnded"])
+                elif css_prop_kebab != "--slider-percentage" and "isDragEnded" not in props:
+                    js_prop_updates.append(
+                        f"{element_var}.style.setProperty('{css_prop_kebab}', {json.dumps(style_value)});"
+                    )
         # --- END OF ADDITION ---
 
         # --- NEW: Apply _style_override from the widget instance ---
@@ -1452,7 +1480,7 @@ class Framework:
         # 2. --- THIS IS THE NEW, SMARTER LOGIC ---
         #    Iterate through the entire rendered map to find any widget that
         #    has declared it needs JS initialization via a flag in its render_props.
-        print("mapp: ",result.new_rendered_map.values())
+        # print("mapp: ",result.new_rendered_map.values())
         for node_data in result.new_rendered_map.values():
             props = node_data.get("props", {})
             html_id = node_data.get("html_id")
@@ -1460,7 +1488,7 @@ class Framework:
 
             # Check for our new Slider's flag
             if props.get("init_slider"):
-                print(">>>init_slider<<<", html_id)
+                # print(">>>init_slider<<<", html_id)
                 imports.add("import { PythraSlider } from './js/slider.js';")
                 options = props.get("slider_options", {})
                 options_json = json.dumps(options)
@@ -1503,7 +1531,7 @@ class Framework:
                 }} catch (e) {{
                     console.error("Error running Pythra initializers:", e);
                 }}
-            }});
+            }});//end event listener
         </script>
         """
         return full_script
@@ -1594,6 +1622,18 @@ class Framework:
                 }});
             }});
             function handleClick(name) {{ if(window.pywebview) window.pywebview.on_pressed_str(name, ()=>{{}}); }}
+            function handleClickWithArgs(callback_name, ...args) {{
+                if (window.pywebview) {{
+                    console.log("index", args);
+                    window.pywebview.on_pressed(callback_name, ...args).then(function(response) {{
+                        console.log(response);
+                    }}).catch(function(error) {{
+                        console.error(error);
+                    }});
+                }} else {{
+                    console.error('pywebview is not defined');
+                }}
+            }}
             function handleItemTap(name, index) {{ if(window.pywebview) window.pywebview.on_item_tap(name, index, ()=>{{}}); }}
             function handleInput(name, value) {{
                 if(window.pywebview) {{

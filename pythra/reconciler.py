@@ -437,21 +437,21 @@ class Reconciler:
             "onChangedName": "onChanged",
             "onDragName":"onDrag",
         }
-        print("props: ", props)
+        # print("props: ", props)
         if "onDragName" in props and "onDrag" in props:
             print(props["onDragName"], " ", props["onDrag"])
             if (cb_name := props["onDragName"]) and (
                 cb_func := props["onDrag"]
             ):
                 result.registered_callbacks[cb_name] = cb_func
-                print(f"Callback registerd sucssesfully [{cb_name}] with function [{cb_func}]")
+                # print(f"Callback registerd sucssesfully [{cb_name}] with function [{cb_func}]")
         for prop_name, func_name in callback_props.items():
             if prop_name in props and hasattr(widget, func_name):
                 if (cb_name := props[prop_name]) and (
                     cb_func := getattr(widget, func_name)
                 ):
                     result.registered_callbacks[cb_name] = cb_func
-                    print(f"Callback registerd sucssesfully [{cb_name}] with function [{cb_func}]")
+                    # print(f"Callback registerd sucssesfully [{cb_name}] with function [{cb_func}]")
 
     def _get_widget_render_tag(self, widget: "Widget") -> str:
         widget_type_name = type(widget).__name__
@@ -566,10 +566,18 @@ class Reconciler:
 
         # Add event handlers
         if "onPressedName" in props and props.get("enabled", True):
+            
             if cb_name := props["onPressedName"]:
-                attrs += (
-                    f" onclick=\"handleClick('{html.escape(cb_name, quote=True)}')\""
-                )
+                if props["onPressedArgs"] != []:
+                    # [print("arg: ", x) for x in props["onPressedArgs"]]
+                    # print("ARGS: ",props["onPressedArgs"] if props["onPressedArgs"] else 'None') #["onPressedArgs"] if props["onPressedArgs"] else 'None'
+                    attrs += (
+                        f" onclick=\"handleClickWithArgs('{html.escape(cb_name, quote=True)}', {props["onPressedArgs"]})\""
+                    )
+                else:
+                    attrs += (
+                        f" onclick=\"handleClick('{html.escape(cb_name, quote=True)}')\""
+                    )
         elif "onTapName" in props and props.get("enabled", True):
             if cb_name := props.get("onTapName"):
                 attrs += (

@@ -93,5 +93,6 @@ class SliderController:
     The parent widget that creates the controller is responsible for updating its
     value within a `setState` call to trigger a rebuild.
     """
-    def __init__(self, value: float = 0.0):
+    def __init__(self, value: float = 0.0, isDragEnded: bool = False):
         self.value = value
+        self.isDragEnded = isDragEnded

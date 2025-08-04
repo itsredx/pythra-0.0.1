@@ -13,6 +13,7 @@ export class PythraSlider { // <-- ADD 'export' HERE
         console.log(`✅ PythraSlider engine is initializing for #${elementId}`);
 
         this.options = options;
+        this.dragBool = false;
         
         // ... THE REST OF THE FILE REMAINS EXACTLY THE SAME ...
         this.track = this.container.querySelector('.slider-track');
@@ -35,6 +36,7 @@ export class PythraSlider { // <-- ADD 'export' HERE
         document.addEventListener('touchmove', this.handleDragMove);
         document.addEventListener('touchend', this.handleDragEnd);
 
+
         this.updatePosition(event);
     }
 
@@ -42,13 +44,17 @@ export class PythraSlider { // <-- ADD 'export' HERE
         this.updatePosition(event);
     }
 
-    handleDragEnd() {
+    handleDragEnd(event) {
         this.container.classList.remove('active');
         
         document.removeEventListener('mousemove', this.handleDragMove);
         document.removeEventListener('mouseup', this.handleDragEnd);
         document.removeEventListener('touchmove', this.handleDragMove);
         document.removeEventListener('touchend', this.handleDragEnd);
+        // console.log("drag ended")
+        this.dragBool = true;
+        console.log("drag ended", this.dragBool, event);
+        this.updatePosition(event);
     }
 
     updatePosition(event) {
@@ -69,7 +75,13 @@ export class PythraSlider { // <-- ADD 'export' HERE
         console.log(percentage, this.options.onDragName, newValue);
         
         if (window.pywebview && this.options.onDragName) {
-            window.pywebview.on_drag_update(this.options.onDragName, newValue);
+            window.pywebview.on_drag_update(this.options.onDragName, newValue, this.dragBool);
+        }
+        if (this.dragBool){
+            console.log("hasDrag: Ended")
+            this.dragBool = false
+        } else {
+            console.log("dragging")
         }
     }
 
@@ -77,6 +89,6 @@ export class PythraSlider { // <-- ADD 'export' HERE
         if (!this.container) return;
         this.container.removeEventListener('mousedown', this.handleDragStart);
         this.container.removeEventListener('touchstart', this.handleDragStart);
-        this.handleDragEnd(); 
+        this.handleDragEnd();
     }
 }
