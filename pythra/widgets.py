@@ -5526,10 +5526,7 @@ class TextField(Widget):
 class Slider(Widget):
     """
     A Material Design slider that allows a user to select a value from a range.
-
-    The slider's value is controlled by a `SliderController`. The parent widget
-    is responsible for creating and managing the controller, updating its value,
-    and triggering rebuilds via `setState` in the `onChanged` callback.
+    Accepts a SliderTheme for detailed styling.
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -5537,20 +5534,26 @@ class Slider(Widget):
                  key: Key,
                  controller: SliderController,
                  onChanged: Callable[[float], None] = None,
-                 onChangeStart: Callable[[float], None]=None,
-                 onChangeEnd: Callable[[float], None]=None,
+                 onChangeStart: Callable[[float], None] = None,
+                 onChangeEnd: Callable[[float], None] = None,
                  min: float = 0.0,
                  max: float = 1.0,
                  divisions: Optional[int] = None,
+                 # --- Direct style props (override theme) ---
                  activeColor: Optional[str] = None,
                  inactiveColor: Optional[str] = None,
-                 thumbColor: Optional[str] = None):
+                 thumbColor: Optional[str] = None,
+                 # --- Theme ---
+                 theme: Optional[SliderTheme] = None):
 
         super().__init__(key=key)
 
         if not isinstance(controller, SliderController):
             raise TypeError("Slider widget requires a SliderController instance.")
         
+        # Initialize default theme if none provided
+        theme = theme or SliderTheme()
+
         self.controller = controller
         self.onChanged = onChanged
         self.onChangeStart = onChangeStart
@@ -5558,19 +5561,29 @@ class Slider(Widget):
         self.min = min
         self.max = max
         self.divisions = divisions
-        self.activeColor = activeColor or Colors.primary
-        self.inactiveColor = inactiveColor or Colors.surfaceVariant
-        self.thumbColor = thumbColor or Colors.primary
-        
-        # --- Callback Management ---
-        # The JS callback name is now tied to the controller instance.
+
+        # --- Style Precedence Logic ---
+        # 1. Direct Prop > 2. Theme Prop > 3. Default
+        self.activeColor = activeColor or theme.activeTrackColor or Colors.primary
+        self.inactiveColor = inactiveColor or theme.inactiveTrackColor or Colors.surfaceVariant
+        self.thumbColor = thumbColor or theme.thumbColor or Colors.primary
+        self.overlayColor = theme.overlayColor or Colors.rgba(103, 80, 164, 0.15)
+        self.trackHeight = theme.trackHeight
+        self.thumbSize = theme.thumbSize
+        self.thumbBorderWidth = theme.thumbBorderWidth
+        self.overlaySize = theme.overlaySize
+
+        # --- Callback Management (no change) ---
         self.on_drag_update_name = f"slider_update_{id(self.controller)}"
-        
-        # Register an *internal* handler that will process the raw value from JS.
-        # Api.instance().register_callback(self.on_drag_update_name, self._handle_drag_update)
+        Api.instance().register_callback(self.on_drag_update_name, self._handle_drag_update)
 
         # --- CSS Style Management ---
-        self.style_key = (self.activeColor, self.inactiveColor, self.thumbColor)
+        # The style_key MUST now include all themeable properties
+        self.style_key = (
+            self.activeColor, self.inactiveColor, self.thumbColor,
+            self.overlayColor, self.trackHeight, self.thumbSize,
+            self.thumbBorderWidth, self.overlaySize
+        )
         
         if self.style_key not in Slider.shared_styles:
             self.css_class = f"shared-slider-{len(Slider.shared_styles)}"
@@ -5580,14 +5593,10 @@ class Slider(Widget):
 
         self.drag_ended: bool = self.controller.isDragEnded
 
-    def _handle_drag_update(self, new_value: float, drag_ended: bool,):
-        """
-        Internal handler that receives the raw value from JS, snaps it,
-        and then calls the user-provided `onChanged` callback.
-        """
+    def _handle_drag_update(self, new_value: float, drag_ended: bool):
+        # This method remains the same
         self.controller.isDragEnded = drag_ended
         clamped_value = max(self.min, min(self.max, new_value))
-        print("Draged")
         
         snapped_value = clamped_value
         if self.divisions is not None and self.divisions > 0:
@@ -5595,17 +5604,14 @@ class Slider(Widget):
             snapped_value = self.min + round((clamped_value - self.min) / step) * step
             snapped_value = max(self.min, min(self.max, snapped_value))
             
-        # Call the user's callback. It is the user's responsibility
-        # to update the controller and call setState().
         if self.onChanged:
-            self.onChanged(clamped_value)
+            self.onChanged(snapped_value)
 
         if self.onChangeEnd and drag_ended:
-            # self.drag_ended = drag_ended
-            self.onChangeEnd(clamped_value)
+            self.onChangeEnd(snapped_value)
 
     def render_props(self) -> Dict[str, Any]:
-        """Pass all necessary data to the reconciler and JS engine."""
+        # This method remains the same
         current_value = self.controller.value
         isDragEnded = self.controller.isDragEnded
         range_val = self.max - self.min
@@ -5618,15 +5624,8 @@ class Slider(Widget):
             "onDragName": self.on_drag_update_name,
             "onDrag": self._handle_drag_update,
             "isDragEnded" : isDragEnded,
-            "slider_options": {
-                "min": self.min,
-                "max": self.max,
-                "onDragName": self.on_drag_update_name,
-                "isDragEnded" : isDragEnded,
-            },
-            "style": {
-                "--slider-percentage": f"{percentage}%",
-            }
+            "slider_options": { "min": self.min, "max": self.max, "onDragName": self.on_drag_update_name, "isDragEnded" : isDragEnded },
+            "style": { "--slider-percentage": f"{percentage}%" }
         }
 
     def get_required_css_classes(self) -> Set[str]:
@@ -5634,13 +5633,11 @@ class Slider(Widget):
 
     @staticmethod
     def _generate_html_stub(widget_instance: 'Slider', html_id: str, props: Dict) -> str:
-        """Generates the specific HTML structure for the slider."""
+        # This method remains the same
         css_class = props.get('css_class', '')
-        # Ensure the style attribute exists and has the percentage key
         style_prop = props.get('style', {})
         percentage_str = style_prop.get('--slider-percentage', '0%')
         style_attr = f'style="width: 100%; --slider-percentage: {percentage_str};"'
-        print("genrating slider html with: ", style_attr)
         
         return f"""
         <div id="{html_id}" class="slider-container {css_class}" {style_attr}>
@@ -5652,8 +5649,13 @@ class Slider(Widget):
         
     @staticmethod
     def generate_css_rule(style_key: Tuple, css_class: str) -> str:
-        """Generates the CSS for the slider's appearance and states."""
-        active_color, inactive_color, thumb_color = style_key
+        """Generates themed CSS for the slider's appearance and states."""
+        # --- Unpack all theme properties from the style_key ---
+        (active_color, inactive_color, thumb_color, overlay_color,
+         track_height, thumb_size, thumb_border_width, overlay_size) = style_key
+        
+        # Calculate track border radius based on height
+        track_radius = track_height / 2.0
         
         return f"""
         .{css_class}.slider-container {{
@@ -5662,8 +5664,8 @@ class Slider(Widget):
             -webkit-tap-highlight-color: transparent;
         }}
         .{css_class} .slider-track, .{css_class} .slider-track-active {{
-            position: absolute; width: 100%; height: 4px;
-            border-radius: 2px; pointer-events: none;
+            position: absolute; width: 100%; height: {track_height}px;
+            border-radius: {track_radius}px; pointer-events: none;
         }}
         .{css_class} .slider-track {{ background-color: {inactive_color}; }}
         .{css_class} .slider-track-active {{
@@ -5671,15 +5673,186 @@ class Slider(Widget):
         }}
         .{css_class} .slider-thumb {{
             position: absolute; left: var(--slider-percentage, 0%);
-            transform: translateX(-50%); width: 14px; height: 14px;
-            background-color: {thumb_color}; border-radius: 50%;
-            border: 2px solid {thumb_color};
+            transform: translateX(-50%);
+            width: {thumb_size}px;
+            height: {thumb_size}px;
+            background-color: {thumb_color};
+            border-radius: 50%;
+            border: {thumb_border_width}px solid {thumb_color};
             transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2); pointer-events: none;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            pointer-events: none;
         }}
         .{css_class}.slider-container:hover .slider-thumb {{ transform: translateX(-50%) scale(1.2); }}
         .{css_class}.slider-container.active .slider-thumb {{
             transform: translateX(-50%) scale(1.4);
-            box-shadow: 0 0 0 8px {Colors.rgba(103, 80, 164, 0.15)};
+            box-shadow: 0 0 0 {overlay_size}px {overlay_color};
+        }}
+        """# In pythra/widgets.py
+
+class Slider(Widget):
+    """
+    A Material Design slider that allows a user to select a value from a range.
+    Accepts a SliderTheme for detailed styling.
+    """
+    shared_styles: Dict[Tuple, str] = {}
+
+    def __init__(self,
+                 key: Key,
+                 controller: SliderController,
+                 onChanged: Callable[[float], None] = None,
+                 onChangeStart: Callable[[float], None] = None,
+                 onChangeEnd: Callable[[float], None] = None,
+                 min: float = 0.0,
+                 max: float = 1.0,
+                 divisions: Optional[int] = None,
+                 # --- Direct style props (override theme) ---
+                 activeColor: Optional[str] = None,
+                 inactiveColor: Optional[str] = None,
+                 thumbColor: Optional[str] = None,
+                 # --- Theme ---
+                 theme: Optional[SliderTheme] = None):
+
+        super().__init__(key=key)
+
+        if not isinstance(controller, SliderController):
+            raise TypeError("Slider widget requires a SliderController instance.")
+        
+        # Initialize default theme if none provided
+        theme = theme or SliderTheme()
+
+        self.controller = controller
+        self.onChanged = onChanged
+        self.onChangeStart = onChangeStart
+        self.onChangeEnd = onChangeEnd
+        self.min = min
+        self.max = max
+        self.divisions = divisions
+
+        # --- Style Precedence Logic ---
+        # 1. Direct Prop > 2. Theme Prop > 3. Default
+        self.activeColor = activeColor or theme.activeTrackColor or Colors.primary
+        self.inactiveColor = inactiveColor or theme.inactiveTrackColor or Colors.surfaceVariant
+        self.thumbColor = thumbColor or theme.thumbColor or Colors.primary
+        self.overlayColor = theme.overlayColor or Colors.rgba(103, 80, 164, 0.15)
+        self.trackHeight = theme.trackHeight
+        self.thumbSize = theme.thumbSize
+        self.thumbBorderWidth = theme.thumbBorderWidth
+        self.overlaySize = theme.overlaySize
+
+        # --- Callback Management (no change) ---
+        self.on_drag_update_name = f"slider_update_{id(self.controller)}"
+        # Api.instance().register_callback(self.on_drag_update_name, self._handle_drag_update)
+
+        # --- CSS Style Management ---
+        # The style_key MUST now include all themeable properties
+        self.style_key = (
+            self.activeColor, self.inactiveColor, self.thumbColor,
+            self.overlayColor, self.trackHeight, self.thumbSize,
+            self.thumbBorderWidth, self.overlaySize
+        )
+        
+        if self.style_key not in Slider.shared_styles:
+            self.css_class = f"shared-slider-{len(Slider.shared_styles)}"
+            Slider.shared_styles[self.style_key] = self.css_class
+        else:
+            self.css_class = Slider.shared_styles[self.style_key]
+
+        self.drag_ended: bool = self.controller.isDragEnded
+
+    def _handle_drag_update(self, new_value: float, drag_ended: bool):
+        # This method remains the same
+        self.controller.isDragEnded = drag_ended
+        clamped_value = max(self.min, min(self.max, new_value))
+        
+        snapped_value = clamped_value
+        if self.divisions is not None and self.divisions > 0:
+            step = (self.max - self.min) / self.divisions
+            snapped_value = self.min + round((clamped_value - self.min) / step) * step
+            snapped_value = max(self.min, min(self.max, snapped_value))
+            
+        if self.onChanged:
+            self.onChanged(snapped_value)
+
+        if self.onChangeEnd and drag_ended:
+            self.onChangeEnd(snapped_value)
+
+    def render_props(self) -> Dict[str, Any]:
+        # This method remains the same
+        current_value = self.controller.value
+        isDragEnded = self.controller.isDragEnded
+        range_val = self.max - self.min
+        percentage = ((current_value - self.min) / range_val) * 100 if range_val > 0 else 0
+
+        return {
+            "css_class": self.css_class,
+            "init_slider": True,
+            "type": "slider",
+            "onDragName": self.on_drag_update_name,
+            "onDrag": self._handle_drag_update,
+            "isDragEnded" : isDragEnded,
+            "slider_options": { "min": self.min, "max": self.max, "onDragName": self.on_drag_update_name, "isDragEnded" : isDragEnded },
+            "style": { "--slider-percentage": f"{percentage}%" }
+        }
+
+    def get_required_css_classes(self) -> Set[str]:
+        return {self.css_class}
+
+    @staticmethod
+    def _generate_html_stub(widget_instance: 'Slider', html_id: str, props: Dict) -> str:
+        # This method remains the same
+        css_class = props.get('css_class', '')
+        style_prop = props.get('style', {})
+        percentage_str = style_prop.get('--slider-percentage', '0%')
+        style_attr = f'style="width: 100%; --slider-percentage: {percentage_str};"'
+        
+        return f"""
+        <div id="{html_id}" class="slider-container {css_class}" {style_attr}>
+            <div class="slider-track"></div>
+            <div class="slider-track-active"></div>
+            <div class="slider-thumb"></div>
+        </div>
+        """
+        
+    @staticmethod
+    def generate_css_rule(style_key: Tuple, css_class: str) -> str:
+        """Generates themed CSS for the slider's appearance and states."""
+        # --- Unpack all theme properties from the style_key ---
+        (active_color, inactive_color, thumb_color, overlay_color,
+         track_height, thumb_size, thumb_border_width, overlay_size) = style_key
+        
+        # Calculate track border radius based on height
+        track_radius = track_height / 2.0
+        
+        return f"""
+        .{css_class}.slider-container {{
+            position: relative; width: 100%; height: 20px;
+            display: flex; align-items: center; cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }}
+        .{css_class} .slider-track, .{css_class} .slider-track-active {{
+            position: absolute; width: 100%; height: {track_height}px;
+            border-radius: {track_radius}px; pointer-events: none;
+        }}
+        .{css_class} .slider-track {{ background-color: {inactive_color}; }}
+        .{css_class} .slider-track-active {{
+            background-color: {active_color}; width: var(--slider-percentage, 0%);
+        }}
+        .{css_class} .slider-thumb {{
+            position: absolute; left: var(--slider-percentage, 0%);
+            transform: translateX(-50%);
+            width: {thumb_size}px;
+            height: {thumb_size}px;
+            background-color: {thumb_color};
+            border-radius: 50%;
+            border: {thumb_border_width}px solid {thumb_color};
+            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            pointer-events: none;
+        }}
+        .{css_class}.slider-container:hover .slider-thumb {{ transform: translateX(-50%) scale(1.2); }}
+        .{css_class}.slider-container.active .slider-thumb {{
+            transform: translateX(-50%) scale(1.4);
+            box-shadow: 0 0 0 {overlay_size}px {overlay_color};
         }}
         """

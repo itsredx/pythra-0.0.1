@@ -1858,3 +1858,35 @@ class ScrollbarTheme:
             self.width, self.height, self.thumbColor, self.thumbHoverColor,
             self.trackColor, self.radius, self.trackRadius, self.thumbPadding, self.trackMargin
         )
+
+# In pythra/styles.py
+
+# ... (keep all your other style classes like EdgeInsets, Colors, etc.)
+
+@dataclass
+class SliderTheme:
+    """
+    Defines the visual properties of a Slider widget.
+
+    This data class holds customizable properties for colors and dimensions,
+    allowing for consistent theming of sliders across an application.
+    """
+    # Colors
+    activeTrackColor: Optional[str] = None
+    inactiveTrackColor: Optional[str] = None
+    thumbColor: Optional[str] = None
+    overlayColor: Optional[str] = None # Color of the halo effect when dragging
+
+    # Dimensions
+    trackHeight: float = 4.0
+    thumbSize: float = 14.0
+    thumbBorderWidth: float = 2.0
+    overlaySize: float = 8.0 # The 'spread' of the overlay halo in pixels
+
+    def to_tuple(self) -> Tuple:
+        """Creates a hashable tuple for use in style keys."""
+        return (
+            self.activeTrackColor, self.inactiveTrackColor, self.thumbColor,
+            self.overlayColor, self.trackHeight, self.thumbSize,
+            self.thumbBorderWidth, self.overlaySize
+        )
