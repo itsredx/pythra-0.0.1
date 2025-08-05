@@ -2,6 +2,7 @@
 
 from pythra.core import Framework
 from pythra.widgets import *
+from pythra.styles import *
 from pythra.state import StatefulWidget, State
 from pythra.base import Key
 from pythra.controllers import SliderController
@@ -50,6 +51,14 @@ class MyComponentState(State):
         pass
 
     def build(self) -> Widget:
+        red_slider_theme = SliderTheme(
+            activeTrackColor=Colors.red,
+            inactiveTrackColor=Colors.rgba(255, 0, 0, 0.3),
+            thumbColor=Colors.red,
+            overlayColor=Colors.rgba(255, 0, 0, 0.2),
+            trackHeight=8.0,
+            thumbSize=12.0
+        )
         return Column(
             key=Key("my_volume_slider_column"),
             crossAxisAlignment = CrossAxisAlignment.STRETCH,
@@ -60,11 +69,12 @@ class MyComponentState(State):
                     controller=self.slider_controller,
                     # onChanged=self.handle_slider_change_async,
                     onChangeEnd=self.handle_slider_change,
+                    theme=red_slider_theme,
                     min=0.0,
                     max=1.0,
                     divisions=10, # Creates 10 discrete steps
-                    activeColor=Colors.green,
-                    thumbColor=Colors.white
+                    # activeColor=Colors.green,
+                    # thumbColor=Colors.white
                 ),
                 SizedBox(key=Key("sizedbox-for-mv-slider-btn"),height=24),
                 ElevatedButton(
