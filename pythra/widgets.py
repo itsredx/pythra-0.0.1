@@ -7,8 +7,9 @@ from .api import Api
 from .base import *
 from .state import *
 from .styles import *
+from .icons import *
+from .controllers import *
 from .config import Config
-from .controllers import TextEditingController, SliderController
 import weakref
 from typing import Any, Dict, List, Optional, Set, Tuple, Union, Callable
 
@@ -5856,3 +5857,433 @@ class Slider(Widget):
             box-shadow: 0 0 0 {overlay_size}px {overlay_color};
         }}
         """
+
+
+
+class Checkbox(Widget):
+    """
+    A Material Design checkbox that conforms to the framework's style-swapping logic.
+    It treats its 'checked' and 'unchecked' states as two distinct visual styles,
+    each with its own shared CSS class, allowing it to work with the existing
+    core update mechanism.
+    """
+    shared_styles: Dict[Tuple, str] = {}
+
+    def __init__(self,
+                 key: Key,
+                 value: bool,
+                 onChanged: Callable[[bool], None],
+                 activeColor: Optional[str] = None,
+                 checkColor: Optional[str] = None,
+                 inactiveColor: Optional[str] = None,
+                 theme: Optional[CheckboxTheme] = None):
+
+        super().__init__(key=key)
+
+        if not isinstance(key, Key):
+             raise TypeError("Checkbox requires a unique Key.")
+        if onChanged is None:
+            raise ValueError("Checkbox requires an onChanged callback.")
+
+        theme = theme or CheckboxTheme()
+
+        self.value = value
+        self.onChanged = onChanged
+
+        # --- Style Configuration ---
+        self.activeColor = activeColor or theme.activeColor or Colors.primary
+        self.checkColor = checkColor or theme.checkColor or Colors.onPrimary
+        self.inactiveColor = inactiveColor or theme.inactiveColor or Colors.onSurfaceVariant
+        self.splashColor = theme.splashColor or Colors.rgba(103, 80, 164, 0.15)
+        self.size = theme.size
+        self.strokeWidth = theme.strokeWidth
+        self.splashRadius = theme.splashRadius
+
+        # --- Callback setup that conforms to the Reconciler pattern ---
+        self.onPressedName = f"checkbox_press_{self.key.value}"
+        # The Reconciler will find the `onPressed` method below and register it.
+
+        # --- STATEFUL STYLE KEY (The Core of the Solution) ---
+        # The boolean 'value' is part of the key. This ensures that a checked
+        # and unchecked checkbox get two different, unique shared CSS classes.
+        self.style_key = (
+            self.value, # <-- This is the key to making it work
+            self.activeColor, self.checkColor, self.inactiveColor, self.splashColor,
+            self.size, self.strokeWidth, self.splashRadius
+        )
+
+        if self.style_key not in Checkbox.shared_styles:
+            self.css_class = f"shared-checkbox-{len(Checkbox.shared_styles)}"
+            Checkbox.shared_styles[self.style_key] = self.css_class
+        else:
+            self.css_class = Checkbox.shared_styles[self.style_key]
+
+    def onPressed(self):
+        """ The framework's Reconciler will automatically find and register this method. """
+        self.onChanged(not self.value)
+
+    def render_props(self) -> Dict[str, Any]:
+        """
+        Passes the single, state-aware CSS class and the callback name to the reconciler.
+        """
+        return {
+            "css_class": self.css_class,
+            "onPressedName": self.onPressedName,
+            "onPressed": self.onPressed,
+        }
+
+    def get_required_css_classes(self) -> Set[str]:
+        return {self.css_class}
+
+    @staticmethod
+    def _generate_html_stub(widget_instance: 'Checkbox', html_id: str, props: Dict) -> str:
+        """Generates the HTML stub. Now with .strip() to prevent whitespace issues."""
+        css_class = props.get('css_class', '')
+        on_click_handler = f"handleClick('{props.get('onPressedName', '')}')"
+
+        return f"""
+        <div id="{html_id}" class="checkbox-container {css_class}" onclick="{on_click_handler}">
+            <svg class="checkbox-svg" viewBox="0 0 24 24">
+                <path class="checkbox-checkmark" d="M1.73,12.91 8.1,19.28 22.79,4.59"/>
+            </svg>
+        </div>
+        """.strip()
+
+    @staticmethod
+    def generate_css_rule(style_key: Tuple, css_class: str) -> str:
+        """
+        Generates a specific CSS rule for EITHER the checked OR unchecked state,
+        based on the boolean value included in the style_key.
+        """
+        (is_checked, active_color, check_color, inactive_color, splash_color,
+         size, stroke_width, splash_radius) = style_key
+
+        if is_checked:
+            background_color = active_color
+            border_color = active_color
+            checkmark_offset = 0
+        else:
+            background_color = 'transparent'
+            border_color = inactive_color
+            checkmark_offset = 29
+
+        # We generate a unique animation name to avoid conflicts
+        animation_name = f"checkbox-ripple-{css_class}"
+
+        return f"""
+        .{css_class}.checkbox-container {{
+            position: relative;
+            width: {size}px; height: {size}px;
+            border: {stroke_width}px solid {border_color};
+            border-radius: 4px;
+            background-color: {background_color};
+            cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;
+            -webkit-tap-highlight-color: transparent;
+        }}
+        .{css_class} .checkbox-svg {{
+            width: 100%; height: 100%;
+            fill: none;
+            stroke: {check_color};
+            stroke-width: {stroke_width + 1};
+            stroke-linecap: round; stroke-linejoin: round;
+        }}
+        .{css_class} .checkbox-checkmark {{
+            stroke-dasharray: 29;
+            stroke-dashoffset: {checkmark_offset};
+            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }}
+        .{css_class}.checkbox-container:active::before {{
+            content: '';
+            position: absolute; top: 50%; left: 50%;
+            width: 0; height: 0;
+            background-color: {splash_color};
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: {animation_name} 0.4s ease-out;
+        }}
+        @keyframes {animation_name} {{
+            from {{ width: 0; height: 0; opacity: 1; }}
+            to {{ width: {splash_radius * 2}px; height: {splash_radius * 2}px; opacity: 0; }}
+        }}
+        """
+
+
+# In pythra/widgets.py
+
+# ... (keep all your other widget classes)
+
+class Switch(Widget):
+    """
+    A Material Design switch that toggles a boolean state.
+
+    This widget conforms to the framework's style-swapping logic by treating
+    its 'on' and 'off' states as two distinct visual styles, each with its own
+    shared CSS class.
+    """
+    shared_styles: Dict[Tuple, str] = {}
+
+    def __init__(self,
+                 key: Key,
+                 value: bool,
+                 onChanged: Callable[[bool], None],
+                 activeColor: Optional[str] = None,
+                 thumbColor: Optional[str] = None,
+                 theme: Optional[SwitchTheme] = None):
+
+        super().__init__(key=key)
+
+        if not isinstance(key, Key):
+             raise TypeError("Switch requires a unique Key.")
+        if onChanged is None:
+            raise ValueError("Switch requires an onChanged callback.")
+
+        theme = theme or SwitchTheme()
+        self.value = value
+        self.onChanged = onChanged
+
+        # --- Style Precedence: Direct Prop > Theme Prop > M3 Default ---
+        self.activeTrackColor = activeColor or theme.activeTrackColor or Colors.primary
+        self.inactiveTrackColor = theme.inactiveTrackColor or Colors.surfaceVariant
+        self.activeThumbColor = theme.activeThumbColor or Colors.onPrimary
+        self.thumbColor = thumbColor or theme.thumbColor or Colors.outline
+
+        # --- Callback Conformance ---
+        self.onPressedName = f"switch_press_{self.key.value}"
+        # The Reconciler will find and register the `onPressed` method below.
+
+        # --- STATEFUL STYLE KEY ---
+        # The boolean 'value' is part of the key, generating a unique class
+        # for the 'on' state and another for the 'off' state.
+        self.style_key = (
+            self.value,
+            self.activeTrackColor,
+            self.inactiveTrackColor,
+            self.activeThumbColor,
+            self.thumbColor,
+        )
+
+        if self.style_key not in Switch.shared_styles:
+            self.css_class = f"shared-switch-{len(Switch.shared_styles)}"
+            Switch.shared_styles[self.style_key] = self.css_class
+        else:
+            self.css_class = Switch.shared_styles[self.style_key]
+
+    def onPressed(self):
+        """The framework's Reconciler will automatically find and register this."""
+        self.onChanged(not self.value)
+
+    def render_props(self) -> Dict[str, Any]:
+        """Passes the state-aware CSS class and callback name to the reconciler."""
+        return {
+            "css_class": self.css_class,
+            "onPressedName": self.onPressedName,
+            "onPressed": self.onPressed,
+        }
+
+    def get_required_css_classes(self) -> Set[str]:
+        return {self.css_class}
+
+    @staticmethod
+    def _generate_html_stub(widget_instance: 'Switch', html_id: str, props: Dict) -> str:
+        """Generates the HTML structure for the switch (track and thumb)."""
+        css_class = props.get('css_class', '')
+        on_click_handler = f"handleClick('{props.get('onPressedName', '')}')"
+
+        return f"""
+        <div id="{html_id}" class="switch-container {css_class}" onclick="{on_click_handler}">
+            <div class="switch-track"></div>
+            <div class="switch-thumb"></div>
+        </div>
+        """.strip()
+
+    @staticmethod
+    def generate_css_rule(style_key: Tuple, css_class: str) -> str:
+        """
+        Generates a specific CSS rule for EITHER the 'on' OR 'off' state,
+        based on the boolean value included in the style_key.
+        """
+        (is_on, active_track_color, inactive_track_color,
+         active_thumb_color, inactive_thumb_color) = style_key
+
+        # --- Determine styles based on the is_on flag ---
+        if is_on:
+            track_color = active_track_color
+            thumb_color = active_thumb_color
+            thumb_transform = "translateX(24px)" # Position for 'on' state
+        else:
+            track_color = inactive_track_color
+            thumb_color = inactive_thumb_color
+            thumb_transform = "translateX(4px)"  # Position for 'off' state
+
+        return f"""
+        /* --- Style for {css_class} ('on' state: {is_on}) --- */
+        .{css_class}.switch-container {{
+            position: relative;
+            width: 52px;
+            height: 32px;
+            border-radius: 16px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0;
+            transition: background-color 0.2s ease-in-out;
+            background-color: {track_color};
+        }}
+        .{css_class} .switch-thumb {{
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background-color: {thumb_color};
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1), background-color 0.2s ease-in-out;
+            transform: {thumb_transform};
+        }}
+        """
+
+
+# In pythra/widgets.py
+
+# ... (keep all your other widget classes)
+
+class Radio(Widget):
+    """
+    A Material Design radio button.
+
+    Used to select one option from a set. A radio button's state is determined
+    by comparing its `value` to a `groupValue`. When the radio button is tapped,
+    it calls the `onChanged` callback with its `value`.
+    """
+    shared_styles: Dict[Tuple, str] = {}
+
+    def __init__(self,
+                 key: Key,
+                 value: Any,  # The unique value this radio button represents
+                 groupValue: Any,  # The currently selected value for the group
+                 onChanged: Callable[[Any], None],
+                 theme: Optional[RadioTheme] = None):
+
+        super().__init__(key=key)
+
+        if not isinstance(key, Key):
+             raise TypeError("Radio requires a unique Key.")
+        if onChanged is None:
+            raise ValueError("Radio requires an onChanged callback.")
+
+        theme = theme or RadioTheme()
+        self.value = value
+        self.groupValue = groupValue
+        self.onChanged = onChanged
+
+        # The radio button is selected if its value matches the group's value.
+        self.isSelected = (self.value == self.groupValue)
+
+        # --- Style Configuration ---
+        self.activeColor = theme.fillColor or Colors.primary
+        self.inactiveColor = Colors.onSurfaceVariant
+        self.splashColor = theme.splashColor or Colors.rgba(103, 80, 164, 0.15)
+
+        # --- Callback Conformance ---
+        self.onPressedName = f"radio_press_{self.key.value}"
+        # The Reconciler will find and register the `onPressed` method.
+
+        # --- STATEFUL STYLE KEY ---
+        # The selection state is the most crucial part of the style key.
+        self.style_key = (
+            self.isSelected,
+            self.activeColor,
+            self.inactiveColor,
+            self.splashColor,
+        )
+
+        if self.style_key not in Radio.shared_styles:
+            self.css_class = f"shared-radio-{len(Radio.shared_styles)}"
+            Radio.shared_styles[self.style_key] = self.css_class
+        else:
+            self.css_class = Radio.shared_styles[self.style_key]
+
+    def onPressed(self):
+        """The Reconciler will find this and register it with the API."""
+        # When pressed, it calls the parent's handler with its own unique value.
+        self.onChanged(self.value)
+
+    def render_props(self) -> Dict[str, Any]:
+        """Passes the state-aware CSS class and callback name to the reconciler."""
+        return {
+            "css_class": self.css_class,
+            "onPressedName": self.onPressedName,
+        }
+
+    def get_required_css_classes(self) -> Set[str]:
+        return {self.css_class}
+
+    @staticmethod
+    def _generate_html_stub(widget_instance: 'Radio', html_id: str, props: Dict) -> str:
+        """Generates the HTML structure: an outer circle and an inner dot."""
+        css_class = props.get('css_class', '')
+        on_click_handler = f"handleClick('{props.get('onPressedName', '')}')"
+
+        return f"""
+        <div id="{html_id}" class="radio-container {css_class}" onclick="{on_click_handler}">
+            <div class="radio-dot"></div>
+        </div>
+        """.strip()
+
+    @staticmethod
+    def generate_css_rule(style_key: Tuple, css_class: str) -> str:
+        """
+        Generates a specific CSS rule for EITHER the 'selected' OR 'unselected'
+        state, based on the boolean value in the style_key.
+        """
+        (is_selected, active_color, inactive_color, splash_color) = style_key
+
+        if is_selected:
+            border_color = active_color
+            dot_bg_color = active_color
+            dot_transform = "scale(1)"
+        else:
+            border_color = inactive_color
+            dot_bg_color = active_color # Dot color is always active, just hidden
+            dot_transform = "scale(0)"
+
+        animation_name = f"radio-ripple-{css_class}"
+
+        return f"""
+        /* --- Style for {css_class} ('selected' state: {is_selected}) --- */
+        .{css_class}.radio-container {{
+            position: relative;
+            width: 20px; height: 20px;
+            border: 2px solid {border_color};
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: border-color 0.2s ease-in-out;
+            -webkit-tap-highlight-color: transparent;
+        }}
+        .{css_class} .radio-dot {{
+            width: 10px; height: 10px;
+            background-color: {dot_bg_color};
+            border-radius: 50%;
+            transform: {dot_transform};
+            transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }}
+
+        /* --- INTERACTION STATES (Splash/Ripple Effect) --- */
+        .{css_class}.radio-container:active::before {{
+            content: '';
+            position: absolute; top: 50%; left: 50%;
+            width: 0; height: 0;
+            background-color: {splash_color};
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: {animation_name} 0.4s ease-out;
+        }}
+        @keyframes {animation_name} {{
+            from {{ width: 0; height: 0; opacity: 1; }}
+            to {{ width: 40px; height: 40px; opacity: 0; }}
+        }}
+        """
+

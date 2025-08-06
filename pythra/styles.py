@@ -1890,3 +1890,79 @@ class SliderTheme:
             self.overlayColor, self.trackHeight, self.thumbSize,
             self.thumbBorderWidth, self.overlaySize
         )
+
+# In pythra/styles.py
+
+# ... (keep all your other style classes like EdgeInsets, SliderTheme, etc.)
+
+@dataclass
+class CheckboxTheme:
+    """
+    Defines the visual properties for a Checkbox widget.
+    """
+    # Colors
+    activeColor: Optional[str] = None      # The background color of the box when checked.
+    checkColor: Optional[str] = None       # The color of the checkmark icon.
+    inactiveColor: Optional[str] = None    # The color of the border when unchecked.
+    splashColor: Optional[str] = None      # The color of the ripple/splash effect on press.
+
+    # Dimensions
+    size: float = 18.0                     # The width and height of the checkbox square.
+    strokeWidth: float = 2.0               # The thickness of the border and checkmark.
+    splashRadius: float = 20.0             # The radius of the splash effect.
+
+    def to_tuple(self) -> Tuple:
+        """Creates a hashable tuple for use in style keys."""
+        return (
+            self.activeColor, self.checkColor, self.inactiveColor,
+            self.splashColor, self.size, self.strokeWidth, self.splashRadius
+        )
+
+
+# In pythra/styles.py
+
+# ... (keep all your other style classes)
+
+@dataclass
+class SwitchTheme:
+    """
+    Defines the visual properties for a Switch widget.
+    """
+    # Color of the sliding circle (thumb).
+    thumbColor: Optional[str] = None
+    # Color of the track when the switch is ON.
+    activeTrackColor: Optional[str] = None
+    # Color of the track when the switch is OFF.
+    inactiveTrackColor: Optional[str] = None
+    # Optional color for the thumb when the switch is ON.
+    activeThumbColor: Optional[str] = None
+
+    def to_tuple(self) -> Tuple:
+        """Creates a hashable tuple for use in style keys."""
+        return (
+            self.thumbColor,
+            self.activeTrackColor,
+            self.inactiveTrackColor,
+            self.activeThumbColor,
+        )
+
+
+# In pythra/styles.py
+
+# ... (keep all your other style classes)
+
+@dataclass
+class RadioTheme:
+    """
+    Defines the visual properties for a Radio button widget.
+    """
+    # The color of the radio button's fill and border when selected.
+    fillColor: Optional[str] = None
+    # The color of the splash/ripple effect on press.
+    splashColor: Optional[str] = None
+
+    def to_tuple(self) -> Tuple:
+        """Creates a hashable tuple for use in style keys."""
+        return (self.fillColor, self.splashColor)
+
+

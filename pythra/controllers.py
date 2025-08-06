@@ -96,3 +96,4 @@ class SliderController:
     def __init__(self, value: float = 0.0, isDragEnded: bool = False):
         self.value = value
         self.isDragEnded = isDragEnded
+
