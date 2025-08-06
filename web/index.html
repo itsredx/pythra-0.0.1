@@ -6,7 +6,7 @@
     <!-- ADD SIMPLEBAR CSS -->
     <link rel="stylesheet" href="./js/scroll-bar/simplebar.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1754435836">
+    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1754522235">
     <style id="dynamic-styles">.shared-container-0 { box-sizing: border-box; padding: 32px; display: flex; justify-content: center; align-items: flex-start; }
 .shared-column-0 { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; height: 100%; direction: ltr; }
 
@@ -229,6 +229,185 @@
             transform: translateX(-50%) scale(1.4);
             box-shadow: 0 0 0 8.0px rgba(255, 0, 0, 0.2);
         }
+        
+.shared-container-1 { box-sizing: border-box; display: flex; justify-content: center; align-items: center; }
+.shared-column-1 { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; height: 100%; direction: ltr; }
+.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }
+
+        .shared-checkbox-0.checkbox-container {
+            position: relative;
+            width: 18.0px; height: 18.0px;
+            border: 2.0px solid #49454F;
+            border-radius: 4px;
+            background-color: transparent;
+            cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .shared-checkbox-0 .checkbox-svg {
+            width: 100%; height: 100%;
+            fill: none;
+            stroke: #FFFFFF;
+            stroke-width: 3.0;
+            stroke-linecap: round; stroke-linejoin: round;
+        }
+        .shared-checkbox-0 .checkbox-checkmark {
+            stroke-dasharray: 29;
+            stroke-dashoffset: 29;
+            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        .shared-checkbox-0.checkbox-container:active::before {
+            content: '';
+            position: absolute; top: 50%; left: 50%;
+            width: 0; height: 0;
+            background-color: rgba(103, 80, 164, 0.15);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;
+        }
+        @keyframes checkbox-ripple-shared-checkbox-0 {
+            from { width: 0; height: 0; opacity: 1; }
+            to { width: 40.0px; height: 40.0px; opacity: 0; }
+        }
+        
+
+        .shared-checkbox-1.checkbox-container {
+            position: relative;
+            width: 24.0px; height: 24.0px;
+            border: 2.0px solid green;
+            border-radius: 4px;
+            background-color: green;
+            cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .shared-checkbox-1 .checkbox-svg {
+            width: 100%; height: 100%;
+            fill: none;
+            stroke: white;
+            stroke-width: 3.0;
+            stroke-linecap: round; stroke-linejoin: round;
+        }
+        .shared-checkbox-1 .checkbox-checkmark {
+            stroke-dasharray: 29;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        .shared-checkbox-1.checkbox-container:active::before {
+            content: '';
+            position: absolute; top: 50%; left: 50%;
+            width: 0; height: 0;
+            background-color: rgba(103, 80, 164, 0.15);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: checkbox-ripple-shared-checkbox-1 0.4s ease-out;
+        }
+        @keyframes checkbox-ripple-shared-checkbox-1 {
+            from { width: 0; height: 0; opacity: 1; }
+            to { width: 40.0px; height: 40.0px; opacity: 0; }
+        }
+        
+.shared-container-2 { box-sizing: border-box; padding: 16px; }
+.shared-row-1 { display: flex; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; direction: ltr; }
+
+        /* --- Style for shared-switch-0 ('on' state: True) --- */
+        .shared-switch-0.switch-container {
+            position: relative;
+            width: 52px;
+            height: 32px;
+            border-radius: 16px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0;
+            transition: background-color 0.2s ease-in-out;
+            background-color: green;
+        }
+        .shared-switch-0 .switch-thumb {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background-color: #FFFFFF;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1), background-color 0.2s ease-in-out;
+            transform: translateX(24px);
+        }
+        
+.shared-column-2 { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; height: 100%; direction: ltr; }
+
+        /* --- Style for shared-radio-0 ('selected' state: True) --- */
+        .shared-radio-0.radio-container {
+            position: relative;
+            width: 20px; height: 20px;
+            border: 2px solid #6750A4;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: border-color 0.2s ease-in-out;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .shared-radio-0 .radio-dot {
+            width: 10px; height: 10px;
+            background-color: #6750A4;
+            border-radius: 50%;
+            transform: scale(1);
+            transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        /* --- INTERACTION STATES (Splash/Ripple Effect) --- */
+        .shared-radio-0.radio-container:active::before {
+            content: '';
+            position: absolute; top: 50%; left: 50%;
+            width: 0; height: 0;
+            background-color: rgba(103, 80, 164, 0.15);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: radio-ripple-shared-radio-0 0.4s ease-out;
+        }
+        @keyframes radio-ripple-shared-radio-0 {
+            from { width: 0; height: 0; opacity: 1; }
+            to { width: 40px; height: 40px; opacity: 0; }
+        }
+        
+
+        /* --- Style for shared-radio-1 ('selected' state: False) --- */
+        .shared-radio-1.radio-container {
+            position: relative;
+            width: 20px; height: 20px;
+            border: 2px solid #49454F;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center; justify-content: center;
+            cursor: pointer;
+            transition: border-color 0.2s ease-in-out;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .shared-radio-1 .radio-dot {
+            width: 10px; height: 10px;
+            background-color: #6750A4;
+            border-radius: 50%;
+            transform: scale(0);
+            transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+
+        /* --- INTERACTION STATES (Splash/Ripple Effect) --- */
+        .shared-radio-1.radio-container:active::before {
+            content: '';
+            position: absolute; top: 50%; left: 50%;
+            width: 0; height: 0;
+            background-color: rgba(103, 80, 164, 0.15);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: radio-ripple-shared-radio-1 0.4s ease-out;
+        }
+        @keyframes radio-ripple-shared-radio-1 {
+            from { width: 0; height: 0; opacity: 1; }
+            to { width: 40px; height: 40px; opacity: 0; }
+        }
         </style>
     
         <script src="qwebchannel.js"></script>
@@ -350,7 +529,7 @@ PythraSlider.prototype.destroy = function() {
                     type="text" 
                     value="initial text"
                     placeholder="None"
-                    oninput="handleInput('ctrl_2476150359440', this.value)"
+                    oninput="handleInput('ctrl_2025660501360', this.value)"
                     
                 >
                 <label for="fw_id_7_input" class="textfield-label shared-textfield-0">Username</label>
@@ -367,7 +546,7 @@ PythraSlider.prototype.destroy = function() {
                     type="password" 
                     value=""
                     placeholder="None"
-                    oninput="handleInput('ctrl_2476129617872', this.value)"
+                    oninput="handleInput('ctrl_2025677901968', this.value)"
                     
                 >
                 <label for="fw_id_9_input" class="textfield-label shared-textfield-1">Password</label>
@@ -381,7 +560,24 @@ PythraSlider.prototype.destroy = function() {
             <div class="slider-track-active"></div>
             <div class="slider-thumb"></div>
         </div>
-        <div id="fw_id_20" class="" style="height: 24px"></div><button id="fw_id_21" class="shared-elevatedbutton-0" onclick="handleClick('move_slider')"><p id="fw_id_22" class="shared-text-1">Move</p></button></div></div></div></div></div>
+        <div id="fw_id_20" class="" style="height: 24px"></div><button id="fw_id_21" class="shared-elevatedbutton-0" onclick="handleClick('move_slider')"><p id="fw_id_22" class="shared-text-1">Move</p></button></div></div><div id="fw_id_23" class="" style="height: 24px"></div><div id="fw_id_24" class=""><div id="fw_id_25" class="shared-container-1" style="display: block"><div id="fw_id_26" class="shared-column-1"><div id="fw_id_27" class="shared-row-0"><div id="fw_id_28" class="checkbox-container shared-checkbox-0" onclick="handleClick('checkbox_press_default_checkbox')">
+            <svg class="checkbox-svg" viewBox="0 0 24 24">
+                <path class="checkbox-checkmark" d="M1.73,12.91 8.1,19.28 22.79,4.59"/>
+            </svg>
+        </div><div id="fw_id_29" class="" style="width: 8px"></div><p id="fw_id_30" class="shared-text-1">Default Checkbox</p></div><div id="fw_id_31" class="" style="height: 8px"></div><div id="fw_id_32" class="shared-row-0"><div id="fw_id_33" class="checkbox-container shared-checkbox-1" onclick="handleClick('checkbox_press_custom_checkbox')">
+            <svg class="checkbox-svg" viewBox="0 0 24 24">
+                <path class="checkbox-checkmark" d="M1.73,12.91 8.1,19.28 22.79,4.59"/>
+            </svg>
+        </div><div id="fw_id_34" class="" style="width: 8px"></div><p id="fw_id_35" class="shared-text-1">Custom Themed Checkbox</p></div></div></div></div><div id="fw_id_36" class="" style="height: 16px"></div><div id="fw_id_37" class=""><div id="fw_id_38" class="shared-container-2" style="display: block"><div id="fw_id_39" class="shared-row-1"><p id="fw_id_40" class="shared-text-1">Notifications</p><div id="fw_id_41" class="switch-container shared-switch-0" onclick="handleClick('switch_press_notification_switch')">
+            <div class="switch-track"></div>
+            <div class="switch-thumb"></div>
+        </div></div></div></div><div id="fw_id_42" class="" style="height: 24px"></div><div id="fw_id_43" class=""><div id="fw_id_44" class="shared-column-2"><div id="fw_id_45" class="shared-row-0"><div id="fw_id_46" class="radio-container shared-radio-0" onclick="handleClick('radio_press_apple')">
+            <div class="radio-dot"></div>
+        </div><div id="fw_id_47" class="" style="width: 8px"></div><p id="fw_id_48" class="shared-text-1">Apple</p></div><div id="fw_id_49" class="" style="height: 8px"></div><div id="fw_id_50" class="shared-row-0"><div id="fw_id_51" class="radio-container shared-radio-1" onclick="handleClick('radio_press_orange')">
+            <div class="radio-dot"></div>
+        </div><div id="fw_id_52" class="" style="width: 8px"></div><p id="fw_id_53" class="shared-text-1">Orange</p></div><div id="fw_id_54" class="" style="height: 8px"></div><div id="fw_id_55" class="shared-row-0"><div id="fw_id_56" class="radio-container shared-radio-1" onclick="handleClick('radio_press_banana')">
+            <div class="radio-dot"></div>
+        </div><div id="fw_id_57" class="" style="width: 8px"></div><p id="fw_id_58" class="shared-text-1">Banana</p></div><div id="fw_id_59" class="" style="height: 16px"></div><p id="fw_id_60" class="shared-text-1">Selected fruit: Apple</p></div></div></div></div></div>
     <div id="overlay-container"></div>
 
     <!-- ADD SIMPLEBAR JS -->
@@ -740,7 +936,7 @@ class PythraSlider { // <-- ADD 'export' HERE
                         // Make sure we don't re-initialize if it somehow already exists
                         if (!window._pythra_instances['fw_id_19']) {
                             console.log('Initializing PythraSlider for #fw_id_19');
-                            window._pythra_instances['fw_id_19'] = new PythraSlider('fw_id_19', {"min": 0.0, "max": 1.0, "onDragName": "slider_update_2476150360448", "isDragEnded": false});
+                            window._pythra_instances['fw_id_19'] = new PythraSlider('fw_id_19', {"min": 0.0, "max": 1.0, "onDragName": "slider_update_2025660502368", "isDragEnded": false});
                         }
                     } else {
                         console.error('PythraSlider class not found. Make sure slider.js is included.');

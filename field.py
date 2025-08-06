@@ -15,6 +15,161 @@ from pythra import (
     TextEditingController, InputDecoration,
 )
 
+
+
+class RadioExample(StatefulWidget):
+    def __init__(self, key: Key):
+        super().__init__(key=key)
+
+    def createState(self):
+        return RadioExampleState()
+
+class RadioExampleState(State):
+    def initState(self):
+        # This one variable controls the entire radio group.
+        self._selected_option = "apple"
+
+    def _on_option_changed(self, new_value):
+        print(f"Radio option changed to: {new_value}")
+        self._selected_option = new_value
+        self.setState()
+
+    def build(self) -> Widget:
+        # Helper function to create a row for a radio button and its label
+        def create_radio_row(text: str, value: str):
+            return Row(
+                key=Key(f"row_{value}"),
+                crossAxisAlignment=CrossAxisAlignment.CENTER,
+                children=[
+                    Radio(
+                        key=Key(value),
+                        value=value,
+                        groupValue=self._selected_option,
+                        onChanged=self._on_option_changed
+                    ),
+                    SizedBox(width=8),
+                    Text(text)
+                ]
+            )
+
+        return Column(
+            key=Key("radio_group_column"),
+            crossAxisAlignment=CrossAxisAlignment.START,
+            children=[
+                create_radio_row("Apple", "apple"),
+                SizedBox(key=Key("sizer_apple"), height=8),
+                create_radio_row("Orange", "orange"),
+                SizedBox(key=Key("sizer_orange"),height=8),
+                create_radio_row("Banana", "banana"),
+                SizedBox(key=Key("sizer_banana"),height=16),
+                Text(f"Selected fruit: {self._selected_option.capitalize()}", key=Key("selection_text"))
+            ]
+        )
+
+
+class SwitchExample(StatefulWidget):
+    def __init__(self, key: Key):
+        super().__init__(key=key)
+
+    def createState(self):
+        return SwitchExampleState()
+
+class SwitchExampleState(State):
+    def initState(self):
+        self._is_on = True
+
+    def _on_switch_changed(self, new_value: bool):
+        print(f"Switch toggled to: {new_value}")
+        self._is_on = new_value
+        self.setState()
+
+    def build(self) -> Widget:
+        return Container(
+            padding=EdgeInsets.all(16),
+            child=Row(
+                mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
+                children=[
+                    Text("Notifications"),
+                    Switch(
+                        key=Key("notification_switch"),
+                        value=self._is_on,
+                        onChanged=self._on_switch_changed,
+                        # Optional: override the active color
+                        activeColor=Colors.green,
+                    )
+                ]
+            )
+        )
+
+
+class CheckBox(StatefulWidget):
+    def __init__(self, key: Key):
+        super().__init__(key=key)
+
+    def createState(self):
+        return CheckBoxState()
+
+
+class CheckBoxState(State):
+    def initState(self):
+        # 1. Hold the boolean state for your checkbox.
+        self._is_checked = False
+        self._is_custom_checked = True
+
+    def _on_checkbox_changed(self, new_value: bool):
+        # 3. This callback updates the state and triggers a rebuild.
+        print(f"Checkbox value changed to: {new_value}")
+        self._is_checked = new_value
+        self.setState()
+        
+    def _on_custom_checkbox_changed(self, new_value: bool):
+        self._is_custom_checked = new_value
+        self.setState()
+
+    def build(self) -> Widget:
+        # Define an optional custom theme
+        custom_theme = CheckboxTheme(
+            activeColor=Colors.green,
+            inactiveColor=Colors.grey,
+            checkColor=Colors.white,
+            size=24.0
+        )
+        
+        return Container(
+            alignment=Alignment.center(),
+            child=Column(
+                mainAxisAlignment=MainAxisAlignment.CENTER,
+                crossAxisAlignment=CrossAxisAlignment.START,
+                children=[
+                    # --- Example 1: Default Checkbox ---
+                    Row(
+                        children=[
+                            Checkbox(
+                                key=Key("default_checkbox"),
+                                value=self._is_checked,
+                                onChanged=self._on_checkbox_changed
+                            ),
+                            SizedBox(key=Key("sizer_def_cb"), width=8),
+                            Text("Default Checkbox")
+                        ]
+                    ),
+                    SizedBox(key=Key("sizer_cb_main"), height=8),
+                    # --- Example 2: Themed Checkbox ---
+                    Row(
+                        children=[
+                            Checkbox(
+                                key=Key("custom_checkbox"),
+                                value=self._is_custom_checked,
+                                onChanged=self._on_custom_checkbox_changed,
+                                theme=custom_theme
+                            ),
+                            SizedBox(key=Key("sizer_cus_cb"), width=8),
+                            Text("Custom Themed Checkbox")
+                        ]
+                    )
+                ]
+            )
+        )
 # In your main.py or any component's build method
 
 class MyComponent(StatefulWidget):
@@ -215,6 +370,10 @@ class MyFormState(State):
         super().__init__()
         self.my_textfield = MyTextField(key=Key("my_textfields"))
         self.my_slider = MyComponent(key=Key("my_slider"))
+        self.my_checkBox = CheckBox(key=Key("my_checkBox_wig"))
+        self.my_switch = SwitchExample(key=Key("my_switch_example")) # <-- Instantiate it
+        self.my_radio_group = RadioExample(key=Key("my_radio_group")) # <-- Instantiate it
+        # self.my_dropdown_example = DropdownExample(key=Key("my_dropdown"))
 
 
     def build(self):
@@ -231,7 +390,15 @@ class MyFormState(State):
                     SizedBox(height=24),
                     self.my_textfield,
                     SizedBox(height=24),
-                    self.my_slider
+                    self.my_slider,
+                    SizedBox(height=24),
+                    self.my_checkBox,
+                    SizedBox(height=16), # <-- Add some space
+                    self.my_switch,     # <-- Add the switch example here
+                    SizedBox(height=24),
+                    self.my_radio_group, # <-- Add the radio group here
+                    # SizedBox(height=24),
+                    # self.my_dropdown_example,
                 ]
             )
         )
