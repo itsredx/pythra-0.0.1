@@ -54,15 +54,102 @@ from pythra import (
     BorderSide,  # <-- ADD THESE IMPORTS
 )
 import math  # For the StarClipper
+from .search_field import SearchComponent, _SearchComponentState
 
 
 class DrawerState(State):
     def __init__(self):
         super().__init__()
-
+        self.search_widget = SearchComponent(key=Key("my_search_field_widget"))
         self.search_controller = TextEditingController()
         self.search_controller.add_listener(self.on_search_updates)
         self.value_entered = False
+        self.currentIndex = 1
+
+        self.clip_path = ClipPath(
+            key=Key("Image_path_border"),
+            viewBox=(
+                290,
+                347,
+            ),
+            points=[
+                (0, 343),
+                (72, 343),
+                (72, 290),
+                (290, 290),
+                (290, 0),
+                (0, 0),
+                # (0, 50),
+            ],
+            radius=15.0,
+            child=Container(
+                key=Key("Image_path_border_container"),
+                width="100%",
+                height="100%",
+                padding=EdgeInsets.all(5),
+                decoration=BoxDecoration(
+                    color=Colors.gradient(
+                        "to bottom",
+                        Colors.red,
+                        Colors.blue,
+                    ),
+                ),
+                child=ClipPath(
+                    key=Key("Image_path_content_path"),
+                    viewBox=(
+                        280,
+                        337,
+                    ),
+                    points=[
+                        (0, 333),
+                        (62, 333),
+                        (62, 280),
+                        (280, 280),
+                        (280, 0),
+                        (0, 0),
+                        # (0, 50),
+                    ],
+                    radius=10.0,
+                    child=Container(
+                        key=Key("Image_path_content_container"),
+                        width="100%",
+                        height=330,
+                        padding=EdgeInsets.all(9),
+                        decoration=BoxDecoration(
+                            color=Colors.hex("#363636"),
+                        ),
+                        child=Column(
+                            key=Key("Image_content_root_column"),
+                            mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
+                            crossAxisAlignment=CrossAxisAlignment.START,
+                            children=[
+                                Container(
+                                    key=Key("Song_artwork_mage_container"),
+                                    width=262,
+                                    height=262,
+                                    # padding=EdgeInsets.all(5),
+                                    child=Image(
+                                        AssetImage("artwork.jpeg"),
+                                        key=Key("Song_artwork_mage"),
+                                        width=261,
+                                        height=261,
+                                        borderRadius=BorderRadius.all(6),
+                                    ),
+                                ),
+                                # SizedBox(height=9),
+                                Image(
+                                    AssetImage("avatar.jpg"),
+                                    key=Key("Song_artist_mage"),
+                                    width=42,
+                                    height=42,
+                                    borderRadius=BorderRadius.all(5),
+                                ),
+                            ],
+                        ),
+                    ),
+                ),
+            ),
+        )
 
     def on_search_updates(self):
         print(f"Listener notified! Username is now: {self.search_controller.text}")
@@ -81,6 +168,11 @@ class DrawerState(State):
     def clear_search(self):
         self.search_controller.clear()
         self.setState()
+    
+    def on_tab_selected(self, index):
+        print(f"Tab {index} selected")
+        self.currentIndex = index
+        self.setState()
 
     def build(self) -> Widget:
         # print(f"\n--- Building Drawer UI ---")
@@ -93,471 +185,492 @@ class DrawerState(State):
             focusColor=Colors.hex("#FF94DA"),
         )
         return Container(
-            key=Key("main_drawer_content_container"),
-            width=323,
-            height=822,
-            padding=EdgeInsets.all(14),
-            child=Column(
-                key=Key("main_drawer_content_column"),
-                mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
-                crossAxisAlignment=CrossAxisAlignment.START,
-                children=[
-                    Container(
-                        key=Key("top_drawer_content_container"),
-                        child=Column(
-                            key=Key("top_rawer_content_column"),
-                            crossAxisAlignment=CrossAxisAlignment.START,
-                            children=[
-                                Row(
-                                    key=Key("Title_row"),
-                                    crossAxisAlignment=CrossAxisAlignment.CENTER,
-                                    children=[
-                                        Icon(
-                                            Icons.arrow_back_ios_rounded,
-                                            size=16,
-                                            color=Colors.hex("#d9d9d955"),
-                                        ),
-                                        SizedBox(width=12),
-                                        Icon(
-                                            icon=Icons.play_music_rounded,
-                                            size=22,
-                                            color=Colors.hex("#D9D9D9"),
-                                        ),
-                                        SizedBox(width=12),
-                                        Text(
-                                            "Music Player",
-                                            style=TextStyle(
-                                                color=Colors.hex("#D9D9D9"),
-                                                fontSize=12.0,
-                                                fontFamily="verdana",
-                                            ),
-                                        ),
-                                    ],
-                                ),
-                                SizedBox(height=15),
-                                TextField(
-                                    key=Key("search_field"),  # Another unique key
-                                    controller=self.search_controller,
-                                    decoration=search_field_decoration,
-                                    # enabled= False,
-                                    # obscureText= True,
-                                    # You would add a property to make this a password type input
-                                ),
-                                Container(
-                                    key=Key("search_icon_container"),
-                                    margin=EdgeInsets.only(top=-26, left=262, right=12),
-                                    child=Icon(
-                                        key=Key("search_icon"),
-                                        icon=Icons.search_rounded,
-                                        size=16,
-                                        color=Colors.hex("#D9D9D9"),
-                                    ),
-                                ),
-                                (
-                                    Container(
-                                        key=Key("clear_icon_container"),
-                                        margin=EdgeInsets.only(top=-20, left=238),
-                                        child=ElevatedButton(
-                                            key=Key("clear_btn"),
-                                            child=Icon(
-                                                key=Key("clear_icon"),
-                                                icon=Icons.close_rounded,
+                key=Key("main_drawer_content_container"),
+                width=323,
+                height=822,
+                padding=EdgeInsets.all(14),
+                child=Column(
+                    key=Key("main_drawer_content_column"),
+                    mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
+                    crossAxisAlignment=CrossAxisAlignment.START,
+                    children=[
+                        Container(
+                            key=Key("top_drawer_content_container"),
+                            child=Column(
+                                key=Key("top_rawer_content_column"),
+                                crossAxisAlignment=CrossAxisAlignment.START,
+                                children=[
+                                    Row(
+                                        key=Key("Title_row"),
+                                        crossAxisAlignment=CrossAxisAlignment.CENTER,
+                                        children=[
+                                            Icon(
+                                                Icons.arrow_back_ios_rounded,
+                                                key=Key("Title_row_back_icon"),
                                                 size=16,
+                                                color=Colors.hex("#d9d9d955"),
+                                            ),
+                                            SizedBox(
+                                                key=Key(
+                                                    "Title_row_back_icon_right_padding"
+                                                ),
+                                                width=12,
+                                            ),
+                                            Icon(
+                                                icon=Icons.play_music_rounded,
+                                                key=Key("Title_row_music_player_icon"),
+                                                size=22,
                                                 color=Colors.hex("#D9D9D9"),
                                             ),
-                                            onPressed=self.clear_search,
-                                            style=ButtonStyle(
-                                                padding=EdgeInsets.all(0),
-                                                margin=EdgeInsets.all(0),
-                                                shape=BorderRadius.circular(4.0),
-                                                backgroundColor=Colors.transparent,
-                                                elevation=0,
+                                            SizedBox(
+                                                key=Key(
+                                                    "Title_row_music_player_icon_right_padding"
+                                                ),
+                                                width=12,
+                                            ),
+                                            Text(
+                                                "Music Player",
+                                                key=Key(
+                                                    "Title_row_music_player_name_text"
+                                                ),
+                                                style=TextStyle(
+                                                    color=Colors.hex("#D9D9D9"),
+                                                    fontSize=12.0,
+                                                    fontFamily="verdana",
+                                                ),
+                                            ),
+                                        ],
+                                    ),
+                                    SizedBox(
+                                        key=Key("search_field_margin"),
+                                        height=15,
+                                    ),
+                                    self.search_widget,
+                                    SizedBox(
+                                        key=Key("how_text_icon_container_margin"),
+                                        height=12,
+                                    ),
+                                    ElevatedButton(
+                                        key=Key("how_text_icon_elevated_btn"),
+                                        onPressed=lambda: self.on_tab_selected(1),
+                                        child=Container(
+                                            key=Key("how_text_icon_container"),
+                                            width="100%",
+                                            height=36,
+                                            padding=EdgeInsets.only(
+                                                top=6,
+                                                left=12,
+                                                right=12,
+                                                bottom=6,
+                                            ),
+                                            child=Row(
+                                                key=Key("home_text_icon_row"),
+                                                mainAxisAlignment=MainAxisAlignment.START,
+                                                children=[
+                                                    Icon(
+                                                        icon=Icons.home_rounded,
+                                                        key=Key("home_icon"),
+                                                        size=22,
+                                                        color=Colors.hex("#D9D9D9"),
+                                                    ),
+                                                    SizedBox(width=16),
+                                                    Text(
+                                                        "Home",
+                                                        key=Key("Home_text"),
+                                                        style=TextStyle(
+                                                            color=Colors.hex("#D9D9D9"),
+                                                            fontSize=16.0,
+                                                            fontFamily="verdana",
+                                                        ),
+                                                    ),
+                                                ],
                                             ),
                                         ),
-                                    )
-                                    if self.value_entered
-                                    else SizedBox(
-                                        key=Key("clear_icon_placeholder"), width=0
-                                    )
-                                ),
-                                #
-                                SizedBox(height=12),
-                                ElevatedButton(
-                                    child=Container(
-                                        width="100%",
-                                        height=36,
-                                        padding=EdgeInsets.only(
-                                            top=6, left=12, right=12, bottom=6
-                                        ),
-                                        child=Row(
-                                            mainAxisAlignment=MainAxisAlignment.START,
-                                            children=[
-                                                Icon(
-                                                    icon=Icons.home_rounded,
-                                                    size=22,
-                                                    color=Colors.hex("#D9D9D9"),
-                                                ),
-                                                SizedBox(width=16),
-                                                Text(
-                                                    "Home",
-                                                    style=TextStyle(
-                                                        color=Colors.hex("#D9D9D9"),
-                                                        fontSize=16.0,
-                                                        fontFamily="verdana",
-                                                    ),
-                                                ),
-                                            ],
+                                        style=ButtonStyle(
+                                            padding=EdgeInsets.all(0),
+                                            margin=EdgeInsets.all(0),
+                                            shape=BorderRadius.circular(4.0),
+                                            backgroundColor=Colors.transparent,
+                                            elevation=0,
+                                            maximumSize=(290, 36),
+                                            minimumSize=(290, 36),
                                         ),
                                     ),
-                                    style=ButtonStyle(
-                                        padding=EdgeInsets.all(0),
-                                        margin=EdgeInsets.all(0),
-                                        shape=BorderRadius.circular(4.0),
-                                        backgroundColor=Colors.transparent,
-                                        elevation=0,
-                                        maximumSize=(290, 36),
-                                        minimumSize=(290, 36),
+                                    SizedBox(
+                                        key=Key(
+                                            "Music_library_text_icon_selector_margin"
+                                        ),
+                                        height=4,
                                     ),
-                                ),
-                                SizedBox(height=4),
-                                ElevatedButton(
-                                    child=Container(
-                                        width="100%",
-                                        height=36,
-                                        padding=EdgeInsets.only(
-                                            top=6, left=12, right=12, bottom=6
+                                    ElevatedButton(
+                                        key=Key(
+                                            "Music_library_text_icon_selector_elevated_btn"
                                         ),
-                                        decoration=BoxDecoration(
-                                            color=Colors.hex("#363636"),
-                                            borderRadius=BorderRadius.all(4),
-                                        ),
-                                        child=Row(
-                                            mainAxisAlignment=MainAxisAlignment.START,
-                                            children=[
-                                                Container(
-                                                    margin=EdgeInsets.only(
-                                                        left=-12, right=9
-                                                    ),
-                                                    child=Image(
-                                                        AssetImage("selector-.svg"),
-                                                        width=3,
-                                                        height=20,
-                                                    ),
+                                        onPressed=lambda: self.on_tab_selected(0),
+                                        child=Container(
+                                            key=Key(
+                                                "Music_library_text_icon_selector_container"
+                                            ),
+                                            width="100%",
+                                            height=36,
+                                            padding=EdgeInsets.only(
+                                                top=6,
+                                                left=12,
+                                                right=12,
+                                                bottom=6,
+                                            ),
+                                            decoration=BoxDecoration(
+                                                color=Colors.hex("#363636"),
+                                                borderRadius=BorderRadius.all(4),
+                                            ),
+                                            child=Row(
+                                                key=Key(
+                                                    "Music_library_text_icon_selector_row"
                                                 ),
-                                                Icon(
-                                                    icon=Icons.library_music_rounded,
-                                                    size=22,
-                                                    color=Colors.hex("#D9D9D9"),
-                                                ),
-                                                SizedBox(width=16),
-                                                Text(
-                                                    "Music library",
-                                                    style=TextStyle(
-                                                        color=Colors.hex("#D9D9D9"),
-                                                        fontSize=16.0,
-                                                        fontFamily="verdana",
-                                                    ),
-                                                ),
-                                            ],
-                                        ),
-                                    ),
-                                    style=ButtonStyle(
-                                        padding=EdgeInsets.all(0),
-                                        margin=EdgeInsets.all(0),
-                                        shape=BorderRadius.circular(4.0),
-                                        backgroundColor=Colors.transparent,
-                                        elevation=0,
-                                        maximumSize=(290, 36),
-                                        minimumSize=(290, 36),
-                                    ),
-                                ),
-                                SizedBox(height=14),
-                                Container(
-                                    height=2,
-                                    width="100%",
-                                    color=Colors.hex("#7C7C7C"),
-                                ),
-                                SizedBox(height=12),
-                                ElevatedButton(
-                                    child=Container(
-                                        width="100%",
-                                        height=36,
-                                        padding=EdgeInsets.only(
-                                            top=6, left=12, right=12, bottom=6
-                                        ),
-                                        child=Row(
-                                            mainAxisAlignment=MainAxisAlignment.START,
-                                            children=[
-                                                Icon(
-                                                    icon=Icons.queue_music_rounded,
-                                                    size=22,
-                                                    color=Colors.hex("#D9D9D9"),
-                                                ),
-                                                SizedBox(width=16),
-                                                Text(
-                                                    "Play queue",
-                                                    style=TextStyle(
-                                                        color=Colors.hex("#D9D9D9"),
-                                                        fontSize=16.0,
-                                                        fontFamily="verdana",
-                                                    ),
-                                                ),
-                                            ],
-                                        ),
-                                    ),
-                                    style=ButtonStyle(
-                                        padding=EdgeInsets.all(0),
-                                        margin=EdgeInsets.all(0),
-                                        shape=BorderRadius.circular(4.0),
-                                        backgroundColor=Colors.transparent,
-                                        elevation=0,
-                                        maximumSize=(290, 36),
-                                        minimumSize=(290, 36),
-                                    ),
-                                ),
-                                SizedBox(height=4),
-                                ElevatedButton(
-                                    child=Container(
-                                        width="100%",
-                                        height=36,
-                                        padding=EdgeInsets.only(
-                                            top=6, left=12, right=12, bottom=6
-                                        ),
-                                        child=Row(
-                                            mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
-                                            children=[
-                                                Row(
-                                                    mainAxisAlignment=MainAxisAlignment.START,
-                                                    children=[
-                                                        Icon(
-                                                            icon=Icons.playlist_play_rounded,
-                                                            size=22,
-                                                            color=Colors.hex("#D9D9D9"),
+                                                mainAxisAlignment=MainAxisAlignment.START,
+                                                children=[
+                                                    Container(
+                                                        key=Key(
+                                                            "Music_library_image_selector"
                                                         ),
-                                                        SizedBox(width=16),
-                                                        Text(
-                                                            "Playlists",
-                                                            style=TextStyle(
+                                                        margin=EdgeInsets.only(
+                                                            left=-12,
+                                                            right=9,
+                                                        ),
+                                                        child=Image(
+                                                            AssetImage("selector-.svg"),
+                                                            key=Key(
+                                                                "Music_library_selctor_identifier"
+                                                            ),
+                                                            width=3,
+                                                            height=20,
+                                                        ),
+                                                    ),
+                                                    Icon(
+                                                        icon=Icons.library_music_rounded,
+                                                        key=Key("Music_library_icon"),
+                                                        size=22,
+                                                        color=Colors.hex("#D9D9D9"),
+                                                    ),
+                                                    SizedBox(
+                                                        key=Key(
+                                                            "Music_library_icon_padding"
+                                                        ),
+                                                        width=16,
+                                                    ),
+                                                    Text(
+                                                        "Music library",
+                                                        key=Key("Music_library_text"),
+                                                        style=TextStyle(
+                                                            color=Colors.hex("#D9D9D9"),
+                                                            fontSize=16.0,
+                                                            fontFamily="verdana",
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                        style=ButtonStyle(
+                                            padding=EdgeInsets.all(0),
+                                            margin=EdgeInsets.all(0),
+                                            shape=BorderRadius.circular(4.0),
+                                            backgroundColor=Colors.transparent,
+                                            elevation=0,
+                                            maximumSize=(290, 36),
+                                            minimumSize=(290, 36),
+                                        ),
+                                    ),
+                                    SizedBox(
+                                        key=Key("drawer_divider_margin"),
+                                        height=14,
+                                    ),
+                                    Container(
+                                        key=Key("drawer_divider"),
+                                        height=2,
+                                        width="100%",
+                                        color=Colors.hex("#7C7C7C"),
+                                    ),
+                                    SizedBox(
+                                        key=Key("drawer_divider_padding"),
+                                        height=12,
+                                    ),
+                                    ElevatedButton(
+                                        key=Key("Play_queue_text_icon_elevated_btn"),
+                                        child=Container(
+                                            key=Key("Play_queue_text_icon_container"),
+                                            width="100%",
+                                            height=36,
+                                            padding=EdgeInsets.only(
+                                                top=6,
+                                                left=12,
+                                                right=12,
+                                                bottom=6,
+                                            ),
+                                            child=Row(
+                                                key=Key("Play_queue_text_icon_row"),
+                                                mainAxisAlignment=MainAxisAlignment.START,
+                                                children=[
+                                                    Icon(
+                                                        icon=Icons.queue_music_rounded,
+                                                        key=Key("Play_queue_icon"),
+                                                        size=22,
+                                                        color=Colors.hex("#D9D9D9"),
+                                                    ),
+                                                    SizedBox(
+                                                        key=Key(
+                                                            "Play_queue_icon_padding"
+                                                        ),
+                                                        width=16,
+                                                    ),
+                                                    Text(
+                                                        "Play queue",
+                                                        key=Key("Play_queue_text"),
+                                                        style=TextStyle(
+                                                            color=Colors.hex("#D9D9D9"),
+                                                            fontSize=16.0,
+                                                            fontFamily="verdana",
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                        style=ButtonStyle(
+                                            padding=EdgeInsets.all(0),
+                                            margin=EdgeInsets.all(0),
+                                            shape=BorderRadius.circular(4.0),
+                                            backgroundColor=Colors.transparent,
+                                            elevation=0,
+                                            maximumSize=(290, 36),
+                                            minimumSize=(290, 36),
+                                        ),
+                                    ),
+                                    SizedBox(
+                                        key=Key("playlist_and_icons_margin_4"),
+                                        height=4,
+                                    ),
+                                    ElevatedButton(
+                                        key=Key("playlist_and_icons_elevated_button"),
+                                        child=Container(
+                                            key=Key("playlist_and_icons_container"),
+                                            width="100%",
+                                            height=36,
+                                            padding=EdgeInsets.only(
+                                                top=6,
+                                                left=12,
+                                                right=12,
+                                                bottom=6,
+                                            ),
+                                            child=Row(
+                                                key=Key("playlist_and_icons_root_row"),
+                                                mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
+                                                children=[
+                                                    Row(
+                                                        key=Key(
+                                                            "playlist_and_icons_row"
+                                                        ),
+                                                        mainAxisAlignment=MainAxisAlignment.START,
+                                                        children=[
+                                                            Icon(
+                                                                icon=Icons.playlist_play_rounded,
+                                                                key=Key(
+                                                                    "playlist_icon_btn"
+                                                                ),
+                                                                size=22,
                                                                 color=Colors.hex(
                                                                     "#D9D9D9"
                                                                 ),
-                                                                fontSize=16.0,
-                                                                fontFamily="verdana",
                                                             ),
-                                                        ),
-                                                    ],
-                                                ),
-                                                Icon(
-                                                    icon=Icons.arrow_drop_down_rounded,
-                                                    color=Colors.hex("#D9D9D9"),
-                                                    size=16,
-                                                    fill=True,
-                                                    weight=700,
-                                                ),
-                                            ],
-                                        ),
-                                    ),
-                                    style=ButtonStyle(
-                                        padding=EdgeInsets.all(0),
-                                        margin=EdgeInsets.all(0),
-                                        shape=BorderRadius.circular(4.0),
-                                        backgroundColor=Colors.transparent,
-                                        elevation=0,
-                                        maximumSize=(290, 36),
-                                        minimumSize=(290, 36),
-                                    ),
-                                ),
-                            ],
-                        ),
-                    ),
-                    Container(
-                        child=Column(
-                            crossAxisAlignment=CrossAxisAlignment.START,
-                            children=[
-                                ElevatedButton(
-                                    Container(
-                                        width="100%",
-                                        height=36,
-                                        padding=EdgeInsets.only(
-                                            top=6, left=12, right=12, bottom=6
-                                        ),
-                                        child=Row(
-                                            mainAxisAlignment=MainAxisAlignment.START,
-                                            children=[
-                                                Icon(
-                                                    icon=Icons.settings_rounded,
-                                                    size=22,
-                                                    color=Colors.hex("#D9D9D9"),
-                                                ),
-                                                SizedBox(width=16),
-                                                Text(
-                                                    "Settings",
-                                                    style=TextStyle(
-                                                        color=Colors.hex("#D9D9D9"),
-                                                        fontSize=16.0,
-                                                        fontFamily="verdana",
+                                                            SizedBox(
+                                                                key=Key(
+                                                                    "playlist_icon_btn_padding"
+                                                                ),
+                                                                width=16,
+                                                            ),
+                                                            Text(
+                                                                "Playlists",
+                                                                key=Key(
+                                                                    "playlist_btn_text"
+                                                                ),
+                                                                style=TextStyle(
+                                                                    color=Colors.hex(
+                                                                        "#D9D9D9"
+                                                                    ),
+                                                                    fontSize=16.0,
+                                                                    fontFamily="verdana",
+                                                                ),
+                                                            ),
+                                                        ],
                                                     ),
-                                                ),
-                                            ],
-                                        ),
-                                    ),
-                                    style=ButtonStyle(
-                                        padding=EdgeInsets.all(0),
-                                        margin=EdgeInsets.all(0),
-                                        shape=BorderRadius.circular(4.0),
-                                        backgroundColor=Colors.transparent,
-                                        elevation=0,
-                                        maximumSize=(290, 36),
-                                        minimumSize=(290, 36),
-                                    ),
-                                ),
-                                SizedBox(height=4),
-                                Container(
-                                    height=344.5,
-                                    width=291,
-                                    decoration=BoxDecoration(
-                                        color=Colors.transparent,
-                                        borderRadius=BorderRadius.all(4),
-                                    ),
-                                    child=ClipPath(
-                                        viewBox=(
-                                            290,
-                                            347,
-                                        ),
-                                        points=[
-                                            (0, 343),
-                                            (72, 343),
-                                            (72, 290),
-                                            (290, 290),
-                                            (290, 0),
-                                            (0, 0),
-                                            # (0, 50),
-                                        ],
-                                        radius=15.0,
-                                        child=Container(
-                                            width="100%",
-                                            height="100%",
-                                            padding=EdgeInsets.all(5),
-                                            decoration=BoxDecoration(
-                                                color=Colors.gradient(
-                                                    "to bottom", Colors.red, Colors.blue
-                                                ),
-                                            ),
-                                            child=ClipPath(
-                                                viewBox=(
-                                                    280,
-                                                    337,
-                                                ),
-                                                points=[
-                                                    (0, 333),
-                                                    (62, 333),
-                                                    (62, 280),
-                                                    (280, 280),
-                                                    (280, 0),
-                                                    (0, 0),
-                                                    # (0, 50),
+                                                    Icon(
+                                                        icon=Icons.arrow_drop_down_rounded,
+                                                        key=Key(
+                                                            "playlist_dropdown_icon"
+                                                        ),
+                                                        color=Colors.hex("#D9D9D9"),
+                                                        size=16,
+                                                        fill=True,
+                                                        weight=700,
+                                                    ),
                                                 ],
-                                                radius=10.0,
-                                                child=Container(
-                                                    width="100%",
-                                                    height=330,
-                                                    padding=EdgeInsets.all(9),
+                                            ),
+                                        ),
+                                        style=ButtonStyle(
+                                            padding=EdgeInsets.all(0),
+                                            margin=EdgeInsets.all(0),
+                                            shape=BorderRadius.circular(4.0),
+                                            backgroundColor=Colors.transparent,
+                                            elevation=0,
+                                            maximumSize=(290, 36),
+                                            minimumSize=(290, 36),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                        Container(
+                            key=Key("settings_btn_and_playing_status_container"),
+                            child=Column(
+                                key=Key("settings_btn_and_playing_status_column"),
+                                crossAxisAlignment=CrossAxisAlignment.START,
+                                children=[
+                                    ElevatedButton(
+                                        key=Key("settings_btn"),
+                                        child=Container(
+                                            key=Key("settings_btn_iner_container"),
+                                            width="100%",
+                                            height=36,
+                                            padding=EdgeInsets.only(
+                                                top=6,
+                                                left=12,
+                                                right=12,
+                                                bottom=6,
+                                            ),
+                                            child=Row(
+                                                key=Key("settings_row_btn"),
+                                                mainAxisAlignment=MainAxisAlignment.START,
+                                                children=[
+                                                    Icon(
+                                                        key=Key("settings_icon_btn"),
+                                                        icon=Icons.settings_rounded,
+                                                        size=22,
+                                                        color=Colors.hex("#D9D9D9"),
+                                                    ),
+                                                    SizedBox(
+                                                        key=Key(
+                                                            "settings_icon_btn_padding"
+                                                        ),
+                                                        width=16,
+                                                    ),
+                                                    Text(
+                                                        "Settings",
+                                                        key=Key("settings_text_btn"),
+                                                        style=TextStyle(
+                                                            color=Colors.hex("#D9D9D9"),
+                                                            fontSize=16.0,
+                                                            fontFamily="verdana",
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ),
+                                        style=ButtonStyle(
+                                            padding=EdgeInsets.all(0),
+                                            margin=EdgeInsets.all(0),
+                                            shape=BorderRadius.circular(4.0),
+                                            backgroundColor=Colors.transparent,
+                                            elevation=0,
+                                            maximumSize=(290, 36),
+                                            minimumSize=(290, 36),
+                                        ),
+                                    ),
+                                    SizedBox(
+                                        key=Key("playing_status_margin_under_settins"),
+                                        height=4,
+                                    ),
+                                    Container(
+                                        key=Key(
+                                            "playing_status_image_artist_path_container"
+                                        ),
+                                        height=344.5,
+                                        width=291,
+                                        decoration=BoxDecoration(
+                                            color=Colors.transparent,
+                                            borderRadius=BorderRadius.all(4),
+                                        ),
+                                        child=self.clip_path,
+                                    ),
+                                    Container(
+                                        key=Key(
+                                            "playing_status_root_container_in_path"
+                                        ),
+                                        width="100%",
+                                        margin=EdgeInsets.only(top=-46),
+                                        child=Row(
+                                            key=Key("playing_status_row_in_path"),
+                                            mainAxisAlignment=MainAxisAlignment.END,
+                                            children=[
+                                                Container(
+                                                    key=Key(
+                                                        "playing_status_container_in_path"
+                                                    ),
+                                                    height=41,
+                                                    width=207,
+                                                    padding=EdgeInsets.symmetric(8, 4),
                                                     decoration=BoxDecoration(
                                                         color=Colors.hex("#363636"),
+                                                        borderRadius=BorderRadius.circular(
+                                                            5.863
+                                                        ),
                                                     ),
                                                     child=Column(
+                                                        key=Key(
+                                                            "playing_status_column_in_path"
+                                                        ),
                                                         mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
                                                         crossAxisAlignment=CrossAxisAlignment.START,
                                                         children=[
-                                                            Container(
-                                                                width=262,
-                                                                height=262,
-                                                                # padding=EdgeInsets.all(5),
-                                                                child=Image(
-                                                                    AssetImage(
-                                                                        "artwork.jpeg"
+                                                            Text(
+                                                                "Shoma (feat. Yng Bun)",
+                                                                key=Key(
+                                                                    "song_name_in_path"
+                                                                ),
+                                                                style=TextStyle(
+                                                                    color=(
+                                                                        Colors.hex(
+                                                                            "#D9D9D9"
+                                                                        )
                                                                     ),
-                                                                    width=261,
-                                                                    height=261,
-                                                                    borderRadius=BorderRadius.all(
-                                                                        6
-                                                                    ),
+                                                                    fontSize=14.0,
+                                                                    fontFamily="verdana",
                                                                 ),
                                                             ),
-                                                            # SizedBox(height=9),
-                                                            Image(
-                                                                AssetImage(
-                                                                    "avatar.jpg"
+                                                            Text(
+                                                                "Red X",
+                                                                key=Key(
+                                                                    "artist_name_in_path"
                                                                 ),
-                                                                width=42,
-                                                                height=42,
-                                                                borderRadius=BorderRadius.all(
-                                                                    5
+                                                                style=TextStyle(
+                                                                    color=(
+                                                                        Colors.hex(
+                                                                            "#D9D9D9"
+                                                                        )
+                                                                    ),
+                                                                    fontSize=11.0,
+                                                                    fontFamily="verdana",
                                                                 ),
                                                             ),
                                                         ],
                                                     ),
                                                 ),
-                                            ),
+                                            ],
                                         ),
                                     ),
-                                ),
-                                Container(
-                                    width="100%",
-                                    margin=EdgeInsets.only(top=-46),
-                                    child=Row(
-                                        mainAxisAlignment=MainAxisAlignment.END,
-                                        children=[
-                                            Container(
-                                                height=41,
-                                                width=207,
-                                                padding=EdgeInsets.symmetric(8, 4),
-                                                decoration=BoxDecoration(
-                                                    color=Colors.hex("#363636"),
-                                                    borderRadius=BorderRadius.circular(
-                                                        5.863
-                                                    ),
-                                                ),
-                                                child=Column(
-                                                    mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
-                                                    crossAxisAlignment=CrossAxisAlignment.START,
-                                                    children=[
-                                                        Text(
-                                                            "Shoma (feat. Yng Bun)",
-                                                            style=TextStyle(
-                                                                color=(
-                                                                    Colors.hex(
-                                                                        "#D9D9D9"
-                                                                    )
-                                                                ),
-                                                                fontSize=14.0,
-                                                                fontFamily="verdana",
-                                                            ),
-                                                        ),
-                                                        Text(
-                                                            "Red X",
-                                                            style=TextStyle(
-                                                                color=(
-                                                                    Colors.hex(
-                                                                        "#D9D9D9"
-                                                                    )
-                                                                ),
-                                                                fontSize=11.0,
-                                                                fontFamily="verdana",
-                                                            ),
-                                                        ),
-                                                    ],
-                                                ),
-                                            ),
-                                        ],
-                                    ),
-                                ),
-                            ],
-                        )
-                    ),
-                ],
-            ),
-        )
+                                ],
+                            ),
+                        ),
+                    ],
+                ),
+            )
 
 
 class Drawer(StatefulWidget):

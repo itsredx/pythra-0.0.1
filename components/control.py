@@ -95,7 +95,7 @@ class MyComponentState(State):
             onChangeEnd=self.handle_slider_change,
             min=0.0,
             max=1.0,
-            divisions=10,
+            divisions=100,
             activeColor=Colors.hex("#363636"),
             thumbColor=Colors.hex("#FFF"),#FF94DA
         )
@@ -134,22 +134,6 @@ class ControlsState(State):
                                 ),
                             ),
                             SizedBox(width=12),
-                            # Container(
-                            #     width="100%",
-                            #     height=9,
-                            #     color=Colors.hex("#D9D9D9"),
-                            #     decoration=BoxDecoration(
-                            #         borderRadius=BorderRadius.all(3)
-                            #     ),
-                            #     child=Container(
-                            #         width="66%",
-                            #         height=9,
-                            #         color=Colors.hex("#363636"),
-                            #         decoration=BoxDecoration(
-                            #             borderRadius=BorderRadius.all(3)
-                            #         ),
-                            #     ),
-                            # ),
                             Container(width="100%", child=self.my_slider),
                             SizedBox(width=12),
                             Text(
