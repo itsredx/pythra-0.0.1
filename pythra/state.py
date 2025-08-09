@@ -100,6 +100,19 @@ class State:
         """
         pass # Default implementation does nothing
 
+    def didUpdateWidget(self, oldWidget: 'StatefulWidget'):
+        """
+        Called whenever the widget configuration changes.
+
+        If the parent widget rebuilds and creates a new instance of this
+        widget (with the same key and type), this method is called to notify
+        the state object of the new configuration.
+
+        This is the right place to re-subscribe to controllers or update
+        internal state based on the new widget properties.
+        """
+        pass # Default implementation does nothing
+
 
     def get_widget(self) -> Optional['StatefulWidget']: # Hint uses forward reference
         """Safely retrieves the associated StatefulWidget instance."""

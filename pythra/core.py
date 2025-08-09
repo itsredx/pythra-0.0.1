@@ -1,7 +1,7 @@
 # pythra/core.py
 
 # --- ADD THESE IMPORTS AT THE TOP OF THE FILE ---
-import cProfile
+# import cProfile
 import pstats
 import io
 # --- END OF IMPORTS ---
@@ -239,8 +239,8 @@ class Framework:
         body and applying it in one atomic operation, avoiding patch race conditions.
         """
         # --- PROFILER SETUP ---
-        profiler = cProfile.Profile()
-        profiler.enable()
+        # profiler = cProfile.Profile()
+        # profiler.enable()
         # --- END PROFILER SETUP ---
 
         if not self.window or not self.root_widget:
@@ -342,11 +342,11 @@ class Framework:
 
         print(f"--- Hot Restart Complete (Total: {time.time() - start_time:.4f}s) ---")
         # --- PROFILER REPORTING ---
-        profiler.disable()
-        s = io.StringIO()
-        # Sort stats by 'cumulative time' to see the biggest bottlenecks at the top
-        ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
-        ps.print_stats(20) # Print the top 20 most time-consuming functions
+        # profiler.disable()
+        # s = io.StringIO()
+        # # Sort stats by 'cumulative time' to see the biggest bottlenecks at the top
+        # ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
+        # ps.print_stats(20) # Print the top 20 most time-consuming functions
 
         print("\n--- cProfile Report ---")
         print(s.getvalue())
@@ -361,7 +361,8 @@ class Framework:
         js_files = [
             "web/js/pathGenerator.js",
             "web/js/clipPathUtils.js",
-            "web/js/slider.js"  # <-- ADD THIS LINE
+            "web/js/slider.js",
+            "web/js/dropdown.js",  # <-- ADD THIS LINE
         ]
         all_js_code = []
         for file_path in js_files:
@@ -391,8 +392,8 @@ class Framework:
         """
 
         # --- PROFILER SETUP ---
-        profiler = cProfile.Profile()
-        profiler.enable()
+        # profiler = cProfile.Profile()
+        # profiler.enable()
         # --- END PROFILER SETUP ---
 
         self._reconciliation_requested = False
@@ -483,7 +484,7 @@ class Framework:
         combined_script = (css_update_script + "\n" + dom_patch_script).strip()
         if combined_script:
             print(f"Framework: Executing {len(all_patches)} DOM patches.")
-            # print("Patches:", all_patches)
+            print("Patches:", all_patches)
             self.window.evaluate_js(self.id, combined_script)
         else:
             print("Framework: No DOM changes detected.")
@@ -494,15 +495,15 @@ class Framework:
         )
 
         # --- PROFILER REPORTING ---
-        profiler.disable()
-        s = io.StringIO()
-        # Sort stats by 'cumulative time' to see the biggest bottlenecks at the top
-        ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
-        ps.print_stats(20) # Print the top 20 most time-consuming functions
+        # profiler.disable()
+        # s = io.StringIO()
+        # # Sort stats by 'cumulative time' to see the biggest bottlenecks at the top
+        # ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
+        # ps.print_stats(20) # Print the top 20 most time-consuming functions
 
-        print("\n--- cProfile Report ---")
-        print(s.getvalue())
-        print("--- End of Report ---\n")
+        # print("\n--- cProfile Report ---")
+        # print(s.getvalue())
+        # print("--- End of Report ---\n")
         # --- END PROFILER REPORTING ---
 
     # --- Widget Tree Building ---
@@ -717,6 +718,8 @@ class Framework:
 
             command_js = ""
 
+            print("Patch details: ",action, target_id, data)
+
             if action == "INSERT":
                 parent_id, html_stub, props, before_id = (
                     data["parent_html_id"],
@@ -736,18 +739,41 @@ class Framework:
                 command_js = f"""
                     var parentEl = document.getElementById('{parent_id}');
                     if (parentEl) {{
+                        // Create a temporary, disconnected container
                         var tempContainer = document.createElement('div');
-                        tempContainer.innerHTML = `{final_escaped_html}`;
-                        var insertedEl = tempContainer.firstChild;
+                        // Use trim() to remove leading/trailing whitespace from the HTML string
+                        tempContainer.innerHTML = `{final_escaped_html}`.trim(); 
+                        
+                        // Use `firstElementChild` which ignores whitespace text nodes
+                        var insertedEl = tempContainer.firstElementChild; 
+
                         if (insertedEl) {{
                             parentEl.insertBefore(insertedEl, {before_id_js});
+                            // Now we can safely apply props because 'insertedEl' is guaranteed to be an element
                             {self._generate_prop_update_js(target_id, props, is_insert=True)}
                         }}
                     }}
                 """
                 props = data.get("props", {})
 
-                # --- ADD THIS ---
+                 # --- ADD THIS BLOCK ---
+                print("Props: ", props)
+                if props.get("init_dropdown"):
+                    print("---- dropdown init ----", target_id)
+                    options_json = json.dumps(props.get("dropdown_options", {}))
+                    command_js += f"""
+                        setTimeout(() => {{
+                            console.log("Initializig dropdown");
+                            if (typeof PythraDropdown !== 'undefined') {{
+                                console.log("Initializig the dropdown");
+                                if (!window._pythra_instances['{target_id}']) {{
+                                    window._pythra_instances['{target_id}'] = new PythraDropdown('{target_id}', {options_json});
+                                }}
+                            }}
+                        }}, 0);
+                    """
+                # --- END OF BLOCK ---
+
                 if props.get("init_slider"):
                     options_json = json.dumps(props.get("slider_options", {}))
                     command_js += f"""
@@ -919,7 +945,24 @@ class Framework:
                         // Complex JS initializers (like SimpleBar) would need more handling here.
                     }}
                 """
+                # --- ADD THIS NEW LOGIC ---
+                # After replacing the HTML, we must check if the NEW widget
+                # needs a JS engine and initialize it.
+                
+                # Check for Dropdown
+                if new_props.get("init_dropdown"):
+                    options_json = json.dumps(new_props.get("dropdown_options", {}))
+                    # The element ID is the same, but the element itself is new.
+                    command_js += f"""
+                        setTimeout(() => {{
+                            if (typeof PythraDropdown !== 'undefined') {{
+                                console.log('Re-initializing Dropdown for #{target_id} after replacement.');
+                                window._pythra_instances['{target_id}'] = new PythraDropdown('{target_id}', {options_json});
+                            }}
+                        }}, 0);
+                    """
             # --- END OF NEW BLOCK ---
+                
 
             elif action == "SVG_INSERT":
                 parent_id = data.get("parent_html_id")  # e.g., 'svg-defs'
@@ -1194,7 +1237,92 @@ class Framework:
                         getResponsivePath() {{
                             return this.currentPath;
                         }}
-                        }}""")
+                        }}
+
+                        class PythraDropdown {{
+                            constructor(elementId, options) {{
+                                this.container = document.getElementById(elementId);
+                                if (!this.container) {{
+                                    console.error(`Dropdown container with ID #${{elementId}} not found.`);
+                                    return;
+                                }}
+
+                                console.log(`✅ PythraDropdown engine is initializing for #${{elementId}}`);
+
+                                this.options = options;
+                                this.valueContainer = this.container.querySelector('.dropdown-value-container');
+                                this.menu = this.container.querySelector('.dropdown-menu');
+                                this.items = this.menu.querySelectorAll('.dropdown-item');
+
+                                // Bind 'this' to maintain context in event handlers
+                                this.toggleMenu = this.toggleMenu.bind(this);
+                                this.handleItemClick = this.handleItemClick.bind(this);
+                                this.handleClickOutside = this.handleClickOutside.bind(this);
+
+                                // Attach event listeners
+                                this.valueContainer.addEventListener('click', this.toggleMenu);
+                                this.items.forEach(item => {{
+                                    item.addEventListener('click', this.handleItemClick);
+                                }});
+                            }}
+
+                            toggleMenu(event) {{
+                                event.stopPropagation(); // Prevent click from bubbling to the document
+                                const isCurrentlyOpen = this.container.classList.toggle('open');
+                                console.log("Value container Clicked");
+                                
+                                if (isCurrentlyOpen) {{
+                                    // If we just opened the menu, listen for clicks outside to close it
+                                    document.addEventListener('click', this.handleClickOutside);
+                                }} else {{
+                                    // If we just closed it, stop listening
+                                    document.removeEventListener('click', this.handleClickOutside);
+                                }}
+                            }}
+
+                            handleItemClick(event) {{
+                                const selectedValue = event.currentTarget.dataset.value;
+                                const selectedLabel = event.currentTarget.textContent;
+
+                                console.log("Dropdown option Clicked");
+                                
+                                // 1. Update the display value immediately for instant feedback
+                                this.valueContainer.querySelector('span').textContent = selectedLabel;
+                                
+                                // 2. Send the selected *value* back to the Python backend
+                                if (window.pywebview && this.options.onChangedName) {{
+                                    window.pywebview.on_input_changed(this.options.onChangedName, selectedValue);
+                                }}
+                                
+                                // 3. Close the menu
+                                this.closeMenu();
+                            }}
+                            
+                            closeMenu() {{
+                                if (this.container.classList.contains('open')) {{
+                                    this.container.classList.remove('open');
+                                    document.removeEventListener('click', this.handleClickOutside);
+                                }}
+                            }}
+
+                            handleClickOutside(event) {{
+                                // If the click is outside the main container, close the menu
+                                if (!this.container.contains(event.target)) {{
+                                    this.closeMenu();
+                                }}
+                            }}
+
+                            destroy() {{
+                                // Cleanup to prevent memory leaks
+                                if (!this.container) return;
+                                this.valueContainer.removeEventListener('click', this.toggleMenu);
+                                this.items.forEach(item => {{
+                                    item.removeEventListener('click', this.handleItemClick);
+                                }});
+                                document.removeEventListener('click', this.handleClickOutside);
+                            }}
+                        }}
+                        """)
                 # js_commands.append(f"console.log('Applying patch {action} {target_id}:', {loggable_data_str});")
                 # --- END OF FIX ---
             # print(js_commands)
@@ -1486,6 +1614,14 @@ class Framework:
             html_id = node_data.get("html_id")
             # print(">>>init_slider<<<", html_id)
 
+             # --- ADD THIS BLOCK ---
+            if props.get("init_dropdown"):
+                imports.add("import { PythraDropdown } from './js/dropdown.js';")
+                options = props.get("dropdown_options", {})
+                options_json = json.dumps(options)
+                js_commands.append(f"window._pythra_instances['{html_id}'] = new PythraDropdown('{html_id}', {options_json});")
+            # --- END OF BLOCK ---
+
             # Check for our new Slider's flag
             if props.get("init_slider"):
                 # print(">>>init_slider<<<", html_id)
@@ -1518,6 +1654,7 @@ class Framework:
             // import {{ generateRoundedPath }} from './js/pathGenerator.js';
             // import {{ ResponsiveClipPath }} from './js/clipPathUtils.js';
             import {{ PythraSlider }} from './js/slider.js';
+            import {{ PythraDropdown }} from './js/dropdown.js';
             
 
             document.addEventListener('DOMContentLoaded', () => {{

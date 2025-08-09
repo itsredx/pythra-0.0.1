@@ -1,5 +1,5 @@
 # pythra/controllers.py
-from typing import Callable, List, Optional
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, Callable
 
 class TextEditingController:
     """
@@ -97,3 +97,20 @@ class SliderController:
         self.value = value
         self.isDragEnded = isDragEnded
 
+
+# In pythra/controllers.py
+
+# ... (keep your existing controllers)
+
+
+class DropdownController:
+    """
+    Manages the state of a Dropdown widget.
+
+    This includes the currently selected value and the open/closed state of the
+    dropdown menu. The parent widget is responsible for creating and managing
+    this controller.
+    """
+    def __init__(self, selectedValue: Any = None):
+        self.selectedValue = selectedValue
+        self.isOpen = False # Internal state for toggling, managed by JS engine
