@@ -351,6 +351,7 @@ class TextButton(Widget):
             'css_class': self.css_class,
             # Pass the identifier for the callback, not the function object
             'onPressedName': self.onPressed_id,
+            'onPressedArgs': [],
             # Note: Child diffing handled separately
         }
         return {k: v for k, v in props.items() if v is not None}
