@@ -1966,3 +1966,37 @@ class RadioTheme:
         return (self.fillColor, self.splashColor)
 
 
+# In pythra/styles.py
+
+# ... (keep your existing style classes)
+
+@dataclass
+class DropdownTheme:
+    """Defines the visual properties for a Dropdown widget."""
+    # Main button/display area
+    backgroundColor: str = Colors.surfaceContainerHighest
+    padding: EdgeInsets = field(default_factory=lambda: EdgeInsets.symmetric(horizontal=12, vertical=8))
+    borderRadius: BorderRadius = field(default_factory=lambda: BorderRadius.all(4))
+    border: BorderSide = field(default_factory=lambda: BorderSide(width=1, color=Colors.outline))
+    
+    # Dropdown menu overlay
+    menuBackgroundColor: str = Colors.surfaceContainer
+    menuElevation: float = 2.0
+    menuBorderRadius: BorderRadius = field(default_factory=lambda: BorderRadius.all(4))
+    
+    # Items within the menu
+    itemHeight: int = 40
+    itemHoverColor: str = Colors.rgba(103, 80, 164, 0.1) # primary with alpha
+
+    # Icon
+    iconColor: str = Colors.onSurfaceVariant
+    iconSize: int = 24
+
+    def to_tuple(self) -> Tuple:
+        """Creates a hashable tuple for use in style keys."""
+        return (
+            self.backgroundColor, make_hashable(self.padding), make_hashable(self.borderRadius),
+            make_hashable(self.border), self.menuBackgroundColor, self.menuElevation,
+            make_hashable(self.menuBorderRadius), self.itemHeight, self.itemHoverColor,
+            self.iconColor, self.iconSize
+        )

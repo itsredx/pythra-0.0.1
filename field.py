@@ -5,7 +5,7 @@ from pythra.widgets import *
 from pythra.styles import *
 from pythra.state import StatefulWidget, State
 from pythra.base import Key
-from pythra.controllers import SliderController
+from pythra.controllers import *
 
 from pythra import (
     Framework, State, StatefulWidget, Key, Container,
@@ -15,7 +15,55 @@ from pythra import (
     TextEditingController, InputDecoration,
 )
 
+class MyDropDown(StatefulWidget):
+    def __init__(self, key: Key):
+        super().__init__(key=key)
 
+    def createState(self):
+        return DropDownState()
+
+class DropDownState(State):
+    def initState(self):
+        # 1. Create and hold the controller in your state.
+        #    Initialize with a value if you have a default selection.
+        self.dropdown_controller = DropdownController(selectedValue='usa')
+
+        self.countries = [
+            ("United States", "usa"),
+            ("Canada", "can"),
+            ("Mexico", "mex")
+        ]
+
+    def _on_country_changed(self, new_value):
+        # 3. This callback updates the controller and triggers a rebuild.
+        print(f"Dropdown value changed to: {new_value}")
+        self.dropdown_controller.selectedValue = new_value
+        self.setState()
+
+    def build(self) -> Widget:
+        # Get the current label to display it elsewhere in the UI if needed
+        current_label = ""
+        for label, val in self.countries:
+            if val == self.dropdown_controller.selectedValue:
+                current_label = label
+                break
+
+        return Column(
+            crossAxisAlignment = CrossAxisAlignment.START,
+            children=[
+                Text(f"Selected Country Code: {self.dropdown_controller.selectedValue}"),
+                Text(f"Selected Country Name: {current_label}"),
+                SizedBox(height=20),
+                
+                # 2. In your build method, create the Dropdown widget.
+                Dropdown(
+                    key=Key("country_selector"),
+                    controller=self.dropdown_controller,
+                    items=self.countries,
+                    onChanged=self._on_country_changed
+                )
+            ]
+        )
 
 class RadioExample(StatefulWidget):
     def __init__(self, key: Key):
@@ -101,6 +149,41 @@ class SwitchExampleState(State):
             )
         )
 
+class SwitchExample2(StatefulWidget):
+    def __init__(self, key: Key):
+        super().__init__(key=key)
+
+    def createState(self):
+        return SwitchExample2State()
+
+class SwitchExample2State(State):
+    def initState(self):
+        self._is_on = False
+
+    def _on_switch_changed(self, new_value: bool):
+        print(f"Switch toggled to: {new_value}")
+        self._is_on = new_value
+        self.setState()
+
+    def build(self) -> Widget:
+        return Container(
+            key=Key("switch_ex_container"),
+            padding=EdgeInsets.all(16),
+            child=Row(
+                key=Key("switch_ex_row"),
+                mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
+                children=[
+                    Text("Pop up Notifications",key=Key("Pop_up_notification_switch_txt")),
+                    Switch(
+                        key=Key("Pop_up_notification_switch"),
+                        value=self._is_on,
+                        onChanged=self._on_switch_changed,
+                        # Optional: override the active color
+                        activeColor=Colors.green,
+                    )
+                ]
+            )
+        )
 
 class CheckBox(StatefulWidget):
     def __init__(self, key: Key):
@@ -372,8 +455,9 @@ class MyFormState(State):
         self.my_slider = MyComponent(key=Key("my_slider"))
         self.my_checkBox = CheckBox(key=Key("my_checkBox_wig"))
         self.my_switch = SwitchExample(key=Key("my_switch_example")) # <-- Instantiate it
+        self.my_switch2 = SwitchExample2(key=Key("my_switch2_example")) # <-- Instantiate it
         self.my_radio_group = RadioExample(key=Key("my_radio_group")) # <-- Instantiate it
-        # self.my_dropdown_example = DropdownExample(key=Key("my_dropdown"))
+        self.my_dropdown_example = MyDropDown(key=Key("my_dropdown"))
 
 
     def build(self):
@@ -386,19 +470,44 @@ class MyFormState(State):
                 key=Key("main__column"),
                 crossAxisAlignment=CrossAxisAlignment.STRETCH,
                 children=[
-                    Text("Login Form",key=Key('Login_header'), style=TextStyle(fontSize=24, fontWeight='bold')),
-                    SizedBox(height=24),
-                    self.my_textfield,
-                    SizedBox(height=24),
-                    self.my_slider,
-                    SizedBox(height=24),
-                    self.my_checkBox,
-                    SizedBox(height=16), # <-- Add some space
-                    self.my_switch,     # <-- Add the switch example here
-                    SizedBox(height=24),
-                    self.my_radio_group, # <-- Add the radio group here
+                    Row(
+                        mainAxisAlignment = MainAxisAlignment.SPACE_BETWEEN,
+                        children=[
+                            Text("Dropdown Test",key=Key('Login_header'), style=TextStyle(fontSize=24, fontWeight='bold')),
+                            ElevatedButton(
+                                onPressed= self.framework.close,
+                                child=Container(
+                                    height=15,
+                                    width=15,
+                                    color=Colors.red,
+                                    decoration = BoxDecoration(
+                                        borderRadius = BorderRadius.circular(4),
+                                    )
+                                ),
+                                style=ButtonStyle(
+                                    padding=EdgeInsets.all(0),
+                                    margin=EdgeInsets.all(0),
+                                    backgroundColor=Colors.transparent,
+                                    shape = BorderRadius.all(0),
+                                    elevation= 0,
+                                )
+                            )
+                        ]
+                    ),
                     # SizedBox(height=24),
-                    # self.my_dropdown_example,
+                    # self.my_textfield,
+                    # SizedBox(height=24),
+                    # self.my_slider,
+                    SizedBox(height=24),
+                    # self.my_checkBox,
+                    # SizedBox(height=16), # <-- Add some space
+                    # self.my_switch,     # <-- Add the switch example here
+                    # SizedBox(height=24),
+                    # self.my_switch2,     # <-- Add the switch example here
+                    # SizedBox(height=24),
+                    # self.my_radio_group, # <-- Add the radio group here
+                    SizedBox(height=24),
+                    self.my_dropdown_example,
                 ]
             )
         )

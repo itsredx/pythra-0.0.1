@@ -309,7 +309,9 @@ class TextButton(Widget):
                  key: Optional[Key] = None,
                  onPressed: Optional[Callable] = None, # The actual callback function
                  onPressedName: Optional[str] = None, # Explicit name for the callback
-                 style: Optional[ButtonStyle] = None):
+                 style: Optional[ButtonStyle] = None,
+                 onPressedArgs: Optional[List] = [],
+                 ):
 
         # Pass key and child list to the base Widget constructor
         super().__init__(key=key, children=[child])
@@ -322,6 +324,7 @@ class TextButton(Widget):
         self.onPressed_id = onPressedName if onPressedName else (onPressed.__name__ if onPressed else None)
 
         self.style = style or ButtonStyle() # Use default ButtonStyle if none provided
+        self.onPressedArgs = onPressedArgs
 
         # --- CSS Class Management ---
         # Use make_hashable or ensure ButtonStyle itself is hashable
@@ -351,7 +354,7 @@ class TextButton(Widget):
             'css_class': self.css_class,
             # Pass the identifier for the callback, not the function object
             'onPressedName': self.onPressed_id,
-            'onPressedArgs': [],
+            'onPressedArgs': self.onPressedArgs,
             # Note: Child diffing handled separately
         }
         return {k: v for k, v in props.items() if v is not None}
@@ -4035,6 +4038,7 @@ class ListTile(Widget):
                  trailing: Optional[Widget] = None,
                  onTap: Optional[Callable] = None,
                  onTapName: Optional[str] = None,
+                 onTapArg: Optional[List] = [],
                  enabled: bool = True,
                  selected: bool = False,
                  dense: bool = False,
@@ -4054,6 +4058,7 @@ class ListTile(Widget):
 
         self.onTap = onTap
         self.onTapName = onTapName if onTapName else (onTap.__name__ if onTap else None)
+        self.onTapArg = onTapArg
         self.enabled = enabled
         self.selected = selected
         self.dense = dense
@@ -4084,6 +4089,8 @@ class ListTile(Widget):
             'css_class': self.current_css_class,
             'enabled': self.enabled,
             'onTapName': self.onTapName if self.enabled else None,
+            'onTapArg' : self.onTapArg,
+            'onTap' : self.onTap,
             # Pass colors as CSS variables for the .selected rule to use
             'style': {
                 '--listtile-selected-fg': self.selectedColor,
@@ -6288,3 +6295,180 @@ class Radio(Widget):
         }}
         """
 
+# In pythra/widgets.py
+
+class Dropdown(Widget):
+    """
+    A custom, stateless dropdown widget.
+
+    Its state (selected value) is managed by a `DropdownController`.
+    It renders pure HTML and is controlled by the dropdown.js engine.
+    """
+    shared_styles: Dict[Tuple, str] = {}
+
+    def __init__(self,
+                 key: Key,
+                 controller: DropdownController,
+                 items: List[Union[str, Tuple[str, Any]]],
+                 onChanged: Callable[[Any], None],
+                 hintText: str = "Select an option",
+                 # --- Theme properties can be added here later ---
+                 backgroundColor: str = Colors.surfaceContainerHighest,
+                 textColor: str = Colors.onSurface,
+                 borderColor: str = Colors.outline,
+                 borderRadius: int = 4):
+
+        super().__init__(key=key)
+
+        if not isinstance(controller, DropdownController):
+            raise TypeError("Dropdown requires a DropdownController instance.")
+
+        self.controller = controller
+        self.items = items
+        self.onChanged = onChanged
+        self.hintText = hintText
+        
+        # --- Style Properties ---
+        self.backgroundColor = backgroundColor
+        self.textColor = textColor
+        self.borderColor = borderColor
+        self.borderRadius = borderRadius
+
+        # --- Callback Management ---
+        self.on_changed_name = f"dropdown_change_{id(self.controller)}"
+        # Note: We pass the user's `onChanged` function directly. The JS engine
+        # will send the new value, and the framework will call this function.
+        
+        # --- CSS Style Management ---
+        self.style_key = (self.backgroundColor, self.textColor, self.borderColor, self.borderRadius)
+        
+        if self.style_key not in Dropdown.shared_styles:
+            self.css_class = f"shared-dropdown-{len(Dropdown.shared_styles)}"
+            Dropdown.shared_styles[self.style_key] = self.css_class
+        else:
+            self.css_class = Dropdown.shared_styles[self.style_key]
+
+    def _get_label_for_value(self, value: Any) -> str:
+        """Finds the display label corresponding to a given value."""
+        for item in self.items:
+            if isinstance(item, tuple):
+                label, item_value = item
+                if item_value == value:
+                    return label
+            elif item == value: # Handle simple list of strings
+                return item
+        return self.hintText # Fallback if value not found
+
+    def render_props(self) -> Dict[str, Any]:
+        """Pass all necessary data to the reconciler and JS engine."""
+        return {
+            "css_class": self.css_class,
+            "init_dropdown": True, # Flag for the JS initializer
+            "dropdown_options": {
+                "onChangedName": self.on_changed_name,
+            },
+            # This is the new, unified callback pattern
+            "onChangedName": self.on_changed_name,
+            "onChanged": self.onChanged,
+        }
+
+    def get_required_css_classes(self) -> Set[str]:
+        return {self.css_class}
+
+    @staticmethod
+    def _generate_html_stub(widget_instance: 'Dropdown', html_id: str, props: Dict) -> str:
+        """Generates the pure HTML structure for the dropdown."""
+        css_class = props.get('css_class', '')
+        controller = widget_instance.controller
+        items = widget_instance.items
+        
+        current_label = widget_instance._get_label_for_value(controller.selectedValue)
+        
+        # Build the list of dropdown items (<li> elements)
+        items_html = ""
+        for item in items:
+            if isinstance(item, tuple):
+                label, value = item
+                items_html += f'<li class="dropdown-item" data-value="{html.escape(str(value), quote=True)}">{html.escape(label)}</li>'
+            else: # Simple list of strings
+                items_html += f'<li class="dropdown-item" data-value="{html.escape(str(item), quote=True)}">{html.escape(item)}</li>'
+
+        return f"""
+        <div id="{html_id}" class="dropdown-container {css_class}">
+            <div class="dropdown-value-container">
+                <span>{html.escape(current_label)}</span>
+                <svg class="dropdown-caret" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"></path></svg>
+            </div>
+            <ul class="dropdown-menu">
+                {items_html}
+            </ul>
+        </div>
+        """
+        
+    @staticmethod
+    def generate_css_rule(style_key: Tuple, css_class: str) -> str:
+        """Generates the CSS for the dropdown's appearance and states."""
+        bg_color, text_color, border_color, border_radius = style_key
+
+        return f"""
+        .{css_class}.dropdown-container {{
+            position: relative;
+            width: 100%;
+            font-family: sans-serif;
+        }}
+        .{css_class} .dropdown-value-container {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background-color: {bg_color};
+            color: {text_color};
+            border: 1px solid {border_color};
+            border-radius: {border_radius}px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }}
+        .{css_class}.open .dropdown-value-container {{
+            border-color: {Colors.primary}; /* Highlight when open */
+        }}
+        .{css_class} .dropdown-caret {{
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            transition: transform 0.2s ease-in-out;
+        }}
+        .{css_class}.open .dropdown-caret {{
+            transform: rotate(180deg);
+        }}
+        .{css_class} .dropdown-menu {{
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background-color: {bg_color};
+            border: 1px solid {border_color};
+            border-radius: {border_radius}px;
+            list-style: none;
+            margin: 0;
+            padding: 4px 0;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }}
+        .{css_class}.open .dropdown-menu {{
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }}
+        .{css_class} .dropdown-item {{
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }}
+        .{css_class} .dropdown-item:hover {{
+            background-color: {Colors.rgba(103, 80, 164, 0.1)}; /* Hover color */
+        }}
+        """

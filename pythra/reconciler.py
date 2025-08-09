@@ -627,6 +627,9 @@
 #                     continue
 #                 changes[key] = new_val
 #         return changes if changes else None
+
+
+# RECONCILER.PY
 """
 Handles the reconciliation process for the PyThra framework.
 It compares the new widget tree with the previously rendered state and generates
@@ -833,6 +836,7 @@ class Reconciler:
         # If we get here, the widget is the same, so we update its properties.
         html_id = old_data["html_id"]
         new_props = new_widget.render_props()
+        
         self._collect_details(new_widget, new_props, result)
 
         old_props_from_map = old_data.get("props", {})
@@ -911,6 +915,18 @@ class Reconciler:
             }
             result.js_initializers.append(initializer_data)
 
+
+        if "init_dropdown" in new_props:
+            print("DROPDOWN INIT")
+            if html_id != new_id:
+                old_id, new_id = new_id, html_id
+            initializer_data = {
+                "type": "dropdown",
+                "target_id": html_id,
+                "data": new_props,
+                "before_id": old_id,
+            }
+            result.js_initializers.append(initializer_data)
 
         if "type" in new_props and "init_slider" in new_props:
             print("SLIDER INIT")
@@ -1184,6 +1200,10 @@ class Reconciler:
                 inline_styles[css_key] = value
         # --- END OF FIX ---
 
+        if 'position_type' in props:
+            print("position_type:", props["position_type"])
+            inline_styles["position"] = props["position_type"]
+
         if inline_styles:
             style_str = "; ".join(
                 f"{k.replace('_','-')}: {v}"
@@ -1209,9 +1229,16 @@ class Reconciler:
                     )
         elif "onTapName" in props and props.get("enabled", True):
             if cb_name := props.get("onTapName"):
-                attrs += (
-                    f" onclick=\"handleClick('{html.escape(cb_name, quote=True)}')\""
-                )
+                if props["onTapArg"] != []:
+                    # [print("arg: ", x) for x in props["onPressedArgs"]]
+                    # print("ARGS: ",props["onPressedArgs"] if props["onPressedArgs"] else 'None') #["onPressedArgs"] if props["onPressedArgs"] else 'None'
+                    attrs += (
+                        f" onclick=\"handleClickWithArgs('{html.escape(cb_name, quote=True)}', {props['onTapArg']})\""
+                    )
+                else:
+                    attrs += (
+                        f" onclick=\"handleClick('{html.escape(cb_name, quote=True)}')\""
+                    )
         elif "onItemTapName" in props and props.get("enabled", True):
             if cb_name := props.get("onItemTapName"):
                 attrs += f' onclick="handleItemTap(\'{html.escape(cb_name, quote=True)}\', {props.get("item_index", -1)})"'
