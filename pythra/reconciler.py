@@ -939,6 +939,30 @@ class Reconciler:
                 "before_id": old_id,
             }
             result.js_initializers.append(initializer_data)
+
+        if "init_gesture_detector" in new_props:
+            print("GESTURE-DETECTOR INIT")
+            if html_id != new_id:
+                old_id, new_id = new_id, html_id
+            initializer_data = {
+                "type": "gesture_detector",
+                "target_id": html_id,
+                "data": new_props,
+                "before_id": old_id,
+            }
+            result.js_initializers.append(initializer_data)
+
+        if "init_gradient_clip_border" in new_props:
+            print("GRADIENT-CLIP-BORDER INIT")
+            if html_id != new_id:
+                old_id, new_id = new_id, html_id
+            initializer_data = {
+                "type": "gradient_clip_border",
+                "target_id": html_id,
+                "data": new_props,
+                "before_id": old_id,
+            }
+            result.js_initializers.append(initializer_data)
         
 
         # --- END NEW ---
@@ -1081,6 +1105,11 @@ class Reconciler:
             "onItemTapName": "onItemTap",
             "onChangedName": "onChanged",
             "onDragName":"onDrag",
+            "onDoubleTapName":"onDoubleTap",
+            "onLongPressName":"onLongPress",
+            "onPanStartName":"onPanStart",
+            "onPanUpdateName":"onPanUpdate",
+            "onPanEndName":"onPanEnd",
         }
         # print("props: ", props)
         if "onDragName" in props and "onDrag" in props:

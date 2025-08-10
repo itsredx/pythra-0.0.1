@@ -12,8 +12,300 @@ from pythra import (
     Column, Row, Text, ElevatedButton, SizedBox,
     Colors, EdgeInsets, MainAxisAlignment, CrossAxisAlignment,
     ButtonStyle, BoxDecoration, BorderRadius, Alignment, # <-- ADD THESE IMPORTS
-    TextEditingController, InputDecoration,
+    TextEditingController, InputDecoration, GestureDetector, 
+    TapDetails, PanUpdateDetails, GradientBorderTheme,
 )
+
+
+
+# In your application's main state class
+
+class MyAnimatedClipGradientBorder(StatefulWidget):
+    def __init__(self, key: Key):
+        super().__init__(key=key)
+
+    def createState(self):
+        return MyAnimatedClipGradientBorderState()
+
+class MyAnimatedClipGradientBorderState(State):
+    def __init__(self):
+        self.rotating_gradient_theme = GradientTheme(
+            gradientColors=['red', 'yellow', 'green','blue', 'red'],
+            rotationSpeed='4s' # <-- Set a rotation speed to enable rotation
+        )
+        self.clip_path = ClipPath(
+            key=Key("Image_path_border"),
+            viewBox=(
+                290,
+                347,
+            ),
+            points=[
+                (0, 343),
+                (72, 343),
+                (72, 290),
+                (290, 290),
+                (290, 0),
+                (0, 0),
+                # (0, 50),
+            ],
+            radius=15.0,
+            child=Container(
+                key=Key("Image_path_border_container"),
+                width="100%",
+                height="100%",
+                padding=EdgeInsets.all(5),
+                gradient=self.rotating_gradient_theme,
+                # decoration=BoxDecoration(
+                #     color=Colors.gradient(
+                #         "to bottom",
+                #         Colors.red,
+                #         Colors.blue,
+                #     ),
+                # ),
+                child=ClipPath(
+                    key=Key("Image_path_content_path"),
+                    viewBox=(
+                        280,
+                        337,
+                    ),
+                    points=[
+                        (0, 333),
+                        (62, 333),
+                        (62, 280),
+                        (280, 280),
+                        (280, 0),
+                        (0, 0),
+                        # (0, 50),
+                    ],
+                    radius=10.0,
+                    child=Container(
+                        key=Key("Image_path_content_container"),
+                        width="100%",
+                        height=330,
+                        padding=EdgeInsets.all(9),
+                        decoration=BoxDecoration(
+                            color=Colors.hex("#363636"),
+                        ),
+                        child=Column(
+                            key=Key("Image_content_root_column"),
+                            mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
+                            crossAxisAlignment=CrossAxisAlignment.START,
+                            children=[
+                                Container(
+                                    key=Key("Song_artwork_mage_container"),
+                                    width=262,
+                                    height=262,
+                                    # padding=EdgeInsets.all(5),
+                                    child=Image(
+                                        AssetImage("artwork.jpeg"),
+                                        key=Key("Song_artwork_mage"),
+                                        width=261,
+                                        height=261,
+                                        borderRadius=BorderRadius.all(6),
+                                    ),
+                                ),
+                                # SizedBox(height=9),
+                                Image(
+                                    AssetImage("avatar.jpg"),
+                                    key=Key("Song_artist_mage"),
+                                    width=42,
+                                    height=42,
+                                    borderRadius=BorderRadius.all(5),
+                                ),
+                            ],
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+    def build(self) -> Widget:
+        
+        # Define the shape with points, just like for a normal ClipPath
+        diamond_points = [
+            (50, 0), (100, 50), (50, 100), (0, 50)
+        ]
+        cyberpunk_theme = GradientBorderTheme(
+            gradientColors=['cyan', 'magenta', 'yellow', 'cyan'],
+            animationSpeed='3s'
+        )
+
+        purple_pink_gradient = GradientTheme(
+            gradientColors=['#a78bfa', '#ff4d4d', '#a78bfa'],
+            animationSpeed='4s'
+        )
+        rotating_gradient_theme = GradientTheme(
+            gradientColors=['red', 'yellow', 'green', 'blue', 'red'],
+            rotationSpeed='8s' # <-- Set a rotation speed to enable rotation
+        )
+
+        return Center(child=Column(
+        children=[
+            # Example 1: Container with an animated gradient background
+            Container(
+                gradient=purple_pink_gradient, # <-- USE THE NEW PROP
+                padding=EdgeInsets.all(4),
+                decoration=BoxDecoration(
+                    borderRadius=BorderRadius.all(12)
+                ),
+                child=Container(child=Text(
+                    "This Container has an animated background!",
+                    style=TextStyle(color=Colors.surfaceVariant,)
+                ),padding=EdgeInsets.all(20),color=Colors.transparent,)
+            ),
+
+            SizedBox(height=12),
+
+            # Example 2: A standard container with a solid color
+            # It works exactly as it did before.
+            Container(
+                # height=60,
+                gradient=rotating_gradient_theme,
+                # color=Colors.surfaceVariant,
+                padding=EdgeInsets.all(4),
+                child=Container(child=Text("This is a normal container."),padding=EdgeInsets.all(20),color=Colors.surfaceVariant,)
+            ),
+            SizedBox(height=6),
+            Container(
+                # height=60,
+                width = 323,
+                padding=EdgeInsets.all(14),
+                child=self.clip_path,
+            ),
+            
+        ]
+    ))
+
+
+
+class MyAnimatedGradientBorder(StatefulWidget):
+    def __init__(self, key: Key):
+        super().__init__(key=key)
+
+    def createState(self):
+        return MyAnimatedGradientBorderState()
+
+class MyAnimatedGradientBorderState(State):
+    def build(self) -> Widget:
+        
+        # Define an optional custom theme for the gradient
+        cyberpunk_theme = GradientBorderTheme(
+            gradientColors=['cyan', 'magenta', 'yellow', 'cyan'],
+            animationSpeed='3s'
+        )
+
+        return Column(
+            mainAxisAlignment=MainAxisAlignment.CENTER,
+            crossAxisAlignment=CrossAxisAlignment.CENTER,
+            children=[
+                # --- Example 1: Wrapping a Container with a defined shape ---
+                GradientBorderContainer(
+                    key=Key("grad_box_1"),
+                    borderWidth=4,
+                    child=Container(
+                        padding=EdgeInsets.symmetric(horizontal=36, vertical=20),
+                        # The GradientBorderContainer will read this decoration
+                        decoration=BoxDecoration(
+                            color=Colors.background,
+                            borderRadius=BorderRadius.all(14)
+                        ),
+                        child=Text("Adapts to Child's Radius")
+                    )
+                ),
+                
+                SizedBox(height=12),
+
+                # --- Example 2: Using a custom theme ---
+                GradientBorderContainer(
+                    key=Key("grad_box_2"),
+                    borderWidth=8,
+                    theme=cyberpunk_theme,
+                    child=Container(
+                        padding=EdgeInsets.all(25),
+                        decoration=BoxDecoration(
+                            color="#ddd",
+                            borderRadius=BorderRadius.circular(50) # A circle
+                        ),
+                        child=Text("Custom Theme")
+                    )
+                ),
+                
+                SizedBox(height=12),
+                
+                # --- Example 3: Wrapping a widget with no radius ---
+                # The gradient border will have a radius equal to the borderWidth
+                GradientBorderContainer(
+                    key=Key("grad_box_3"),
+                    borderWidth=5,
+                    child=Container(
+                        color="#ddd",
+                        padding=EdgeInsets.all(20),
+                        child=Text("No Child Radius")
+                    )
+                )
+            ]
+        )
+
+class MyGestureDetector(StatefulWidget):
+    def __init__(self, key: Key):
+        super().__init__(key=key)
+
+    def createState(self):
+        return MyGestureDetectorState()
+
+
+class MyGestureDetectorState(State):
+    def initState(self):
+        self.box_color = Colors.primary
+        self.box_position = {"x": 0, "y": 0}
+        self.status_text = "Tap, Double Tap, Long Press, or Drag the box."
+
+    def on_tap(self, details: TapDetails):
+        self.status_text = "Tapped!"
+        self.setState()
+
+    def on_double_tap(self):
+        self.status_text = "Double Tapped!"
+        # Cycle color on double tap
+        self.box_color = Colors.secondary if self.box_color == Colors.primary else Colors.primary
+        self.setState()
+
+    def on_long_press(self):
+        self.status_text = "Long Pressed! Resetting position."
+        self.box_position = {"x": 0, "y": 0}
+        self.setState()
+        
+    def on_pan_update(self, details: PanUpdateDetails):
+        self.status_text = f"Dragging... dx={details.dx:.1f}, dy={details.dy:.1f}"
+        self.box_position = {"x": details.dx, "y": details.dy}
+        self.setState()
+        
+    def on_pan_end(self):
+        self.status_text = "Drag Ended."
+        # Note: You might want to update a permanent offset here
+        self.setState()
+
+    def build(self) -> Widget:
+        return Column(children=[
+            Text(self.status_text),
+            SizedBox(height=20),
+            
+            GestureDetector(
+                key=Key("interactive_box"),
+                onTap=self.on_tap,
+                onDoubleTap=self.on_double_tap,
+                onLongPress=self.on_long_press,
+                onPanUpdate=self.on_pan_update,
+                onPanEnd=self.on_pan_end,
+                child=Container(
+                    width=100,
+                    height=100,
+                    color=self.box_color,
+                    # Apply drag position using CSS transform
+                    transform=f"translate({self.box_position['x']}px, {self.box_position['y']}px)"
+                )
+            )
+        ])
 
 class MyDropDown(StatefulWidget):
     def __init__(self, key: Key):
@@ -458,14 +750,18 @@ class MyFormState(State):
         self.my_switch2 = SwitchExample2(key=Key("my_switch2_example")) # <-- Instantiate it
         self.my_radio_group = RadioExample(key=Key("my_radio_group")) # <-- Instantiate it
         self.my_dropdown_example = MyDropDown(key=Key("my_dropdown"))
+        self.my_gesture_detector = MyGestureDetector(key=Key("my_gesture_detector"))
+        self.my_animated_gradient_border = MyAnimatedGradientBorder(key=Key("my_animated_gradient_border"))
+        self.my_animated_clip_gradient_border = MyAnimatedClipGradientBorder(key=Key("my_animated_clip_gradient_border"))
 
 
     def build(self):
         
         return Container(
             key=Key("Build_container"),
-            alignment=Alignment.top_center(),
+            # alignment=Alignment.top_center(),
             padding=EdgeInsets.all(32),
+            # color=Colors.hex("#282828"),
             child=Column(
                 key=Key("main__column"),
                 crossAxisAlignment=CrossAxisAlignment.STRETCH,
@@ -473,7 +769,7 @@ class MyFormState(State):
                     Row(
                         mainAxisAlignment = MainAxisAlignment.SPACE_BETWEEN,
                         children=[
-                            Text("Dropdown Test",key=Key('Login_header'), style=TextStyle(fontSize=24, fontWeight='bold')),
+                            Text("Animated Gradient Clip Path Border Test",key=Key('Login_header'), style=TextStyle(fontSize=24, fontWeight='bold', color=Colors.surfaceVariant,)),
                             ElevatedButton(
                                 onPressed= self.framework.close,
                                 child=Container(
@@ -494,11 +790,11 @@ class MyFormState(State):
                             )
                         ]
                     ),
-                    # SizedBox(height=24),
+                    SizedBox(height=24),
                     # self.my_textfield,
                     # SizedBox(height=24),
                     # self.my_slider,
-                    SizedBox(height=24),
+                    # SizedBox(height=24),
                     # self.my_checkBox,
                     # SizedBox(height=16), # <-- Add some space
                     # self.my_switch,     # <-- Add the switch example here
@@ -506,8 +802,14 @@ class MyFormState(State):
                     # self.my_switch2,     # <-- Add the switch example here
                     # SizedBox(height=24),
                     # self.my_radio_group, # <-- Add the radio group here
+                    # SizedBox(height=24),
+                    # self.my_dropdown_example,
+                    # SizedBox(height=24),
+                    # self.my_gesture_detector,
+                    # SizedBox(height=24),
+                    self.my_animated_gradient_border,
                     SizedBox(height=24),
-                    self.my_dropdown_example,
+                    self.my_animated_clip_gradient_border,
                 ]
             )
         )
@@ -515,4 +817,4 @@ class MyFormState(State):
 if __name__ == '__main__':
     app = Framework.instance()
     app.set_root(MyForm(key=Key("my_app_root")))
-    app.run(title="TextField Focus Test")
+    app.run(title="Animated Gradient Clip Path Border Test")

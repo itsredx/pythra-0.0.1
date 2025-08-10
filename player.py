@@ -67,6 +67,7 @@ from pythra import (
     InputDecoration,
     BorderSide,
     VirtualListView,
+    GradientTheme,
     Axis,  # <-- ADD THESE IMPORTS
 )
 import math  # For the StarClipper

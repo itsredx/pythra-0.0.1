@@ -362,7 +362,9 @@ class Framework:
             "web/js/pathGenerator.js",
             "web/js/clipPathUtils.js",
             "web/js/slider.js",
-            "web/js/dropdown.js",  # <-- ADD THIS LINE
+            "web/js/dropdown.js",
+            "web/js/gesture_detector.js",
+            "web/js/gradient_border.js",  # <-- ADD THIS LINE
         ]
         all_js_code = []
         for file_path in js_files:
@@ -370,7 +372,7 @@ class Framework:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     # We need to remove the 'export' keyword so they become
                     # simple global functions within our script's scope.
-                    content = f.read().replace('export function', 'function').replace('export class', 'class')
+                    content = f.read().replace('export function', 'function').replace('export class', 'class').replace("import { generateRoundedPath } from './pathGenerator.js';", "")
                     all_js_code.append(content)
             except FileNotFoundError:
                 print(f"Warning: JS utility file not found: {file_path}")
@@ -484,7 +486,7 @@ class Framework:
         combined_script = (css_update_script + "\n" + dom_patch_script).strip()
         if combined_script:
             print(f"Framework: Executing {len(all_patches)} DOM patches.")
-            print("Patches:", all_patches)
+            # print("Patches:", all_patches)
             self.window.evaluate_js(self.id, combined_script)
         else:
             print("Framework: No DOM changes detected.")
@@ -718,7 +720,7 @@ class Framework:
 
             command_js = ""
 
-            print("Patch details: ",action, target_id, data)
+            # print("Patch details: ",action, target_id, data)
 
             if action == "INSERT":
                 parent_id, html_stub, props, before_id = (
@@ -756,8 +758,32 @@ class Framework:
                 """
                 props = data.get("props", {})
 
-                 # --- ADD THIS BLOCK ---
-                print("Props: ", props)
+                # --- ADD THIS BLOCK ---
+                if props.get("init_gradient_clip_border"):
+                    options_json = json.dumps(props.get("gradient_clip_options", {}))
+                    command_js += f"""
+                        setTimeout(() => {{
+                            if (typeof PythraGradientClipPath !== 'undefined') {{
+                                window._pythra_instances['{target_id}'] = new PythraGradientClipPath('{target_id}', {options_json});
+                            }}
+                        }}, 0);
+                    """
+                # --- END OF BLOCK ---
+
+                # --- ADD THIS BLOCK ---
+                if props.get("init_gesture_detector"):
+                    options_json = json.dumps(props.get("gesture_options", {}))
+                    command_js += f"""
+                        setTimeout(() => {{
+                            if (typeof PythraGestureDetector !== 'undefined') {{
+                                window._pythra_instances['{target_id}'] = new PythraGestureDetector('{target_id}', {options_json});
+                            }}
+                        }}, 0);
+                    """
+                # --- END OF BLOCK ---
+
+                # --- ADD THIS BLOCK ---
+                # print("Props: ", props)
                 if props.get("init_dropdown"):
                     print("---- dropdown init ----", target_id)
                     options_json = json.dumps(props.get("dropdown_options", {}))
@@ -1322,6 +1348,282 @@ class Framework:
                                 document.removeEventListener('click', this.handleClickOutside);
                             }}
                         }}
+                        /**
+                        * PythraGestureDetector: A client-side engine for a feature-rich gesture detector.
+                        *
+                        * It uses Pointer Events to handle mouse and touch统一. It disambiguates between
+                        * taps, double taps, long presses, and panning gestures.
+                        */
+                        class PythraGestureDetector {{
+                            constructor(elementId, options) {{
+                                this.element = document.getElementById(elementId);
+                                if (!this.element) {{
+                                    console.error(`GestureDetector element with ID #${{elementId}} not found.`);
+                                    return;
+                                }}
+
+                                this.options = options;
+
+                                // --- Gesture State ---
+                                this.lastTapTime = 0;
+                                this.tapTimeout = null;
+                                this.longPressTimeout = null;
+                                this.isPanning = false;
+                                this.panStartPoint = {{ x: 0, y: 0 }};
+                                this.panThreshold = 5; // Pixels to move before a pan is detected
+
+                                // --- Bind Handlers ---
+                                this.handlePointerDown = this.handlePointerDown.bind(this);
+                                this.handlePointerMove = this.handlePointerMove.bind(this);
+                                this.handlePointerUp = this.handlePointerUp.bind(this);
+                                this.fireTap = this.fireTap.bind(this);
+                                this.fireLongPress = this.fireLongPress.bind(this);
+
+                                // Attach the entry-point event listener
+                                this.element.addEventListener('pointerdown', this.handlePointerDown);
+                            }}
+
+                            handlePointerDown(event) {{
+                                // Only respond to the primary button (e.g., left mouse click)
+                                if (event.button !== 0) return;
+
+                                const currentTime = Date.now();
+
+                                // --- Double Tap Detection ---
+                                if (currentTime - this.lastTapTime < 300) {{ // 300ms window for double tap
+                                    clearTimeout(this.tapTimeout);
+                                    this.tapTimeout = null;
+                                    this.lastTapTime = 0;
+                                    if (this.options.onDoubleTapName) {{
+                                        window.pywebview.on_gesture_event(this.options.onDoubleTapName, {{}});
+                                    }}
+                                    return;
+                                }}
+                                
+                                this.lastTapTime = currentTime;
+                                this.panStartPoint = {{ x: event.clientX, y: event.clientY }};
+
+                                // --- Long Press Detection ---
+                                if (this.options.onLongPressName) {{
+                                    this.longPressTimeout = setTimeout(() => this.fireLongPress(), 500); // 500ms for long press
+                                }}
+
+                                // --- Single Tap Detection (will be fired later if not cancelled) ---
+                                if (this.options.onTapName) {{
+                                    this.tapTimeout = setTimeout(() => this.fireTap(), 300);
+                                }}
+
+                                // Listen for move/up on the entire document for robust dragging
+                                document.addEventListener('pointermove', this.handlePointerMove);
+                                document.addEventListener('pointerup', this.handlePointerUp);
+                                document.addEventListener('pointercancel', this.handlePointerUp); // Treat cancel like up
+                            }}
+
+                            handlePointerMove(event) {{
+                                if (this.isPanning) {{
+                                    // --- Continue Panning ---
+                                    const dx = event.clientX - this.panStartPoint.x;
+                                    const dy = event.clientY - this.panStartPoint.y;
+                                    if (this.options.onPanUpdateName) {{
+                                        window.pywebview.on_gesture_event(this.options.onPanUpdateName, {{ dx, dy }});
+                                    }}
+                                }} else {{
+                                    // --- Check if a Pan has Started ---
+                                    const dx = event.clientX - this.panStartPoint.x;
+                                    const dy = event.clientY - this.panStartPoint.y;
+                                    if (Math.sqrt(dx * dx + dy * dy) > this.panThreshold) {{
+                                        this.isPanning = true;
+                                        // A pan gesture cancels tap and long press
+                                        clearTimeout(this.tapTimeout);
+                                        this.tapTimeout = null;
+                                        clearTimeout(this.longPressTimeout);
+                                        this.longPressTimeout = null;
+                                        
+                                        if (this.options.onPanStartName) {{
+                                            window.pywebview.on_gesture_event(this.options.onPanStartName, {{}});
+                                        }}
+                                    }}
+                                }}
+                            }}
+
+                            handlePointerUp(event) {{
+                                // Clean up document-level listeners immediately
+                                document.removeEventListener('pointermove', this.handlePointerMove);
+                                document.removeEventListener('pointerup', this.handlePointerUp);
+                                document.removeEventListener('pointercancel', this.handlePointerUp);
+
+                                // Always clear a pending long press if pointer is lifted
+                                clearTimeout(this.longPressTimeout);
+                                this.longPressTimeout = null;
+                                
+                                if (this.isPanning) {{
+                                    // --- End Panning ---
+                                    this.isPanning = false;
+                                    if (this.options.onPanEndName) {{
+                                        window.pywebview.on_gesture_event(this.options.onPanEndName, {{}});
+                                    }}
+                                }}
+                            }}
+
+                            fireTap() {{
+                                if (this.tapTimeout){{ // Ensure it wasn't cancelled
+                                    this.tapTimeout = null;
+                                    if (this.options.onTapName) {{
+                                        window.pywebview.on_gesture_event(this.options.onTapName, {{}});
+                                    }}
+                                }}
+                            }}
+                            
+                            fireLongPress() {{
+                                // A long press cancels a single tap
+                                clearTimeout(this.tapTimeout);
+                                this.tapTimeout = null;
+                                this.lastTapTime = 0; // Prevent next tap from being a double tap
+                                
+                                if (this.longPressTimeout) {{
+                                    this.longPressTimeout = null;
+                                    if (this.options.onLongPressName) {{
+                                        window.pywebview.on_gesture_event(this.options.onLongPressName, {{}});
+                                    }}
+                                }}
+                            }}
+
+                            destroy() {{
+                                if (!this.element) return;
+                                this.element.removeEventListener('pointerdown', this.handlePointerDown);
+                                this.handlePointerUp(); // Ensure document listeners are cleaned up
+                                clearTimeout(this.tapTimeout);
+                                clearTimeout(this.longPressTimeout);
+                            }}
+                        }}
+                        /**
+                        * PythraGradientClipPath: Client-side engine for creating an animated
+                        * gradient border around a complex clip-path shape.
+                        */
+                        //import {{ generateRoundedPath }} from './pathGenerator.js';
+
+                        // Helper function for basic vector math
+                        const vec_gradient_border = (p1, p2) => ({{ x: p2.x - p1.x, y: p2.y - p1.y }});
+                        const magnitude_gradient_border = (v) => Math.sqrt(v.x * v.x + v.y * v.y);
+                        const normalize_gradient_border = (v) => {{
+                            const mag = magnitude_gradient_border(v);
+                            return mag > 0 ? {{ x: v.x / mag, y: v.y / mag }} : {{ x: 0, y: 0 }};
+                        }};
+                        const dot_gradient_border = (v1, v2) => v1.x * v2.x + v1.y * v2.y;
+
+                        /**
+                        * Calculates a new set of points offset outwards from the original polygon.
+                        * @param {{Array<Object>}} points - The original points, e.g., [{{x: 0, y: 0}}, ...].
+                        * @param {{number}} offset - The distance to offset the points outwards.
+                        * @returns {{Array<Object>}} The new, offset points.
+                        */
+                        function offsetPoints(points, offset) {{
+                            const numPoints = points.length;
+                            if (numPoints < 3) return points;
+
+                            const offsetPoints = [];
+
+                            for (let i = 0; i < numPoints; i++) {{
+                                const p_prev = points[(i + numPoints - 1) % numPoints];
+                                const p_curr = points[i];
+                                const p_next = points[(i + 1) % numPoints];
+
+                                const v1 = normalize_gradient_border(vec_gradient_border(p_curr, p_prev));
+                                const v2 = normalize_gradient_border(vec_gradient_border(p_curr, p_next));
+
+                                // Calculate the angle bisector vector (points outwards for convex shapes)
+                                const bisector = normalize_gradient_border({{ x: v1.x + v2.x, y: v1.y + v2.y }});
+
+                                // Calculate the angle between the two edge vectors
+                                const angle = Math.acos(dot_gradient_border(v1, v2));
+
+                                // Use trigonometry to find the length to move along the bisector
+                                // to achieve the desired perpendicular offset distance.
+                                const distance = offset / Math.sin(angle / 2);
+
+                                if (isNaN(distance) || !isFinite(distance)) {{
+                                    // Handle collinear points (angle is ~PI), just move along the normal
+                                    const normal = {{ x: -v1.y, y: v1.x }};
+                                    offsetPoints.push({{ x: p_curr.x + normal.x * offset, y: p_curr.y + normal.y * offset }});
+                                }} else {{
+                                    offsetPoints.push({{ x: p_curr.x + bisector.x * distance, y: p_curr.y + bisector.y * distance }});
+                                }}
+                            }}
+                            return offsetPoints;
+                        }}
+
+
+                        class PythraGradientClipPath {{
+                            constructor(elementId, options) {{
+                                this.container = document.getElementById(elementId);
+                                if (!this.container) {{
+                                    console.error(`GradientClipPath container with ID #${{elementId}} not found.`);
+                                    return;
+                                }}
+
+                                console.log(`✅ PythraGradientClipPath engine is initializing for #${{elementId}}`);
+                                
+                                // --- Setup DOM Structure ---
+                                // The reconciler placed the child widget inside our container.
+                                // We need to wrap it and add a background element.
+                                this.backgroundEl = document.createElement('div');
+                                this.backgroundEl.className = 'gradient-clip-background';
+                                
+                                this.contentHost = document.createElement('div');
+                                this.contentHost.className = 'gradient-clip-content-host';
+
+                                // Move the original child from the container into the new host
+                                while (this.container.firstChild) {{
+                                    this.contentHost.appendChild(this.container.firstChild);
+                                }}
+                                
+                                this.container.appendChild(this.backgroundEl);
+                                this.container.appendChild(this.contentHost);
+                                
+                                // --- Generate and Apply Paths ---
+                                this.options = options;
+                                this.update = this.update.bind(this);
+                                
+                                // Use a ResizeObserver to make it fully responsive
+                                this.ro = new ResizeObserver(this.update);
+                                this.ro.observe(this.container);
+                                
+                                // Initial update
+                                this.update();
+                            }}
+
+                            update() {{
+                                const rect = this.container.getBoundingClientRect();
+                                if (rect.width === 0 || rect.height === 0) return;
+
+                                const {{ points, radius, viewBox, borderWidth }} = this.options;
+                                const jsPoints = points.map(p => ({{ x: p[0], y: p[1] }}));
+
+                                // 1. Generate the inner path for the content
+                                const innerPathStr = generateRoundedPath(jsPoints, radius);
+                                const innerClipPath = `path("${{innerPathStr}}")`;
+
+                                // 2. Calculate offset points and a larger radius for the outer path
+                                const offset_points = offsetPoints(jsPoints, borderWidth);
+                                const outerRadius = radius + borderWidth;
+                                const outerPathStr = generateRoundedPath(offset_points, outerRadius);
+                                const outerClipPath = `path("${{outerPathStr}}")`;
+
+                                // 3. Apply the responsive clip-paths to the elements
+                                // We don't need ResponsiveClipPath class here because we update on every resize.
+                                this.contentHost.style.clipPath = innerClipPath;
+                                this.contentHost.style.webkitClipPath = innerClipPath;
+                                
+                                this.backgroundEl.style.clipPath = outerClipPath;
+                                this.backgroundEl.style.webkitClipPath = outerClipPath;
+                            }}
+
+                            destroy() {{
+                                if (this.ro && this.container) {{
+                                    this.ro.unobserve(this.container);
+                                }}
+                            }}
+                        }}
                         """)
                 # js_commands.append(f"console.log('Applying patch {action} {target_id}:', {loggable_data_str});")
                 # --- END OF FIX ---
@@ -1614,7 +1916,24 @@ class Framework:
             html_id = node_data.get("html_id")
             # print(">>>init_slider<<<", html_id)
 
-             # --- ADD THIS BLOCK ---
+            # --- ADD THIS BLOCK ---
+            if props.get("init_gradient_clip_border"):
+                imports.add("import { PythraGradientClipPath } from './js/gradient_border.js';")
+                imports.add("import { generateRoundedPath } from './js/pathGenerator.js';")
+                options = props.get("gradient_clip_options", {})
+                options_json = json.dumps(options)
+                js_commands.append(f"window._pythra_instances['{html_id}'] = new PythraGradientClipPath('{html_id}', {options_json});")
+            # --- END OF BLOCK ---
+
+            # --- ADD THIS BLOCK ---
+            if props.get("init_gesture_detector"):
+                imports.add("import { PythraGestureDetector } from './js/gesture_detector.js';")
+                options = props.get("gesture_options", {})
+                options_json = json.dumps(options)
+                js_commands.append(f"window._pythra_instances['{html_id}'] = new PythraGestureDetector('{html_id}', {options_json});")
+            # --- END OF BLOCK ---
+
+            # --- ADD THIS BLOCK ---
             if props.get("init_dropdown"):
                 imports.add("import { PythraDropdown } from './js/dropdown.js';")
                 options = props.get("dropdown_options", {})

@@ -10,6 +10,7 @@ from .styles import *
 from .icons import *
 from .controllers import *
 from .config import Config
+from .events import TapDetails, PanUpdateDetails
 import weakref
 from typing import Any, Dict, List, Optional, Set, Tuple, Union, Callable
 
@@ -30,22 +31,12 @@ port = config.get('assets_server_port')
 
 
 
-
 class Container(Widget):
     """
     A layout widget that serves as a styled box to contain a single child widget.
-
-    The `Container` widget allows styling and positioning of its child through various
-    layout and style properties like padding, margin, width, height, background color,
-    decoration, alignment, and more. It automatically generates and reuses shared CSS
-    class names for identical style combinations to avoid redundancy and optimize rendering.
+    Now supports animated gradient backgrounds.
     """
-
-    # Class-level cache for mapping unique style definitions to a CSS class name.
-    # Key: A hashable tuple representing a unique combination of style properties.
-    # Value: A generated unique CSS class name (e.g., "shared-container-0").
     shared_styles: Dict[Tuple, str] = {}
-    visible_bool: bool = True
 
     def __init__(self,
                  child: Optional[Widget] = None,
@@ -60,11 +51,11 @@ class Container(Widget):
                  transform: Optional[str] = None,
                  alignment: Optional[Alignment] = None,
                  clipBehavior: Optional[ClipBehavior] = None,
-                 visible: bool = True):
+                 visible: bool = True,
+                 gradient: Optional[GradientTheme] = None): # <-- NEW PARAMETER
 
         super().__init__(key=key, children=[child] if child else [])
 
-        # --- Store all style properties ---
         self.padding = padding
         self.color = color
         self.decoration = decoration
@@ -76,22 +67,16 @@ class Container(Widget):
         self.alignment = alignment
         self.clipBehavior = clipBehavior
         self.visible = visible
+        self.gradient = gradient # <-- STORE IT
 
-        # --- CSS Class Management ---
-        # 1. Create a unique, hashable key from all style properties.
-        #    The `make_hashable` helper is crucial here. It converts style objects
-        #    like EdgeInsets into tuples, making them usable as dictionary keys.
+        # --- UPDATED CSS Class Management ---
+        # The style key now includes the gradient theme.
         self.style_key = tuple(make_hashable(prop) for prop in (
             self.padding, self.color, self.decoration, self.width, self.height,
             self.constraints, self.margin, self.transform, self.alignment,
-            self.clipBehavior,
+            self.clipBehavior, self.gradient # <-- ADD GRADIENT TO KEY
         ))
 
-        Container.visible_bool = self.visible
-        # print(self.style_key)
-
-        # 2. Check the cache. If this style combination is new, create a new class.
-        #    Otherwise, reuse the existing one.
         if self.style_key not in Container.shared_styles:
             self.css_class = f"shared-container-{len(Container.shared_styles)}"
             Container.shared_styles[self.style_key] = self.css_class
@@ -99,107 +84,298 @@ class Container(Widget):
             self.css_class = Container.shared_styles[self.style_key]
 
     def render_props(self) -> Dict[str, Any]:
-        """
-        Return properties for diffing. For a styled container, the only property
-        that matters for rendering is the CSS class, as all styles are baked into it.
-        """
-        # This simplification is key. The DOM element only needs its class.
-        # The complex style logic lives entirely in the CSS generation.
-        # --- NEW LOGIC ---
+        # This method remains the same, as all styling is baked into the CSS class.
         instance_styles = {}
         if not self.visible:
             instance_styles['display'] = 'none'
         else: instance_styles['display'] = 'block'
+        
+        # We can remove 'display: block' as the CSS rule will handle it.
+        # This makes the props cleaner.
 
         return {
             'css_class': self.css_class,
-            'style': instance_styles # Pass the dynamic styles here
-            }
+            'style': instance_styles if not self.visible else {}
+        }
 
     def get_required_css_classes(self) -> Set[str]:
-        """Return the shared class name needed for this instance."""
         return {self.css_class}
 
     @staticmethod
     def generate_css_rule(style_key: Tuple, css_class: str) -> str:
         """
-        Static method that correctly unpacks the style_key and generates the CSS rule.
-        This is called by the Reconciler when it encounters a new CSS class.
+        Static method updated to generate CSS for solid colors OR animated gradients.
         """
         try:
-            # 1. Unpack the style_key tuple. The order MUST match the creation order in __init__.
+            # 1. Unpack the style_key tuple, now with the gradient at the end.
             (padding_tuple, color, decoration_tuple, width, height,
              constraints_tuple, margin_tuple, transform, alignment_tuple,
-             clipBehavior) = style_key
+             clipBehavior, gradient_tuple) = style_key
 
             styles = ["box-sizing: border-box;"]
+            extra_rules = [] # For storing @keyframes
 
-            # if not visible:
-            #     styles.append("display: none;")
+            # --- HANDLE GRADIENT BACKGROUND ---
+            if gradient_tuple:
+                grad_theme = GradientTheme(*gradient_tuple)
+                gradient_str = ", ".join(grad_theme.gradientColors)
+                
+                if grad_theme.rotationSpeed:
+                    # --- TRUE ROTATING GRADIENT LOGIC (using @property) ---
+                    
+                    # 1. Register a custom property for the gradient angle.
+                    #    This tells the browser it's a real angle it can animate.
+                    extra_rules.append(f"""
+                    @property --gradient-angle-{css_class} {{
+                        syntax: '<angle>';
+                        initial-value: 0deg;
+                        inherits: false;
+                    }}
+                    """)
 
-            # 2. Reconstruct style objects from their tuple representations and generate CSS.
+                    # 2. Define the keyframe animation for the angle property.
+                    keyframes_name = f"bgRotate-{css_class}"
+                    extra_rules.append(f"""
+                    @keyframes {keyframes_name} {{
+                        0% {{ --gradient-angle-{css_class}: 0deg; }}
+                        100% {{ --gradient-angle-{css_class}: 360deg; }}
+                    }}
+                    """)
 
-            # Handle Decoration and Color. Decoration can also contain a color.
-            # If both are present, the explicit `color` property overrides the one in `decoration`.
-            if decoration_tuple and isinstance(decoration_tuple, tuple):
-                # Reconstruct from the tuple created by `make_hashable`.
-                # This assumes BoxDecoration.to_tuple() produces a tuple that
-                # matches the __init__ signature.
+                    # 3. Style the main container to use the conic-gradient and the animation.
+                    #    We use a repeating-conic-gradient for a seamless loop.
+                    styles.extend([
+                        f"background: repeating-conic-gradient(from var(--gradient-angle-{css_class}), {gradient_str});",
+                        f"animation: {keyframes_name} {grad_theme.rotationSpeed} linear infinite;"
+                    ])
+
+                else:
+                    # --- SCROLLING (existing) GRADIENT LOGIC ---
+                    keyframes_name = f"bgShift-{css_class}"
+                    extra_rules.append(f"""
+                    @keyframes {keyframes_name} {{
+                        0% {{ background-position: 0% 50%; }}
+                        50% {{ background-position: 100% 50%; }}
+                        100% {{ background-position: 0% 50%; }}
+                    }}
+                    """)
+                    styles.append(f"background: linear-gradient({grad_theme.gradientDirection}, {gradient_str});")
+                    styles.append("background-size: 400% 400%;")
+                    styles.append(f"animation: {keyframes_name} {grad_theme.animationSpeed} {grad_theme.animationTiming} infinite;")
+
+            # Handle Decoration and solid Color (if no gradient is present)
+            elif decoration_tuple and isinstance(decoration_tuple, tuple):
                 deco_obj = BoxDecoration(*decoration_tuple)
-                # print("Container Deco: ",deco_obj.to_css())
                 styles.append(deco_obj.to_css())
 
-            if color:
-                # This will override any background-color from decoration if present.
+            if color and not gradient_tuple: # Solid color only applies if there's no gradient
                 styles.append(f"background: {color};")
             
-            # Handle Padding and Margin
-            if padding_tuple and isinstance(padding_tuple, tuple):
-                styles.append(f"padding: {EdgeInsets(*padding_tuple).to_css_value()};")
+            # --- The rest of the styling logic remains the same ---
+            if padding_tuple: styles.append(f"padding: {EdgeInsets(*padding_tuple).to_css_value()};")
+            if margin_tuple: styles.append(f"margin: {EdgeInsets(*margin_tuple).to_css_value()};")
+            if width is not None: styles.append(f"width: {width}px;" if isinstance(width, (int, float)) else f"width: {width};")
+            if height is not None: styles.append(f"height: {height}px;" if isinstance(height, (int, float)) else f"height: {height};")
             
-            if margin_tuple and isinstance(margin_tuple, tuple):
-                styles.append(f"margin: {EdgeInsets(*margin_tuple).to_css_value()};")
-                # print(f"margin: {EdgeInsets(*margin_tuple).to_css_value()};")
+            if constraints_tuple:
+                styles.append(BoxConstraints(*constraints_tuple).to_css())
 
-            # Handle explicit Width and Height
-            if width is not None:
-                styles.append(f"width: {width}px;" if isinstance(width, (int, float)) else f"width: {width};")
-
-            if height is not None:
-                styles.append(f"height: {height}px;" if isinstance(height, (int, float)) else f"height: {height};")
-            
-            # Handle BoxConstraints
-            if constraints_tuple and isinstance(constraints_tuple, tuple):
-                constraints_obj = BoxConstraints(*constraints_tuple)
-                styles.append(constraints_obj.to_css())
-
-            # Handle Alignment (for positioning the child)
-            if alignment_tuple and isinstance(alignment_tuple, tuple):
+            if alignment_tuple:
                 align_obj = Alignment(*alignment_tuple)
-                # An alignment object implies a flex container to position the child
                 styles.append("display: flex;")
                 styles.append(f"justify-content: {align_obj.justify_content};")
                 styles.append(f"align-items: {align_obj.align_items};")
 
-            # Handle Transform
-            if transform:
-                styles.append(f"transform: {transform};")
+            if transform: styles.append(f"transform: {transform};")
 
-            # Handle Clipping
             if clipBehavior and hasattr(clipBehavior, 'to_css_overflow'):
                 overflow_val = clipBehavior.to_css_overflow()
-                if overflow_val:
-                    styles.append(f"overflow: {overflow_val};")
+                if overflow_val: styles.append(f"overflow: {overflow_val};")
             
-            # 3. Assemble and return the final CSS rule.
-            # The `filter(None, ...)` removes any empty strings from the list.
-            return f".{css_class} {{ {' '.join(filter(None, styles))} }}"
+            # Assemble and return the final CSS rules.
+            main_rule = f".{css_class} {{ {' '.join(filter(None, styles))} }}"
+            
+            # Prepend any extra rules (like @keyframes) to the main rule
+            return "\n".join(extra_rules) + "\n" + main_rule
 
         except Exception as e:
             import traceback
             print(f"ERROR generating CSS for Container {css_class} with key {style_key}:")
             traceback.print_exc()
             return f"/* Error generating rule for .{css_class} */"
+
+
+
+# class Container(Widget):
+#     """
+#     A layout widget that serves as a styled box to contain a single child widget.
+
+#     The `Container` widget allows styling and positioning of its child through various
+#     layout and style properties like padding, margin, width, height, background color,
+#     decoration, alignment, and more. It automatically generates and reuses shared CSS
+#     class names for identical style combinations to avoid redundancy and optimize rendering.
+#     """
+
+#     # Class-level cache for mapping unique style definitions to a CSS class name.
+#     # Key: A hashable tuple representing a unique combination of style properties.
+#     # Value: A generated unique CSS class name (e.g., "shared-container-0").
+#     shared_styles: Dict[Tuple, str] = {}
+#     visible_bool: bool = True
+
+#     def __init__(self,
+#                  child: Optional[Widget] = None,
+#                  key: Optional[Key] = None,
+#                  padding: Optional[EdgeInsets] = None,
+#                  color: Optional[str] = None,
+#                  decoration: Optional[BoxDecoration] = None,
+#                  width: Optional[Any] = None,
+#                  height: Optional[Any] = None,
+#                  constraints: Optional[BoxConstraints] = None,
+#                  margin: Optional[EdgeInsets] = None,
+#                  transform: Optional[str] = None,
+#                  alignment: Optional[Alignment] = None,
+#                  clipBehavior: Optional[ClipBehavior] = None,
+#                  visible: bool = True,
+#                  ):
+
+#         super().__init__(key=key, children=[child] if child else [])
+
+#         # --- Store all style properties ---
+#         self.padding = padding
+#         self.color = color
+#         self.decoration = decoration
+#         self.width = width
+#         self.height = height
+#         self.constraints = constraints
+#         self.margin = margin
+#         self.transform = transform
+#         self.alignment = alignment
+#         self.clipBehavior = clipBehavior
+#         self.visible = visible
+
+#         # --- CSS Class Management ---
+#         # 1. Create a unique, hashable key from all style properties.
+#         #    The `make_hashable` helper is crucial here. It converts style objects
+#         #    like EdgeInsets into tuples, making them usable as dictionary keys.
+#         self.style_key = tuple(make_hashable(prop) for prop in (
+#             self.padding, self.color, self.decoration, self.width, self.height,
+#             self.constraints, self.margin, self.transform, self.alignment,
+#             self.clipBehavior,
+#         ))
+
+#         Container.visible_bool = self.visible
+#         # print(self.style_key)
+
+#         # 2. Check the cache. If this style combination is new, create a new class.
+#         #    Otherwise, reuse the existing one.
+#         if self.style_key not in Container.shared_styles:
+#             self.css_class = f"shared-container-{len(Container.shared_styles)}"
+#             Container.shared_styles[self.style_key] = self.css_class
+#         else:
+#             self.css_class = Container.shared_styles[self.style_key]
+
+#     def render_props(self) -> Dict[str, Any]:
+#         """
+#         Return properties for diffing. For a styled container, the only property
+#         that matters for rendering is the CSS class, as all styles are baked into it.
+#         """
+#         # This simplification is key. The DOM element only needs its class.
+#         # The complex style logic lives entirely in the CSS generation.
+#         # --- NEW LOGIC ---
+#         instance_styles = {}
+#         if not self.visible:
+#             instance_styles['display'] = 'none'
+#         else: instance_styles['display'] = 'block'
+
+#         return {
+#             'css_class': self.css_class,
+#             'style': instance_styles # Pass the dynamic styles here
+#             }
+
+#     def get_required_css_classes(self) -> Set[str]:
+#         """Return the shared class name needed for this instance."""
+#         return {self.css_class}
+
+#     @staticmethod
+#     def generate_css_rule(style_key: Tuple, css_class: str) -> str:
+#         """
+#         Static method that correctly unpacks the style_key and generates the CSS rule.
+#         This is called by the Reconciler when it encounters a new CSS class.
+#         """
+#         try:
+#             # 1. Unpack the style_key tuple. The order MUST match the creation order in __init__.
+#             (padding_tuple, color, decoration_tuple, width, height,
+#              constraints_tuple, margin_tuple, transform, alignment_tuple,
+#              clipBehavior) = style_key
+
+#             styles = ["box-sizing: border-box;"]
+
+#             # if not visible:
+#             #     styles.append("display: none;")
+
+#             # 2. Reconstruct style objects from their tuple representations and generate CSS.
+
+#             # Handle Decoration and Color. Decoration can also contain a color.
+#             # If both are present, the explicit `color` property overrides the one in `decoration`.
+#             if decoration_tuple and isinstance(decoration_tuple, tuple):
+#                 # Reconstruct from the tuple created by `make_hashable`.
+#                 # This assumes BoxDecoration.to_tuple() produces a tuple that
+#                 # matches the __init__ signature.
+#                 deco_obj = BoxDecoration(*decoration_tuple)
+#                 # print("Container Deco: ",deco_obj.to_css())
+#                 styles.append(deco_obj.to_css())
+
+#             if color:
+#                 # This will override any background-color from decoration if present.
+#                 styles.append(f"background: {color};")
+            
+#             # Handle Padding and Margin
+#             if padding_tuple and isinstance(padding_tuple, tuple):
+#                 styles.append(f"padding: {EdgeInsets(*padding_tuple).to_css_value()};")
+            
+#             if margin_tuple and isinstance(margin_tuple, tuple):
+#                 styles.append(f"margin: {EdgeInsets(*margin_tuple).to_css_value()};")
+#                 # print(f"margin: {EdgeInsets(*margin_tuple).to_css_value()};")
+
+#             # Handle explicit Width and Height
+#             if width is not None:
+#                 styles.append(f"width: {width}px;" if isinstance(width, (int, float)) else f"width: {width};")
+
+#             if height is not None:
+#                 styles.append(f"height: {height}px;" if isinstance(height, (int, float)) else f"height: {height};")
+            
+#             # Handle BoxConstraints
+#             if constraints_tuple and isinstance(constraints_tuple, tuple):
+#                 constraints_obj = BoxConstraints(*constraints_tuple)
+#                 styles.append(constraints_obj.to_css())
+
+#             # Handle Alignment (for positioning the child)
+#             if alignment_tuple and isinstance(alignment_tuple, tuple):
+#                 align_obj = Alignment(*alignment_tuple)
+#                 # An alignment object implies a flex container to position the child
+#                 styles.append("display: flex;")
+#                 styles.append(f"justify-content: {align_obj.justify_content};")
+#                 styles.append(f"align-items: {align_obj.align_items};")
+
+#             # Handle Transform
+#             if transform:
+#                 styles.append(f"transform: {transform};")
+
+#             # Handle Clipping
+#             if clipBehavior and hasattr(clipBehavior, 'to_css_overflow'):
+#                 overflow_val = clipBehavior.to_css_overflow()
+#                 if overflow_val:
+#                     styles.append(f"overflow: {overflow_val};")
+            
+#             # 3. Assemble and return the final CSS rule.
+#             # The `filter(None, ...)` removes any empty strings from the list.
+#             return f".{css_class} {{ {' '.join(filter(None, styles))} }}"
+
+#         except Exception as e:
+#             import traceback
+#             print(f"ERROR generating CSS for Container {css_class} with key {style_key}:")
+#             traceback.print_exc()
+#             return f"/* Error generating rule for .{css_class} */"
 
 
 # --- Text Widget Refactored ---
@@ -5226,7 +5402,8 @@ class ClipPath(Widget):
                  viewBox: Tuple[float, float] = (100, 100),
                  width: Optional[Union[str, int, float]] = '100%',
                  height: Optional[Union[str, int, float]] = '100%',
-                 aspectRatio: Optional[float] = None): # <-- NEW PARAMETER
+                 aspectRatio: Optional[float] = None,
+                 ): # <-- NEW PARAMETER
         
         if not child: raise ValueError("ClipPath widget requires a child.")
         super().__init__(key=key, children=[child])
@@ -6470,5 +6647,325 @@ class Dropdown(Widget):
         }}
         .{css_class} .dropdown-item:hover {{
             background-color: {Colors.rgba(103, 80, 164, 0.1)}; /* Hover color */
+        }}
+        """
+
+# In pythra/widgets.py
+# (Make sure to import TapDetails, PanUpdateDetails from your events file)
+
+
+class GestureDetector(Widget):
+    """
+    A widget that detects gestures.
+
+    This widget does not have a visual representation but instead tries to
+    recognize gestures that are made on its child widget.
+    """
+    shared_styles: Dict[Tuple, str] = {}
+
+    def __init__(self,
+                 key: Key,
+                 child: Widget,
+                 onTap: Optional[Callable[[TapDetails], None]] = None,
+                 onDoubleTap: Optional[Callable[[], None]] = None,
+                 onLongPress: Optional[Callable[[], None]] = None,
+                 onPanStart: Optional[Callable[[], None]] = None,
+                 onPanUpdate: Optional[Callable[[PanUpdateDetails], None]] = None,
+                 onPanEnd: Optional[Callable[[], None]] = None,
+                 ):
+
+        super().__init__(key=key, children=[child])
+        
+        self.child = child
+        self.onTap = onTap
+        self.onDoubleTap = onDoubleTap
+        self.onLongPress = onLongPress
+        self.onPanStart = onPanStart
+        self.onPanUpdate = onPanUpdate
+        self.onPanEnd = onPanEnd
+        
+        # --- Unique callback names for this instance ---
+        instance_id = id(self)
+        self.onTapName = f"gd_tap_{instance_id}" if onTap else None
+        self.onDoubleTapName = f"gd_dbtap_{instance_id}" if onDoubleTap else None
+        self.onLongPressName = f"gd_lpress_{instance_id}" if onLongPress else None
+        self.onPanStartName = f"gd_pstart_{instance_id}" if onPanStart else None
+        self.onPanUpdateName = f"gd_pupdate_{instance_id}" if onPanUpdate else None
+        self.onPanEndName = f"gd_pend_{instance_id}" if onPanEnd else None
+
+        # --- CSS Style Management ---
+        # The style key depends on which gestures are active, to apply CSS like `cursor`.
+        has_tap = bool(onTap or onDoubleTap)
+        has_pan = bool(onPanStart or onPanUpdate or onPanEnd)
+        self.style_key = (has_tap, has_pan)
+
+        if self.style_key not in GestureDetector.shared_styles:
+            self.css_class = f"shared-gesture-{len(GestureDetector.shared_styles)}"
+            GestureDetector.shared_styles[self.style_key] = self.css_class
+        else:
+            self.css_class = GestureDetector.shared_styles[self.style_key]
+
+    def render_props(self) -> Dict[str, Any]:
+        """Pass all necessary data to the reconciler and JS engine."""
+        return {
+            "css_class": self.css_class,
+            "init_gesture_detector": True,
+            "gesture_options": {
+                "onTapName": self.onTapName,
+                "onDoubleTapName": self.onDoubleTapName,
+                "onLongPressName": self.onLongPressName,
+                "onPanStartName": self.onPanStartName,
+                "onPanUpdateName": self.onPanUpdateName,
+                "onPanEndName": self.onPanEndName,
+            },
+            # Pass the actual callback functions for the reconciler to register
+            "onTap": self.onTap,
+            "onTapName": self.onTapName,
+            "onDoubleTap": self.onDoubleTap,
+            "onLongPress": self.onLongPress,
+            "onPanStart": self.onPanStart,
+            "onPanUpdate": self.onPanUpdate,
+            "onPanEnd": self.onPanEnd,
+            "onDoubleTapName": self.onDoubleTapName,
+            "onLongPressName": self.onLongPressName,
+            "onPanStartName": self.onPanStartName,
+            "onPanUpdateName": self.onPanUpdateName,
+            "onPanEndName": self.onPanEndName,
+        }
+
+    def get_required_css_classes(self) -> Set[str]:
+        return {self.css_class}
+
+    @staticmethod
+    def _generate_html_stub(widget_instance: 'GestureDetector', html_id: str, props: Dict) -> str:
+        """A GestureDetector is just a div that wraps its child."""
+        # The child's HTML will be generated and placed inside this div by the framework.
+        return f'<div id="{html_id}" class="{props.get("css_class", "")}"></div>'
+
+    @staticmethod
+    def generate_css_rule(style_key: Tuple, css_class: str) -> str:
+        """Generates CSS to make the gesture detector functional."""
+        has_tap, has_pan = style_key
+        
+        styles = [
+            # CRITICAL: This makes the wrapper invisible for layout purposes.
+            # The child will be positioned as if the GestureDetector div isn't there.
+            "display: contents;"
+        ]
+        
+        # We need to apply interaction styles to the child element itself.
+        child_styles = []
+        if has_tap:
+            child_styles.append("cursor: pointer;")
+        if has_pan:
+            # CRITICAL: These prevent unwanted browser behavior like text selection or page scrolling during a drag.
+            child_styles.append("touch-action: none;")
+            child_styles.append("user-select: none;")
+            child_styles.append("-webkit-user-select: none;") # For Safari
+
+        container_rule = f".{css_class} {{ {' '.join(styles)} }}"
+        child_rule = f".{css_class} > * {{ {' '.join(child_styles)} }}"
+        
+        return f"{container_rule}\n{child_rule}"
+
+
+
+class GradientBorderContainer(Widget):
+    """
+    A widget that wraps its child with an animated gradient border.
+
+    It intelligently calculates its own border-radius based on the child's
+    styling and the specified border width (padding).
+    """
+    shared_styles: Dict[Tuple, str] = {}
+
+    def __init__(self,
+                 key: Key,
+                 child: Widget,
+                 borderWidth: float = 6.0,
+                 theme: Optional[GradientBorderTheme] = None):
+
+        super().__init__(key=key, children=[child]) # Child is passed to base
+
+        if not child:
+            raise ValueError("GradientBorderContainer requires a child widget.")
+            
+        self.borderWidth = borderWidth
+        self.theme = theme or GradientBorderTheme()
+
+        self.style_key = self.theme.to_tuple()
+
+        if self.style_key not in GradientBorderContainer.shared_styles:
+            self.css_class = f"shared-gradient-border-{len(GradientBorderContainer.shared_styles)}"
+            GradientBorderContainer.shared_styles[self.style_key] = self.css_class
+        else:
+            self.css_class = GradientBorderContainer.shared_styles[self.style_key]
+
+    def render_props(self) -> Dict[str, Any]:
+        child = self.get_children()[0]
+        child_props = child.render_props()
+
+        # --- Intelligent Radius Calculation ---
+        child_radius_val = 0.0
+        # Check for radius on a Container's decoration
+        if isinstance(child, Container) and child.decoration and child.decoration.borderRadius:
+            radius_prop = child.decoration.borderRadius
+            if isinstance(radius_prop, (int, float)):
+                child_radius_val = radius_prop
+            elif isinstance(radius_prop, BorderRadius):
+                child_radius_val = radius_prop.topLeft # Use one value for simplicity
+
+        wrapper_radius = child_radius_val + self.borderWidth
+
+        # Pass all calculated values as CSS custom properties
+        return {
+            'css_class': self.css_class,
+            'style': {
+                '--gradient-border-size': f"{self.borderWidth}px",
+                '--gradient-border-radius': f"{wrapper_radius}px",
+                '--gradient-child-radius': f"{child_radius_val}px",
+            }
+        }
+
+    def get_required_css_classes(self) -> Set[str]:
+        # The main class + we need to tell the reconciler to style the child
+        return {self.css_class, f"{self.css_class}-child-override"}
+
+    @staticmethod
+    def _generate_html_stub(widget_instance: 'GradientBorderContainer', html_id: str, props: Dict) -> str:
+        # The stub for the wrapper. The child's HTML will be inserted inside by the reconciler.
+        style_prop = props.get('style', {})
+        style_str = " ".join([f"{key}: {value};" for key, value in style_prop.items()])
+        
+        return f'<div id="{html_id}" class="{props.get("css_class", "")}" style="{style_str}"></div>'
+
+    @staticmethod
+    def generate_css_rule(style_key: Tuple, css_class: str) -> str:
+        """Generates the CSS for the gradient container and its child."""
+        # Check if we are generating the special child override rule
+        if css_class.endswith("-child-override"):
+            base_class = css_class.replace("-child-override", "")
+            # This rule modifies the direct child of the gradient border container.
+            # It forces the child's border-radius to match our calculated value.
+            return f"""
+            .{base_class} > * {{
+                border-radius: var(--gradient-child-radius) !important;
+            }}
+            """
+
+        # Otherwise, generate the main container rule
+        (gradient_colors, direction, speed, timing) = style_key
+        
+        gradient_str = ", ".join(gradient_colors)
+
+        return f"""
+        @keyframes borderShift-{css_class} {{
+            0% {{ background-position: 0% 50%; }}
+            50% {{ background-position: 100% 50%; }}
+            100% {{ background-position: 0% 50%; }}
+        }}
+
+        .{css_class} {{
+            padding: var(--gradient-border-size);
+            border-radius: var(--gradient-border-radius);
+            background: linear-gradient({direction}, {gradient_str});
+            background-size: 400% 400%;
+            animation: borderShift-{css_class} {speed} {timing} infinite;
+            /* Ensure it doesn't add extra layout space */
+            display: inline-block;
+            line-height: 0; /* Fix for extra space below inline elements */
+        }}
+        """
+
+
+# In pythra/widgets.py
+
+class GradientClipPathBorder(Widget):
+    """
+    A widget that wraps its child with an animated gradient border that
+    perfectly matches the shape of a complex ClipPath.
+    """
+    shared_styles: Dict[Tuple, str] = {}
+
+    def __init__(self,
+                 key: Key,
+                 child: Widget,
+                 # ClipPath properties
+                 points: List[Tuple[float, float]],
+                 radius: float = 0,
+                 viewBox: Tuple[float, float] = (100, 100),
+                 # Border properties
+                 borderWidth: float = 6.0,
+                 theme: Optional[GradientBorderTheme] = None):
+
+        super().__init__(key=key, children=[child])
+        
+        self.points = points
+        self.radius = radius
+        self.viewBox = viewBox
+        self.borderWidth = borderWidth
+        self.theme = theme or GradientBorderTheme()
+
+        # CSS class is based on the gradient's theme
+        self.style_key = self.theme.to_tuple()
+
+        if self.style_key not in GradientClipPathBorder.shared_styles:
+            self.css_class = f"shared-gradient-clip-{len(GradientClipPathBorder.shared_styles)}"
+            GradientClipPathBorder.shared_styles[self.style_key] = self.css_class
+        else:
+            self.css_class = GradientClipPathBorder.shared_styles[self.style_key]
+
+    def render_props(self) -> Dict[str, Any]:
+        """Pass all geometric and theme data to the reconciler and JS engine."""
+        return {
+            "css_class": self.css_class,
+            "init_gradient_clip_border": True,
+            "gradient_clip_options": {
+                "points": self.points,
+                "radius": self.radius,
+                "viewBox": self.viewBox,
+                "borderWidth": self.borderWidth,
+            }
+        }
+
+    def get_required_css_classes(self) -> Set[str]:
+        return {self.css_class}
+
+    @staticmethod
+    def _generate_html_stub(widget_instance: 'GradientClipPathBorder', html_id: str, props: Dict) -> str:
+        # The stub is just a container. The JS engine will add the background
+        # and host divs. The reconciler will place the child inside.
+        return f'<div id="{html_id}" class="gradient-clip-container {props.get("css_class", "")}"></div>'
+
+    @staticmethod
+    def generate_css_rule(style_key: Tuple, css_class: str) -> str:
+        """Generates the CSS for the container and the gradient background."""
+        (gradient_colors, direction, speed, timing) = style_key
+        gradient_str = ", ".join(gradient_colors)
+
+        return f"""
+        @keyframes borderShift-{css_class} {{
+            0% {{ background-position: 0% 50%; }}
+            50% {{ background-position: 100% 50%; }}
+            100% {{ background-position: 0% 50%; }}
+        }}
+
+        /* This is the main container, it acts as a grid to stack the layers */
+        .{css_class}.gradient-clip-container {{
+            display: grid;
+            grid-template-areas: "stack";
+        }}
+
+        /* The background and content host are placed in the same grid cell */
+        .{css_class} .gradient-clip-background,
+        .{css_class} .gradient-clip-content-host {{
+            grid-area: stack;
+        }}
+
+        /* Style the background layer with the animated gradient */
+        .{css_class} .gradient-clip-background {{
+            background: linear-gradient({direction}, {gradient_str});
+            background-size: 400% 400%;
+            animation: borderShift-{css_class} {speed} {timing} infinite;
         }}
         """
