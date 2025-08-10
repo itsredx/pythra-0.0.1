@@ -53,7 +53,8 @@ from pythra import (
     InputDecoration,
     Slider,
     SliderController,
-    BorderSide,  # <-- ADD THESE IMPORTS
+    BorderSide,
+    GradientTheme,  # <-- ADD THESE IMPORTS
 )
 
 # import math  # For the StarClipper
@@ -74,6 +75,7 @@ class MyComponentState(State):
     def __init__(self):
         super().__init__()
         self.slider_controller = SliderController(value=0.5)
+        
 
     def handle_slider_change(self, new_value):
         print(f"Slider value changed to: {new_value}")
@@ -105,6 +107,10 @@ class ControlsState(State):
     def __init__(self):
         super().__init__()
         self.my_slider = MyComponent(key=Key("my_slider"))
+        self.rotating_gradient_theme = GradientTheme(
+            gradientColors=['red', 'yellow', 'green','blue', 'red'],
+            rotationSpeed='4s' # <-- Set a rotation speed to enable rotation
+        )
 
     def build(self) -> Widget:
         # print(f"\n--- Building Controls UI ---")
@@ -204,11 +210,12 @@ class ControlsState(State):
                                         child=Container(
                                             width=48,
                                             height=48,
-                                            color=Colors.gradient(
-                                                "to bottom right",
-                                                Colors.red,
-                                                Colors.blue,
-                                            ),
+                                            # color=Colors.gradient(
+                                            #     "to bottom right",
+                                            #     Colors.red,
+                                            #     Colors.blue,
+                                            # ),
+                                            gradient=self.rotating_gradient_theme,
                                             padding=EdgeInsets.all(2),
                                             child=Container(
                                                 width=44,

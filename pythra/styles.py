@@ -2000,3 +2000,72 @@ class DropdownTheme:
             make_hashable(self.menuBorderRadius), self.itemHeight, self.itemHoverColor,
             self.iconColor, self.iconSize
         )
+
+
+
+@dataclass
+class GradientBorderTheme:
+    """
+    Defines the visual properties for a GradientBorderContainer.
+    """
+    # A list of CSS colors for the gradient.
+    gradientColors: List[str] = field(default_factory=lambda: [
+        '#ff4d4d', '#ffb86b', '#ffd166', '#7bed9f',
+        '#6ad3ff', '#a78bfa', '#ff4d4d'
+    ])
+    
+    # The CSS angle or direction for the linear gradient (e.g., '270deg', 'to right').
+    gradientDirection: str = '270deg'
+    
+    # The speed of the animation (e.g., '5s', '10s').
+    animationSpeed: str = '5s'
+    
+    # The animation timing function (e.g., 'linear', 'ease-in-out').
+    animationTiming: str = 'linear'
+
+    def to_tuple(self) -> Tuple:
+        """Creates a hashable tuple for use in style keys."""
+        return (
+            tuple(self.gradientColors), # Convert list to tuple for hashing
+            self.gradientDirection,
+            self.animationSpeed,
+            self.animationTiming
+        )
+
+
+# In pythra/styles.py
+
+# Rename GradientBorderTheme to GradientTheme
+@dataclass
+class GradientTheme: # <-- RENAMED
+    """
+    Defines the visual properties for an animated gradient effect.
+    """
+    # A list of CSS colors for the gradient.
+    gradientColors: List[str] = field(default_factory=lambda: [
+        '#ff4d4d', '#ffb86b', '#ffd166', '#7bed9f',
+        '#6ad3ff', '#a78bfa', '#ff4d4d'
+    ])
+    
+    # The CSS angle or direction for the linear gradient.
+    gradientDirection: str = '270deg'
+    
+    # The speed of the animation.
+    animationSpeed: str = '5s'
+    
+    # The animation timing function.
+    animationTiming: str = 'linear'
+
+    # --- NEW: Rotation Animation ---
+    # Set to a time (e.g., '10s') to enable rotation. Set to None to disable.
+    rotationSpeed: Optional[str] = None 
+
+    def to_tuple(self) -> Tuple:
+        """Creates a hashable tuple for use in style keys."""
+        return (
+            tuple(self.gradientColors),
+            self.gradientDirection,
+            self.animationSpeed,
+            self.animationTiming,
+            self.rotationSpeed # <-- ADD TO TUPLE
+        )

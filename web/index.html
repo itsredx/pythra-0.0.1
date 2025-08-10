@@ -2,19 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>TextField Focus Test</title>
+    <title>Animated Gradient Clip Path Border Test</title>
     <!-- ADD SIMPLEBAR CSS -->
     <link rel="stylesheet" href="./js/scroll-bar/simplebar.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1754783527">
-    <style id="dynamic-styles">.shared-container-1 { box-sizing: border-box; padding: 32px; display: flex; justify-content: center; align-items: flex-start; }
-.shared-column-0 { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; height: 100%; direction: ltr; }
+    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1754853203">
+    <style id="dynamic-styles">
+.shared-container-4 { box-sizing: border-box; background: #282828; padding: 32px; }
+.shared-column-1 { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; height: 100%; direction: ltr; }
 .shared-row-0 { display: flex; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; direction: ltr; }
 
             .shared-text-0 {
                 margin: 0; /* Reset default paragraph margin */
                 padding: 0;
-                font-size: 24px; font-weight: bold;
+                color: #E7E0EC; font-size: 24px; font-weight: bold;
                 
                 
             }
@@ -24,8 +25,34 @@
 .shared-elevatedbutton-0:active { box-shadow: none; /* Add background overlay? */ }
 .shared-elevatedbutton-0.disabled { background-color: rgba(0, 0, 0, 0.12); color: rgba(0, 0, 0, 0.38); box-shadow: none; cursor: default; pointer-events: none; }
 
-.shared-container-0 { box-sizing: border-box; border-radius: 4px; background: red; width: 15px; height: 15px; }
-.shared-column-1 { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; height: 100%; direction: ltr; }
+
+.shared-container-3 { box-sizing: border-box; border-radius: 4px; background: red; width: 15px; height: 15px; }
+.shared-column-2 { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; direction: ltr; }
+
+        @keyframes borderShift-shared-gradient-border-0 {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .shared-gradient-border-0 {
+            padding: var(--gradient-border-size);
+            border-radius: var(--gradient-border-radius);
+            background: linear-gradient(270deg, #ff4d4d, #ffb86b, #ffd166, #7bed9f, #6ad3ff, #a78bfa, #ff4d4d);
+            background-size: 400% 400%;
+            animation: borderShift-shared-gradient-border-0 5s linear infinite;
+            /* Ensure it doesn't add extra layout space */
+            display: inline-block;
+            line-height: 0; /* Fix for extra space below inline elements */
+        }
+        
+
+            .shared-gradient-border-0 > * {
+                border-radius: var(--gradient-child-radius) !important;
+            }
+            
+
+.shared-container-5 { box-sizing: border-box; background: #FFFBFE; border-radius: 14px; padding: 20px 36px; }
 
             .shared-text-1 {
                 margin: 0; /* Reset default paragraph margin */
@@ -36,67 +63,92 @@
             }
             
 
-        .shared-dropdown-0.dropdown-container {
-            position: relative;
-            width: 100%;
-            font-family: sans-serif;
+            .shared-gradient-border-1 > * {
+                border-radius: var(--gradient-child-radius) !important;
+            }
+            
+
+        @keyframes borderShift-shared-gradient-border-1 {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
-        .shared-dropdown-0 .dropdown-value-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 12px;
-            background-color: surfaceContainerHighest;
-            color: #1C1B1F;
-            border: 1px solid #79747E;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: border-color 0.2s;
+
+        .shared-gradient-border-1 {
+            padding: var(--gradient-border-size);
+            border-radius: var(--gradient-border-radius);
+            background: linear-gradient(270deg, cyan, magenta, yellow, cyan);
+            background-size: 400% 400%;
+            animation: borderShift-shared-gradient-border-1 3s linear infinite;
+            /* Ensure it doesn't add extra layout space */
+            display: inline-block;
+            line-height: 0; /* Fix for extra space below inline elements */
         }
-        .shared-dropdown-0.open .dropdown-value-container {
-            border-color: #6750A4; /* Highlight when open */
-        }
-        .shared-dropdown-0 .dropdown-caret {
-            width: 20px;
-            height: 20px;
-            fill: currentColor;
-            transition: transform 0.2s ease-in-out;
-        }
-        .shared-dropdown-0.open .dropdown-caret {
-            transform: rotate(180deg);
-        }
-        .shared-dropdown-0 .dropdown-menu {
-            position: absolute;
-            top: calc(100% + 4px);
-            left: 0;
-            right: 0;
-            background-color: surfaceContainerHighest;
-            border: 1px solid #79747E;
-            border-radius: 4px;
-            list-style: none;
-            margin: 0;
-            padding: 4px 0;
-            z-index: 100;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .shared-dropdown-0.open .dropdown-menu {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-        .shared-dropdown-0 .dropdown-item {
-            padding: 8px 12px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .shared-dropdown-0 .dropdown-item:hover {
-            background-color: rgba(103, 80, 164, 0.1); /* Hover color */
-        }
-        </style>
+        
+
+.shared-container-6 { box-sizing: border-box; background: #ddd; border-radius: 50px; padding: 25px; }
+
+.shared-container-7 { box-sizing: border-box; background: #ddd; padding: 20px; }
+.shared-center-0 { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;  }
+.shared-column-3 { display: flex; flex-direction: column; justify-content: flex-start; align-items: center; height: 100%; direction: ltr; }
+
+                    @keyframes bgShift-shared-container-9 {
+                        0% { background-position: 0% 50%; }
+                        50% { background-position: 100% 50%; }
+                        100% { background-position: 0% 50%; }
+                    }
+                    
+.shared-container-9 { box-sizing: border-box; background: linear-gradient(270deg, #a78bfa, #ff4d4d, #a78bfa); background-size: 400% 400%; animation: bgShift-shared-container-9 4s linear infinite; padding: 4px; }
+
+.shared-container-8 { box-sizing: border-box; background: transparent; padding: 20px; }
+
+            .shared-text-2 {
+                margin: 0; /* Reset default paragraph margin */
+                padding: 0;
+                color: #E7E0EC;
+                
+                
+            }
+            
+
+                    @property --gradient-angle-shared-container-11 {
+                        syntax: '<angle>';
+                        initial-value: 0deg;
+                        inherits: false;
+                    }
+                    
+
+                    @keyframes bgRotate-shared-container-11 {
+                        0% { --gradient-angle-shared-container-11: 0deg; }
+                        100% { --gradient-angle-shared-container-11: 360deg; }
+                    }
+                    
+.shared-container-11 { box-sizing: border-box; background: repeating-conic-gradient(from var(--gradient-angle-shared-container-11), red, yellow, green, blue, red); animation: bgRotate-shared-container-11 8s linear infinite; padding: 4px; }
+
+.shared-container-10 { box-sizing: border-box; background: #E7E0EC; padding: 20px; }
+
+.shared-container-12 { box-sizing: border-box; padding: 14px; width: 323px; }
+
+                    @property --gradient-angle-shared-container-2 {
+                        syntax: '<angle>';
+                        initial-value: 0deg;
+                        inherits: false;
+                    }
+                    
+
+                    @keyframes bgRotate-shared-container-2 {
+                        0% { --gradient-angle-shared-container-2: 0deg; }
+                        100% { --gradient-angle-shared-container-2: 360deg; }
+                    }
+                    
+.shared-container-2 { box-sizing: border-box; background: repeating-conic-gradient(from var(--gradient-angle-shared-container-2), red, yellow, green, blue, red); animation: bgRotate-shared-container-2 4s linear infinite; padding: 5px; width: 100%; height: 100%; }
+
+.shared-container-1 { box-sizing: border-box; background: #363636; padding: 9px; width: 100%; height: 330px; }
+.shared-column-0 { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; height: 100%; direction: ltr; }
+
+.shared-container-0 { box-sizing: border-box; width: 262px; height: 262px; }
+.shared-image-0 { display: block; object-fit: contain; width: 261px; height: 261px; object-position: center;border-radius: 6px;}
+.shared-image-1 { display: block; object-fit: contain; width: 42px; height: 42px; object-position: center;border-radius: 5px;}</style>
     
         <script src="qwebchannel.js"></script>
         <script>
@@ -208,17 +260,7 @@ PythraSlider.prototype.destroy = function() {
         
 </head>
 <body>
-    <div id="root-container"><div id="fw_id_1" class="shared-container-1" style="display: block"><div id="fw_id_2" class="shared-column-0"><div id="fw_id_3" class="shared-row-0"><p id="fw_id_4" class="shared-text-0" style="font-size: 24; font-weight: bold">Dropdown Test</p><button id="fw_id_5" class="shared-elevatedbutton-0" onclick="handleClick('close')"><div id="fw_id_6" class="shared-container-0" style="display: block"></div></button></div><div id="fw_id_7" class="" style="height: 24px"></div><div id="fw_id_8" class="" style="height: 24px"></div><div id="fw_id_9" class=""><div id="fw_id_10" class="shared-column-1"><p id="fw_id_11" class="shared-text-1">Selected Country Code: usa</p><p id="fw_id_12" class="shared-text-1">Selected Country Name: United States</p><div id="fw_id_13" class="" style="height: 20px"></div>
-        <div id="fw_id_14" class="dropdown-container shared-dropdown-0">
-            <div class="dropdown-value-container">
-                <span>United States</span>
-                <svg class="dropdown-caret" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"></path></svg>
-            </div>
-            <ul class="dropdown-menu">
-                <li class="dropdown-item" data-value="usa">United States</li><li class="dropdown-item" data-value="can">Canada</li><li class="dropdown-item" data-value="mex">Mexico</li>
-            </ul>
-        </div>
-        </div></div></div></div></div>
+    <div id="root-container"><div id="fw_id_1" class="shared-container-4"><div id="fw_id_2" class="shared-column-1"><div id="fw_id_3" class="shared-row-0"><p id="fw_id_4" class="shared-text-0" style="color: #E7E0EC; font-size: 24; font-weight: bold">Animated Gradient Clip Path Border Test</p><button id="fw_id_5" class="shared-elevatedbutton-0" onclick="handleClick('close')"><div id="fw_id_6" class="shared-container-3"></div></button></div><div id="fw_id_7" class="" style="height: 24px"></div><div id="fw_id_8" class=""><div id="fw_id_9" class="shared-column-2"><div id="fw_id_10" class="shared-gradient-border-0" style="--gradient-border-size: 4px; --gradient-border-radius: 18px; --gradient-child-radius: 14px;"><div id="fw_id_11" class="shared-container-5"><p id="fw_id_12" class="shared-text-1">Adapts to Child&#x27;s Radius</p></div></div><div id="fw_id_13" class="" style="height: 12px"></div><div id="fw_id_14" class="shared-gradient-border-1" style="--gradient-border-size: 8px; --gradient-border-radius: 58px; --gradient-child-radius: 50px;"><div id="fw_id_15" class="shared-container-6"><p id="fw_id_16" class="shared-text-1">Custom Theme</p></div></div><div id="fw_id_17" class="" style="height: 12px"></div><div id="fw_id_18" class="shared-gradient-border-0" style="--gradient-border-size: 5px; --gradient-border-radius: 5.0px; --gradient-child-radius: 0.0px;"><div id="fw_id_19" class="shared-container-7"><p id="fw_id_20" class="shared-text-1">No Child Radius</p></div></div></div></div><div id="fw_id_21" class="" style="height: 24px"></div><div id="fw_id_22" class=""><div id="fw_id_23" class="shared-center-0"><div id="fw_id_24" class="shared-column-3"><div id="fw_id_25" class="shared-container-9"><div id="fw_id_26" class="shared-container-8"><p id="fw_id_27" class="shared-text-2" style="color: #E7E0EC">This Container has an animated background!</p></div></div><div id="fw_id_28" class="" style="height: 12px"></div><div id="fw_id_29" class="shared-container-11"><div id="fw_id_30" class="shared-container-10"><p id="fw_id_31" class="shared-text-1">This is a normal container.</p></div></div><div id="fw_id_32" class="" style="height: 6px"></div><div id="fw_id_33" class="shared-container-12"><div id="fw_id_34" class="" style="width: 100%; height: 100%"><div id="fw_id_35" class="shared-container-2"><div id="fw_id_36" class="" style="width: 100%; height: 100%"><div id="fw_id_37" class="shared-container-1"><div id="fw_id_38" class="shared-column-0"><div id="fw_id_39" class="shared-container-0"><img id="fw_id_40" class="shared-image-0" src="http://localhost:8004/assets/artwork.jpeg" alt=""></div><img id="fw_id_41" class="shared-image-1" src="http://localhost:8004/assets/avatar.jpg" alt=""></div></div></div></div></div></div></div></div></div></div></div></div>
     <div id="overlay-container"></div>
 
     <!-- ADD SIMPLEBAR JS -->
@@ -660,9 +702,318 @@ class PythraDropdown {
         document.removeEventListener('click', this.handleClickOutside);
     }
 }
+/**
+ * PythraGestureDetector: A client-side engine for a feature-rich gesture detector.
+ *
+ * It uses Pointer Events to handle mouse and touch统一. It disambiguates between
+ * taps, double taps, long presses, and panning gestures.
+ */
+class PythraGestureDetector {
+    constructor(elementId, options) {
+        this.element = document.getElementById(elementId);
+        if (!this.element) {
+            console.error(`GestureDetector element with ID #${elementId} not found.`);
+            return;
+        }
+
+        this.options = options;
+
+        // --- Gesture State ---
+        this.lastTapTime = 0;
+        this.tapTimeout = null;
+        this.longPressTimeout = null;
+        this.isPanning = false;
+        this.panStartPoint = { x: 0, y: 0 };
+        this.panThreshold = 5; // Pixels to move before a pan is detected
+
+        // --- Bind Handlers ---
+        this.handlePointerDown = this.handlePointerDown.bind(this);
+        this.handlePointerMove = this.handlePointerMove.bind(this);
+        this.handlePointerUp = this.handlePointerUp.bind(this);
+        this.fireTap = this.fireTap.bind(this);
+        this.fireLongPress = this.fireLongPress.bind(this);
+
+        // Attach the entry-point event listener
+        this.element.addEventListener('pointerdown', this.handlePointerDown);
+    }
+
+    handlePointerDown(event) {
+        // Only respond to the primary button (e.g., left mouse click)
+        if (event.button !== 0) return;
+
+        const currentTime = Date.now();
+
+        // --- Double Tap Detection ---
+        if (currentTime - this.lastTapTime < 300) { // 300ms window for double tap
+            clearTimeout(this.tapTimeout);
+            this.tapTimeout = null;
+            this.lastTapTime = 0;
+            if (this.options.onDoubleTapName) {
+                window.pywebview.on_gesture_event(this.options.onDoubleTapName, {});
+            }
+            return;
+        }
+        
+        this.lastTapTime = currentTime;
+        this.panStartPoint = { x: event.clientX, y: event.clientY };
+
+        // --- Long Press Detection ---
+        if (this.options.onLongPressName) {
+            this.longPressTimeout = setTimeout(() => this.fireLongPress(), 500); // 500ms for long press
+        }
+
+        // --- Single Tap Detection (will be fired later if not cancelled) ---
+        if (this.options.onTapName) {
+            this.tapTimeout = setTimeout(() => this.fireTap(), 300);
+        }
+
+        // Listen for move/up on the entire document for robust dragging
+        document.addEventListener('pointermove', this.handlePointerMove);
+        document.addEventListener('pointerup', this.handlePointerUp);
+        document.addEventListener('pointercancel', this.handlePointerUp); // Treat cancel like up
+    }
+
+    handlePointerMove(event) {
+        if (this.isPanning) {
+            // --- Continue Panning ---
+            const dx = event.clientX - this.panStartPoint.x;
+            const dy = event.clientY - this.panStartPoint.y;
+            if (this.options.onPanUpdateName) {
+                window.pywebview.on_gesture_event(this.options.onPanUpdateName, { dx, dy });
+            }
+        } else {
+            // --- Check if a Pan has Started ---
+            const dx = event.clientX - this.panStartPoint.x;
+            const dy = event.clientY - this.panStartPoint.y;
+            if (Math.sqrt(dx * dx + dy * dy) > this.panThreshold) {
+                this.isPanning = true;
+                // A pan gesture cancels tap and long press
+                clearTimeout(this.tapTimeout);
+                this.tapTimeout = null;
+                clearTimeout(this.longPressTimeout);
+                this.longPressTimeout = null;
+                
+                if (this.options.onPanStartName) {
+                    window.pywebview.on_gesture_event(this.options.onPanStartName, {});
+                }
+            }
+        }
+    }
+
+    handlePointerUp(event) {
+        // Clean up document-level listeners immediately
+        document.removeEventListener('pointermove', this.handlePointerMove);
+        document.removeEventListener('pointerup', this.handlePointerUp);
+        document.removeEventListener('pointercancel', this.handlePointerUp);
+
+        // Always clear a pending long press if pointer is lifted
+        clearTimeout(this.longPressTimeout);
+        this.longPressTimeout = null;
+        
+        if (this.isPanning) {
+            // --- End Panning ---
+            this.isPanning = false;
+            if (this.options.onPanEndName) {
+                window.pywebview.on_gesture_event(this.options.onPanEndName, {});
+            }
+        }
+    }
+
+    fireTap() {
+        if (this.tapTimeout) { // Ensure it wasn't cancelled
+            this.tapTimeout = null;
+            if (this.options.onTapName) {
+                window.pywebview.on_gesture_event(this.options.onTapName, {});
+            }
+        }
+    }
+    
+    fireLongPress() {
+        // A long press cancels a single tap
+        clearTimeout(this.tapTimeout);
+        this.tapTimeout = null;
+        this.lastTapTime = 0; // Prevent next tap from being a double tap
+        
+        if (this.longPressTimeout) {
+            this.longPressTimeout = null;
+            if (this.options.onLongPressName) {
+                window.pywebview.on_gesture_event(this.options.onLongPressName, {});
+            }
+        }
+    }
+
+    destroy() {
+        if (!this.element) return;
+        this.element.removeEventListener('pointerdown', this.handlePointerDown);
+        this.handlePointerUp(); // Ensure document listeners are cleaned up
+        clearTimeout(this.tapTimeout);
+        clearTimeout(this.longPressTimeout);
+    }
+}
+/**
+ * PythraGradientClipPath: Client-side engine for creating an animated
+ * gradient border around a complex clip-path shape.
+ */
+
+
+// Helper function for basic vector math
+const vec_gradient_border = (p1, p2) => ({ x: p2.x - p1.x, y: p2.y - p1.y });
+const magnitude_gradient_border = (v) => Math.sqrt(v.x * v.x + v.y * v.y);
+const normalize_gradient_border = (v) => {
+    const mag = magnitude_gradient_border(v);
+    return mag > 0 ? { x: v.x / mag, y: v.y / mag } : { x: 0, y: 0 };
+};
+const dot_gradient_border = (v1, v2) => v1.x * v2.x + v1.y * v2.y;
+// const cross = (v1, v2) => v1.x * v2.y - v1.y * v2.x;
+
+
+
+/**
+ * Calculates a new set of points offset outwards from the original polygon.
+ * @param {Array<Object>} points - The original points, e.g., [{x: 0, y: 0}, ...].
+ * @param {number} offset - The distance to offset the points outwards.
+ * @returns {Array<Object>} The new, offset points.
+ */
+function offsetPoints(points, offset) {
+    const numPoints = points.length;
+    if (numPoints < 3) return points;
+
+    const offsetPoints = [];
+
+    for (let i = 0; i < numPoints; i++) {
+        const p_prev = points[(i + numPoints - 1) % numPoints];
+        const p_curr = points[i];
+        const p_next = points[(i + 1) % numPoints];
+
+        const v1 = normalize_gradient_border(vec_gradient_border(p_curr, p_prev));
+        const v2 = normalize_gradient_border(vec_gradient_border(p_curr, p_next));
+
+        // Calculate the angle bisector vector (points outwards for convex shapes)
+        const bisector = normalize_gradient_border({ x: v1.x + v2.x, y: v1.y + v2.y });
+
+        // Calculate the angle between the two edge vectors
+        const angle = Math.acos(dot_gradient_border(v1, v2));
+
+        // Use trigonometry to find the length to move along the bisector
+        // to achieve the desired perpendicular offset distance.
+        const distance = offset / Math.sin(angle / 2);
+
+        if (isNaN(distance) || !isFinite(distance)) {
+             // Handle collinear points (angle is ~PI), just move along the normal
+             const normal = { x: -v1.y, y: v1.x };
+             offsetPoints.push({ x: p_curr.x + normal.x * offset, y: p_curr.y + normal.y * offset });
+        } else {
+             offsetPoints.push({ x: p_curr.x + bisector.x * distance, y: p_curr.y + bisector.y * distance });
+        }
+    }
+    return offsetPoints;
+}
+
+
+class PythraGradientClipPath {
+    constructor(elementId, options) {
+        this.container = document.getElementById(elementId);
+        if (!this.container) {
+            console.error(`GradientClipPath container with ID #${elementId} not found.`);
+            return;
+        }
+
+        console.log(`✅ PythraGradientClipPath engine is initializing for #${elementId}`);
+        
+        // --- Setup DOM Structure ---
+        // The reconciler placed the child widget inside our container.
+        // We need to wrap it and add a background element.
+        this.backgroundEl = document.createElement('div');
+        this.backgroundEl.className = 'gradient-clip-background';
+        
+        this.contentHost = document.createElement('div');
+        this.contentHost.className = 'gradient-clip-content-host';
+
+        // Move the original child from the container into the new host
+        while (this.container.firstChild) {
+            this.contentHost.appendChild(this.container.firstChild);
+        }
+        
+        this.container.appendChild(this.backgroundEl);
+        this.container.appendChild(this.contentHost);
+        
+        // --- Generate and Apply Paths ---
+        this.options = options;
+        this.update = this.update.bind(this);
+        
+        // Use a ResizeObserver to make it fully responsive
+        this.ro = new ResizeObserver(this.update);
+        this.ro.observe(this.container);
+        
+        // Initial update
+        this.update();
+    }
+
+    update() {
+        const rect = this.container.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+
+        const { points, radius, viewBox, borderWidth } = this.options;
+        const jsPoints = points.map(p => ({ x: p[0], y: p[1] }));
+
+        // 1. Generate the inner path for the content
+        const innerPathStr = generateRoundedPath(jsPoints, radius);
+        const innerClipPath = `path("${innerPathStr}")`;
+
+        // 2. Calculate offset points and a larger radius for the outer path
+        const offset_points = offsetPoints(jsPoints, borderWidth);
+        const outerRadius = radius + borderWidth;
+        const outerPathStr = generateRoundedPath(offset_points, outerRadius);
+        const outerClipPath = `path("${outerPathStr}")`;
+
+        // 3. Apply the responsive clip-paths to the elements
+        // We don't need ResponsiveClipPath class here because we update on every resize.
+        this.contentHost.style.clipPath = innerClipPath;
+        this.contentHost.style.webkitClipPath = innerClipPath;
+        
+        this.backgroundEl.style.clipPath = outerClipPath;
+        this.backgroundEl.style.webkitClipPath = outerClipPath;
+    }
+
+    destroy() {
+        if (this.ro && this.container) {
+            this.ro.unobserve(this.container);
+        }
+    }
+}
 
                     // Then, RUN the initialization commands
-                    window._pythra_instances['fw_id_14'] = new PythraDropdown('fw_id_14', {"onChangedName": "dropdown_change_1633900975776"});
+                    
+                    // Step 0: Convert Python's array-of-arrays to JS's array-of-objects
+                    const pointsForGenerator_fw_id_34 = [[0, 343], [72, 343], [72, 290], [290, 290], [290, 0], [0, 0]].map(p => ({x: p[0], y: p[1]}));
+                    
+                    // Step 1: Call generateRoundedPath with the points and radius
+                    const initialPathString_fw_id_34 = generateRoundedPath(pointsForGenerator_fw_id_34, 15.0);
+                    
+                    // Step 2: Feed the generated path into ResponsiveClipPath
+                    window._pythra_instances['fw_id_34'] = new ResponsiveClipPath(
+                        'fw_id_34', 
+                        initialPathString_fw_id_34, 
+                        290, 
+                        347, 
+                        { uniformArc: true, decimalPlaces: 2 }
+                    );
+                
+                    // Step 0: Convert Python's array-of-arrays to JS's array-of-objects
+                    const pointsForGenerator_fw_id_36 = [[0, 333], [62, 333], [62, 280], [280, 280], [280, 0], [0, 0]].map(p => ({x: p[0], y: p[1]}));
+                    
+                    // Step 1: Call generateRoundedPath with the points and radius
+                    const initialPathString_fw_id_36 = generateRoundedPath(pointsForGenerator_fw_id_36, 10.0);
+                    
+                    // Step 2: Feed the generated path into ResponsiveClipPath
+                    window._pythra_instances['fw_id_36'] = new ResponsiveClipPath(
+                        'fw_id_36', 
+                        initialPathString_fw_id_36, 
+                        280, 
+                        337, 
+                        { uniformArc: true, decimalPlaces: 2 }
+                    );
+                
                 } catch (e) {
                     console.error("Error running Pythra initializers:", e);
                 }

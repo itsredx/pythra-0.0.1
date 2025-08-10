@@ -20,6 +20,7 @@ from .base import Key # Prefer placing Key in base.py as it's fundamental
 from .state import State, StatefulWidget, StatelessWidget
 from .icons import Icons, IconData
 from .controllers import TextEditingController, SliderController
+from .events import TapDetails, PanUpdateDetails
 
 
 # --- Styling Utilities and Constants ---
@@ -32,7 +33,8 @@ from .styles import (
     # Appearance
     Colors, BoxDecoration, BoxShadow, Offset,
     BorderRadius, BorderSide, BorderStyle,
-    TextStyle, ScrollbarTheme,
+    TextStyle, ScrollbarTheme, GradientBorderTheme,
+    GradientTheme,
     # Behavior/Misc
     ClipBehavior, ImageFit, BoxFit, Overflow, StackFit, ScrollPhysics,
     TextDirection, TextBaseline, VerticalDirection,
@@ -108,6 +110,7 @@ from .widgets import (
     IconButton,
     FloatingActionButton,
     SnackBarAction,
+    GestureDetector,
 
     # --- Overlays / Feedback ---
     Dialog,

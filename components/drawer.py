@@ -51,7 +51,8 @@ from pythra import (
     ScrollbarTheme,
     TextEditingController,
     InputDecoration,
-    BorderSide,  # <-- ADD THESE IMPORTS
+    BorderSide,
+    GradientTheme,  # <-- ADD THESE IMPORTS
 )
 import math  # For the StarClipper
 from .search_field import SearchComponent, _SearchComponentState
@@ -65,6 +66,11 @@ class DrawerState(State):
         self.search_controller.add_listener(self.on_search_updates)
         self.value_entered = False
         self.currentIndex = 1
+
+        self.rotating_gradient_theme = GradientTheme(
+            gradientColors=['red', 'yellow', 'green','blue', 'red'],
+            rotationSpeed='4s' # <-- Set a rotation speed to enable rotation
+        )
 
         self.clip_path = ClipPath(
             key=Key("Image_path_border"),
@@ -87,13 +93,14 @@ class DrawerState(State):
                 width="100%",
                 height="100%",
                 padding=EdgeInsets.all(5),
-                decoration=BoxDecoration(
-                    color=Colors.gradient(
-                        "to bottom",
-                        Colors.red,
-                        Colors.blue,
-                    ),
-                ),
+                gradient=self.rotating_gradient_theme,
+                # decoration=BoxDecoration(
+                #     color=Colors.gradient(
+                #         "to bottom",
+                #         Colors.red,
+                #         Colors.blue,
+                #     ),
+                # ),
                 child=ClipPath(
                     key=Key("Image_path_content_path"),
                     viewBox=(

@@ -14,6 +14,11 @@ from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtGui import QShortcut, QKeySequence # <-- ADD THIS IMPORT
 import sys
 
+# --- THIS IS THE FIX ---
+# Import the gesture event data classes so the Api class can use them.
+# Adjust the path if your events file is located elsewhere (e.g., from .styles import ...)
+from ..events import TapDetails, PanUpdateDetails
+# --- END OF FIX ---
 
 app = QApplication(sys.argv)
 if app is None:
@@ -126,6 +131,30 @@ class Api(QObject):
     @Slot(str)
     def on_button_clicked(self, message):
         print(f"Message from JavaScript: {message}")
+
+    # --- ADD THIS NEW GENERIC SLOT ---
+    @Slot(str, 'QVariantMap', result=None)
+    def on_gesture_event(self, callback_name, details):
+        """
+        Generic slot to handle all events from the GestureDetector JS engine.
+        """
+        callback = self.callbacks.get(callback_name)
+        print("Callback tap debug info: ",callback, " " ,details)
+        if callback:
+            try:
+                # Based on the callback name, we can construct the correct data class.
+                if "pupdate" in callback_name:
+                    # For PanUpdate, details is a dict {'dx': float, 'dy': float}
+                    callback(PanUpdateDetails(dx=details.get('dx', 0), dy=details.get('dy', 0)))
+                elif "tap" in callback_name and "dbtap" not in callback_name:
+                    callback(TapDetails())
+                else:
+                    # For DoubleTap, LongPress, PanStart, PanEnd, no details are needed.
+                    callback()
+            except Exception as e:
+                print(f"Error executing gesture callback '{callback_name}': {e}")
+        else:
+            print(f"Warning: Gesture callback '{callback_name}' not found.")
 
 
 # Create a global instance of the WindowManager

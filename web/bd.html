@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pure CSS Gradient Border Animation</title>
+<style>
+  :root{
+    --border-size: 6px;         /* thickness of the border */
+    --radius: 14px;             /* corner radius */
+    --bg: #0f1724;              /* inner background */
+    --speed: 5s;                /* animation speed */
+  }
+
+  body{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: #0b1020;
+    margin:0;
+    font-family: system-ui, sans-serif;
+  }
+
+  .gradient-border{
+    padding: var(--border-size);
+    border-radius: var(--radius);
+    background: linear-gradient(270deg,
+      #ff4d4d,
+      #ffb86b,
+      #ffd166,
+      #7bed9f,
+      #6ad3ff,
+      #a78bfa,
+      #ff4d4d
+    );
+    background-size: 400% 400%;
+    animation: borderShift var(--speed) linear infinite;
+  }
+
+  .inner{
+    background: var(--bg);
+    border-radius: calc(var(--radius) - var(--border-size));
+    padding: 20px 36px;
+    color: #e6eef8;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    text-align: center;
+  }
+
+  @keyframes borderShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="gradient-border">
+    <div class="inner">Animated Gradient Border</div>
+  </div>
+
+</body>
+</html>
