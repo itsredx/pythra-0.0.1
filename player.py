@@ -7,10 +7,10 @@ import random
 import string
 from PySide6.QtCore import QTimer, QCoreApplication
 from components.drawer import Drawer
+from components.tab_controller import *
 from components.control import Controls
 from components.home import HomePage
 from components.music_list import MusicListBody
-
 from media_scanner import scan_media_library
 from song_utils import group_songs
 
@@ -72,28 +72,47 @@ from pythra import (
 )
 import math  # For the StarClipper
 
+def on_tab_selected(index: int):
+
+    pass
+
+
+
 
 # --- Application State ---
 class PlayerAppState(State):
     def __init__(self):
         super().__init__()
-        self.control_widget = Controls(key=Key("my_control_widget_with_slider"))
-
         # self.search_controller = TextEditingController()
         # self.search_controller.add_listener(self.on_search_updates)
         self.value_entered = False
-        self.currentIndex = 1
-
-        self.music_list_body = MusicListBody(key=Key("my_music_list_body"))
+        self.currentIndex = 0
+        self.music_list_body = MusicListBody(
+            key=Key("my_music_list_body")
+        )
         self.home_page_body = HomePage(key=Key("my_home_page_body"))
+        self.control_widget = Controls(key=Key("my_control_widget_with_slider"))
+        self.drawer_widget = Drawer(
+            key=Key("drawer_root"), onTabSelected=on_tab_selected
+        )
 
+    def on_tab_home_page(self):
+        # if self.currentIndex != 1:
+        self.currentIndex = 1
+        print("currentIndex: ", self.currentIndex)
+        self.setState()
+
+    def on_tab_music_list(self):
+        # if self.currentIndex != 0:
+        self.currentIndex = 0
+        self.setState()
 
     # --- Build Method ---TODO SINGLECHILDSCROL
     def build(self) -> Widget:
         # print(f"\n--- Building PlayerApp UI ---")
-        content = [self.music_list_body, self.home_page_body]
+        # content = [self.music_list_body, self.home_page_body]
 
-        body_content = content[self.currentIndex]
+        # body_content = content[self.currentIndex]
 
         return Container(
             key=Key("player_app_root_container"),
@@ -114,7 +133,7 @@ class PlayerAppState(State):
                             color=Colors.hex("#484848"),
                             borderRadius=BorderRadius.circular(18.0),
                         ),
-                        child=Drawer(key=Key("drawer_root")),
+                        child=self.drawer_widget,
                     ),
                     SizedBox(
                         key=Key("player_app_root_gap"),
@@ -124,7 +143,29 @@ class PlayerAppState(State):
                         height="90vh",
                         child=Column(
                             children=[
-                                body_content,  # self.music_list_body,
+                                Row(children=[
+                                    ElevatedButton(
+                                    child=Text("Switch", key=Key("player_app_root_home_switch_txt"),),
+                                    key=Key("player_app_root_home_switch"),
+                                    onPressed=self.on_tab_home_page,
+                                ),
+                                ElevatedButton(
+                                    child=Text("Switch", key=Key("player_app_root_music_switch_txt"),),
+                                    key=Key("player_app_root_music_switch"),
+                                    onPressed=self.on_tab_music_list,
+                                ),
+                                ]),
+                                
+                                Container(
+                                    child=self.music_list_body,
+                                    key=Key("player_app_root_music_list"),
+                                    visible = True if self.currentIndex == 0 else False,
+                                ),
+                                Container(
+                                    child=self.home_page_body,
+                                    key=Key("player_app_root_home_page"),
+                                    visible = True if self.currentIndex == 1 else False,
+                                ),  # self.music_list_body,
                                 Container(
                                     key=Key("controls_holder"),
                                     height=112,
@@ -150,11 +191,24 @@ class PlayerApp(StatefulWidget):
         return PlayerAppState()
 
 
+class mainAppState(State):
+    def __init__(self):
+        super().__init__()
+
+    def build(self) -> Widget:
+        return PlayerApp(key=Key("player_app_root_with_state"))
+
+
+class mainApp(StatefulWidget):
+    def createState(self) -> mainAppState:
+        return mainAppState()
+
+
 class Application:
     def __init__(self):
         self.framework = Framework.instance()
-        self.my_app = PlayerApp(key=Key("player_app_root_with_state"))
-        self.state_instance: Optional[PlayerAppState] = None
+        self.my_app = mainApp(key=Key("main_app_root_with_state"))
+        self.state_instance: Optional[mainAppState] = None
 
     # def schedule_tests(self):
     #     # ... (same test scheduling logic) ...

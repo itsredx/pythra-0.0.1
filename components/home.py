@@ -60,17 +60,19 @@ import math  # For the StarClipper
 class HomePageState(State):
     def __init__(self):
         super().__init__()
+        self.visible = True
+        print("Initializing home page with visibility: ", self.visible)
 
         self.widgets = []
-        for i in range(2000):
+        for i in range(20):
             self.widgets.append(
                 TextButton(
-                    key=Key(f"heading_textbutton_{i}"),
+                    key=Key(f"heading_textbutton_home_{i}"),
                     child=Container(
-                        key=Key(f"heading_textbutton_container_{i}"),
+                        key=Key(f"heading_textbutton_home_container_{i}"),
                         padding=EdgeInsets.only(left=0, top=8, right=0, bottom=4),
                         child=Column(
-                            key=Key(f"heading_textbutton_innerrow_{i}"),
+                            key=Key(f"heading_textbutton_home_innerrow_{i}"),
                             mainAxisAlignment=MainAxisAlignment.START,
                             crossAxisAlignment=CrossAxisAlignment.START,
                             children=[
@@ -84,7 +86,7 @@ class HomePageState(State):
                                 SizedBox(height=8),
                                 Text(
                                     f"Title {i+1}",
-                                    key=Key(f"heading_{i}"),
+                                    key=Key(f"heading_home_{i}"),
                                     style=TextStyle(
                                         color=Colors.hex("#D9D9D9"),
                                         fontSize=14.0,
@@ -94,7 +96,7 @@ class HomePageState(State):
                                 ),
                                 Text(
                                     f"Sub Title {i+1}",
-                                    key=Key(f"sub_heading_{i}"),
+                                    key=Key(f"sub_heading_home_{i}"),
                                     style=TextStyle(
                                         color=Colors.hex("#D9D9D9"),
                                         fontSize=10.0,
@@ -117,20 +119,21 @@ class HomePageState(State):
 
     def build(self):
         return Container(
-            key=Key("body_content_root_column"),
+            key=Key("body_home_content_root_column"),
             height="100%",
             width=1190,
+            visible= self.visible,
             # color= Colors.hex("#484848"),
             decoration=BoxDecoration(
                 color=Colors.transparent,
                 borderRadius=BorderRadius.circular(18.0),
             ),
             child=Column(
-                key=Key("body_content_column"),
+                key=Key("body_content_home_column"),
                 crossAxisAlignment=CrossAxisAlignment.STRETCH,
                 children=[
                     Container(
-                        key=Key("body_content_container"),
+                        key=Key("body_content_home_container"),
                         height=100,
                         width="100%",
                         decoration=BoxDecoration(
@@ -138,28 +141,28 @@ class HomePageState(State):
                             borderRadius=BorderRadius.circular(18.0),
                         ),
                         child=Column(
-                            key=Key("music_header_title_content_column"),
+                            key=Key("music_header_title_home_content_column"),
                             mainAxisAlignment=MainAxisAlignment.END,
                             crossAxisAlignment=CrossAxisAlignment.STRETCH,
                             children=[
                                 Row(
-                                    key=Key("music_header_title_content_row"),
+                                    key=Key("music_header_title_home_content_row"),
                                     children=[
                                         Container(
                                             key=Key(
-                                                "music_header_title_content_container"
+                                                "music_header_title_home_content_container"
                                             ),
                                             height=50,
                                             width="100%",
                                             padding=EdgeInsets.symmetric(16),
                                             color=Colors.transparent,
                                             child=Row(
-                                                key=Key("music_header_title_row"),
+                                                key=Key("music_header_title_home_row"),
                                                 crossAxisAlignment=CrossAxisAlignment.START,
                                                 children=[
                                                     Text(
                                                         "Home",
-                                                        key=Key("music_header_title"),
+                                                        key=Key("music_header_title_home"),
                                                         style=TextStyle(
                                                             color=Colors.hex("#D9D9D9"),
                                                             fontSize=33.0,
@@ -171,7 +174,7 @@ class HomePageState(State):
                                             ),
                                         ),
                                         Container(
-                                            key=Key("minimize_root_container_btn"),
+                                            key=Key("minimize_home_root_container_btn"),
                                             height=14,
                                             width=14,
                                             margin=EdgeInsets.only(
@@ -182,9 +185,9 @@ class HomePageState(State):
                                                 borderRadius=BorderRadius.circular(4.0),
                                             ),
                                             child=ElevatedButton(
-                                                key=Key("minimize_elevated_btn"),
+                                                key=Key("minimize_home_elevated_btn"),
                                                 child=Container(
-                                                    key=Key("minimize_container_btn"),
+                                                    key=Key("minimize_home_container_btn"),
                                                     height=14,
                                                     width=14,
                                                     decoration=BoxDecoration(
@@ -204,11 +207,11 @@ class HomePageState(State):
                                             ),
                                         ),
                                         SizedBox(
-                                            key=Key("close_container_padding"),
+                                            key=Key("close_home_container_padding"),
                                             width=6,
                                         ),
                                         Container(
-                                            key=Key("close_root_container_btn"),
+                                            key=Key("close_home_root_container_btn"),
                                             height=14,
                                             width=14,
                                             margin=EdgeInsets.only(
@@ -219,9 +222,9 @@ class HomePageState(State):
                                                 borderRadius=BorderRadius.circular(4.0),
                                             ),
                                             child=ElevatedButton(
-                                                key=Key("close_elevated_btn"),
+                                                key=Key("close_home_elevated_btn"),
                                                 child=Container(
-                                                    key=Key("close_container_btn"),
+                                                    key=Key("close_home_container_btn"),
                                                     height=14,
                                                     width=14,
                                                     decoration=BoxDecoration(
@@ -246,7 +249,7 @@ class HomePageState(State):
                         ),
                     ),
                     Container(
-                        key=Key("responsive_body_path_containerroot"),
+                        key=Key("responsive_body_home_path_container_root"),
                         height="100%",
                         width="100%",
                         margin=EdgeInsets.only(
@@ -257,7 +260,7 @@ class HomePageState(State):
                             borderRadius=BorderRadius.circular(18.0),
                         ),
                         child=ClipPath(
-                            key=Key("responsive_body_path"),
+                            key=Key("responsive_body_home_path"),
                             # width="50%",
                             # aspectRatio=1.0,
                             viewBox=(
@@ -265,7 +268,7 @@ class HomePageState(State):
                                 608.24,
                             ),  # Define the coordinate system of the path
                             child=Container(
-                                key=Key("responsive_body_path_container"),
+                                key=Key("responsive_body_home_path_container"),
                                 width="100%",
                                 height="100%",
                                 padding=EdgeInsets.all(16),
@@ -273,32 +276,32 @@ class HomePageState(State):
                                     color=Colors.hex("#484848"),
                                 ),
                                 child=Container(
-                                    key=Key("responsive_body_path_content_container"),
+                                    key=Key("responsive_body_home_path_content_container"),
                                     width="100%",
                                     height="100%",
                                     color=Colors.transparent,
                                     child=Column(
-                                        key=Key("responsive_body_path_content_column"),
+                                        key=Key("responsive_body_home_path_content_column"),
                                         children=[
                                             Row(
                                                 key=Key(
-                                                    "responsive_body_path_content_row"
+                                                    "responsive_body_home_path_content_row"
                                                 ),
                                                 mainAxisAlignment=MainAxisAlignment.END,
                                                 children=[
                                                     ElevatedButton(
                                                         key=Key(
-                                                            "add_folder_elevated_btn"
+                                                            "add_folder_home_elevated_btn"
                                                         ),
                                                         child=Row(
                                                             key=Key(
-                                                                "add_folder_elevated_btn_row"
+                                                                "add_folder_home_elevated_btn_row"
                                                             ),
                                                             children=[
                                                                 Icon(
                                                                     icon=Icons.create_new_folder_rounded,
                                                                     key=Key(
-                                                                        "add_folder_elevated_btn_icon"
+                                                                        "add_folder_home_elevated_btn_icon"
                                                                     ),
                                                                     color=Colors.hex(
                                                                         "#D9D9D9"
@@ -309,14 +312,14 @@ class HomePageState(State):
                                                                 ),
                                                                 SizedBox(
                                                                     key=Key(
-                                                                        "add_folder_padding"
+                                                                        "add_folder_home_padding"
                                                                     ),
                                                                     width=6.0,
                                                                 ),
                                                                 Text(
                                                                     "Add folder",
                                                                     key=Key(
-                                                                        "add_folder_elevated_btn_text"
+                                                                        "add_folder_home_elevated_btn_text"
                                                                     ),
                                                                     style=TextStyle(
                                                                         color=Colors.hex(
@@ -345,12 +348,12 @@ class HomePageState(State):
                                             ),
                                             SizedBox(
                                                 key=Key(
-                                                    "shuffle_and_play_content_row_top_padding"
+                                                    "shuffle_and_play_home_content_row_top_padding"
                                                 ),
                                                 height=50,
                                             ),
                                             Row(
-                                                key=Key("shuffle_and_play_content_row"),
+                                                key=Key("shuffle_and_play_home_content_row"),
                                                 mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
                                                 children=[
                                                     Text(
@@ -366,15 +369,15 @@ class HomePageState(State):
                                                 ],
                                             ),
                                             SizedBox(
-                                                key=Key("sort_identifier_padding"),
+                                                key=Key("sort_home_identifier_padding"),
                                                 height=30,
                                             ),
                                             Container(
-                                                key=Key("list_container_path"),
+                                                key=Key("list_home_container_path"),
                                                 height=496+11,
                                                 width="100%",
                                                 child=Scrollbar(
-                                                    key=Key("scrollbar_body_list"),
+                                                    key=Key("scrollbar_body_list_home"),
                                                     theme=ScrollbarTheme(
                                                         width=14,
                                                         thumbColor=Colors.hex(
@@ -395,7 +398,7 @@ class HomePageState(State):
                                                             right=20
                                                         ),
                                                         child=GridView(
-                                                            key=Key("item_list_column"),
+                                                            key=Key("item_list_home_column"),
                                                             children=self.widgets,
                                                             crossAxisCount=6,
                                                             mainAxisSpacing=8,
@@ -423,7 +426,7 @@ class HomePageState(State):
                         ),
                     ),
                     SizedBox(
-                        key=Key("controls_holder_margin"),
+                        key=Key("controls_home_holder_margin"),
                         height=13,
                     ),
                 ],
@@ -432,5 +435,8 @@ class HomePageState(State):
 
 
 class HomePage(StatefulWidget):
+    def __init__(self, key: Key,):
+        super().__init__(key=key)
+
     def createState(self) -> HomePageState:
         return HomePageState()

@@ -8,17 +8,57 @@ from pythra.base import Key
 from pythra.controllers import *
 
 from pythra import (
-    Framework, State, StatefulWidget, Key, Container,
-    Column, Row, Text, ElevatedButton, SizedBox,
-    Colors, EdgeInsets, MainAxisAlignment, CrossAxisAlignment,
-    ButtonStyle, BoxDecoration, BorderRadius, Alignment, # <-- ADD THESE IMPORTS
-    TextEditingController, InputDecoration, GestureDetector, 
-    TapDetails, PanUpdateDetails, GradientBorderTheme,
+    Framework,
+    State,
+    StatefulWidget,
+    Key,
+    Container,
+    Column,
+    Row,
+    Text,
+    ElevatedButton,
+    SizedBox,
+    Colors,
+    EdgeInsets,
+    MainAxisAlignment,
+    CrossAxisAlignment,
+    ButtonStyle,
+    BoxDecoration,
+    BorderRadius,
+    Alignment,  # <-- ADD THESE IMPORTS
+    TextEditingController,
+    InputDecoration,
+    GestureDetector,
+    TapDetails,
+    PanUpdateDetails,
+    GradientBorderTheme,
 )
 
 
-
 # In your application's main state class
+
+# In main.py
+# Import the new navigation classes
+from pythra.navigation import Navigator, PageRoute
+
+# Let's imagine you have another page for settings
+class SettingsPage(StatelessWidget):
+    def build(self) -> Widget:
+        return Container(
+            color=Colors.blue,
+            alignment=Alignment.center(),
+            child=Column(children=[
+                Text("Settings Page", style=TextStyle(color=Colors.white)),
+                ElevatedButton(
+                    child=Text("Go Back"),
+                    # Use Navigator.of() to find the navigator and pop the route
+                    onPressed=lambda: Navigator.of(self).pop()
+                )
+            ])
+        )
+
+
+
 
 class MyAnimatedClipGradientBorder(StatefulWidget):
     def __init__(self, key: Key):
@@ -27,11 +67,12 @@ class MyAnimatedClipGradientBorder(StatefulWidget):
     def createState(self):
         return MyAnimatedClipGradientBorderState()
 
+
 class MyAnimatedClipGradientBorderState(State):
     def __init__(self):
         self.rotating_gradient_theme = GradientTheme(
-            gradientColors=['red', 'yellow', 'green','blue', 'red'],
-            rotationSpeed='4s' # <-- Set a rotation speed to enable rotation
+            gradientColors=["red", "yellow", "green", "blue", "red"],
+            rotationSpeed="4s",  # <-- Set a rotation speed to enable rotation
         )
         self.clip_path = ClipPath(
             key=Key("Image_path_border"),
@@ -120,62 +161,64 @@ class MyAnimatedClipGradientBorderState(State):
         )
 
     def build(self) -> Widget:
-        
+
         # Define the shape with points, just like for a normal ClipPath
-        diamond_points = [
-            (50, 0), (100, 50), (50, 100), (0, 50)
-        ]
+        diamond_points = [(50, 0), (100, 50), (50, 100), (0, 50)]
         cyberpunk_theme = GradientBorderTheme(
-            gradientColors=['cyan', 'magenta', 'yellow', 'cyan'],
-            animationSpeed='3s'
+            gradientColors=["cyan", "magenta", "yellow", "cyan"], animationSpeed="3s"
         )
 
         purple_pink_gradient = GradientTheme(
-            gradientColors=['#a78bfa', '#ff4d4d', '#a78bfa'],
-            animationSpeed='4s'
+            gradientColors=["#a78bfa", "#ff4d4d", "#a78bfa"], animationSpeed="4s"
         )
         rotating_gradient_theme = GradientTheme(
-            gradientColors=['red', 'yellow', 'green', 'blue', 'red'],
-            rotationSpeed='8s' # <-- Set a rotation speed to enable rotation
+            gradientColors=["red", "yellow", "green", "blue", "red"],
+            rotationSpeed="8s",  # <-- Set a rotation speed to enable rotation
         )
 
-        return Center(child=Column(
-        children=[
-            # Example 1: Container with an animated gradient background
-            Container(
-                gradient=purple_pink_gradient, # <-- USE THE NEW PROP
-                padding=EdgeInsets.all(4),
-                decoration=BoxDecoration(
-                    borderRadius=BorderRadius.all(12)
-                ),
-                child=Container(child=Text(
-                    "This Container has an animated background!",
-                    style=TextStyle(color=Colors.surfaceVariant,)
-                ),padding=EdgeInsets.all(20),color=Colors.transparent,)
-            ),
-
-            SizedBox(height=12),
-
-            # Example 2: A standard container with a solid color
-            # It works exactly as it did before.
-            Container(
-                # height=60,
-                gradient=rotating_gradient_theme,
-                # color=Colors.surfaceVariant,
-                padding=EdgeInsets.all(4),
-                child=Container(child=Text("This is a normal container."),padding=EdgeInsets.all(20),color=Colors.surfaceVariant,)
-            ),
-            SizedBox(height=6),
-            Container(
-                # height=60,
-                width = 323,
-                padding=EdgeInsets.all(14),
-                child=self.clip_path,
-            ),
-            
-        ]
-    ))
-
+        return Center(
+            child=Column(
+                children=[
+                    # Example 1: Container with an animated gradient background
+                    Container(
+                        gradient=purple_pink_gradient,  # <-- USE THE NEW PROP
+                        padding=EdgeInsets.all(4),
+                        decoration=BoxDecoration(borderRadius=BorderRadius.all(12)),
+                        child=Container(
+                            child=Text(
+                                "This Container has an animated background!",
+                                style=TextStyle(
+                                    color=Colors.surfaceVariant,
+                                ),
+                            ),
+                            padding=EdgeInsets.all(20),
+                            color=Colors.transparent,
+                        ),
+                    ),
+                    SizedBox(height=12),
+                    # Example 2: A standard container with a solid color
+                    # It works exactly as it did before.
+                    Container(
+                        # height=60,
+                        gradient=rotating_gradient_theme,
+                        # color=Colors.surfaceVariant,
+                        padding=EdgeInsets.all(4),
+                        child=Container(
+                            child=Text("This is a normal container."),
+                            padding=EdgeInsets.all(20),
+                            color=Colors.surfaceVariant,
+                        ),
+                    ),
+                    SizedBox(height=6),
+                    Container(
+                        # height=60,
+                        width=323,
+                        padding=EdgeInsets.all(14),
+                        child=self.clip_path,
+                    ),
+                ]
+            )
+        )
 
 
 class MyAnimatedGradientBorder(StatefulWidget):
@@ -185,13 +228,13 @@ class MyAnimatedGradientBorder(StatefulWidget):
     def createState(self):
         return MyAnimatedGradientBorderState()
 
+
 class MyAnimatedGradientBorderState(State):
     def build(self) -> Widget:
-        
+
         # Define an optional custom theme for the gradient
         cyberpunk_theme = GradientBorderTheme(
-            gradientColors=['cyan', 'magenta', 'yellow', 'cyan'],
-            animationSpeed='3s'
+            gradientColors=["cyan", "magenta", "yellow", "cyan"], animationSpeed="3s"
         )
 
         return Column(
@@ -206,15 +249,12 @@ class MyAnimatedGradientBorderState(State):
                         padding=EdgeInsets.symmetric(horizontal=36, vertical=20),
                         # The GradientBorderContainer will read this decoration
                         decoration=BoxDecoration(
-                            color=Colors.background,
-                            borderRadius=BorderRadius.all(14)
+                            color=Colors.background, borderRadius=BorderRadius.all(14)
                         ),
-                        child=Text("Adapts to Child's Radius")
-                    )
+                        child=Text("Adapts to Child's Radius"),
+                    ),
                 ),
-                
                 SizedBox(height=12),
-
                 # --- Example 2: Using a custom theme ---
                 GradientBorderContainer(
                     key=Key("grad_box_2"),
@@ -224,14 +264,12 @@ class MyAnimatedGradientBorderState(State):
                         padding=EdgeInsets.all(25),
                         decoration=BoxDecoration(
                             color="#ddd",
-                            borderRadius=BorderRadius.circular(50) # A circle
+                            borderRadius=BorderRadius.circular(50),  # A circle
                         ),
-                        child=Text("Custom Theme")
-                    )
+                        child=Text("Custom Theme"),
+                    ),
                 ),
-                
                 SizedBox(height=12),
-                
                 # --- Example 3: Wrapping a widget with no radius ---
                 # The gradient border will have a radius equal to the borderWidth
                 GradientBorderContainer(
@@ -240,11 +278,12 @@ class MyAnimatedGradientBorderState(State):
                     child=Container(
                         color="#ddd",
                         padding=EdgeInsets.all(20),
-                        child=Text("No Child Radius")
-                    )
-                )
-            ]
+                        child=Text("No Child Radius"),
+                    ),
+                ),
+            ],
         )
+
 
 class MyGestureDetector(StatefulWidget):
     def __init__(self, key: Key):
@@ -267,45 +306,51 @@ class MyGestureDetectorState(State):
     def on_double_tap(self):
         self.status_text = "Double Tapped!"
         # Cycle color on double tap
-        self.box_color = Colors.secondary if self.box_color == Colors.primary else Colors.primary
+        self.box_color = (
+            Colors.secondary if self.box_color == Colors.primary else Colors.primary
+        )
         self.setState()
 
     def on_long_press(self):
         self.status_text = "Long Pressed! Resetting position."
         self.box_position = {"x": 0, "y": 0}
         self.setState()
-        
+
     def on_pan_update(self, details: PanUpdateDetails):
         self.status_text = f"Dragging... dx={details.dx:.1f}, dy={details.dy:.1f}"
         self.box_position = {"x": details.dx, "y": details.dy}
         self.setState()
-        
-    def on_pan_end(self):
+
+    def on_pan_end(self, details: PanUpdateDetails):
         self.status_text = "Drag Ended."
+        print({"x": details.dx, "y": details.dy})
+        self.box_position = {"x": details.dx, "y": details.dy}
         # Note: You might want to update a permanent offset here
         self.setState()
 
     def build(self) -> Widget:
-        return Column(children=[
-            Text(self.status_text),
-            SizedBox(height=20),
-            
-            GestureDetector(
-                key=Key("interactive_box"),
-                onTap=self.on_tap,
-                onDoubleTap=self.on_double_tap,
-                onLongPress=self.on_long_press,
-                onPanUpdate=self.on_pan_update,
-                onPanEnd=self.on_pan_end,
-                child=Container(
-                    width=100,
-                    height=100,
-                    color=self.box_color,
-                    # Apply drag position using CSS transform
-                    transform=f"translate({self.box_position['x']}px, {self.box_position['y']}px)"
-                )
-            )
-        ])
+        return Column(
+            children=[
+                Text(self.status_text),
+                SizedBox(height=20),
+                GestureDetector(
+                    key=Key("interactive_box"),
+                    onTap=self.on_tap,
+                    onDoubleTap=self.on_double_tap,
+                    # onLongPress=self.on_long_press,
+                    onPanUpdate=self.on_pan_update,
+                    onPanEnd=self.on_pan_end,
+                    child=Container(
+                        width=100,
+                        height=100,
+                        color=self.box_color,
+                        # Apply drag position using CSS transform
+                        transform=f"translate({self.box_position['x']}px, {self.box_position['y']}px)",
+                    ),
+                ),
+            ]
+        )
+
 
 class MyDropDown(StatefulWidget):
     def __init__(self, key: Key):
@@ -314,16 +359,17 @@ class MyDropDown(StatefulWidget):
     def createState(self):
         return DropDownState()
 
+
 class DropDownState(State):
     def initState(self):
         # 1. Create and hold the controller in your state.
         #    Initialize with a value if you have a default selection.
-        self.dropdown_controller = DropdownController(selectedValue='usa')
+        self.dropdown_controller = DropdownController(selectedValue="usa")
 
         self.countries = [
             ("United States", "usa"),
             ("Canada", "can"),
-            ("Mexico", "mex")
+            ("Mexico", "mex"),
         ]
 
     def _on_country_changed(self, new_value):
@@ -341,21 +387,43 @@ class DropDownState(State):
                 break
 
         return Column(
-            crossAxisAlignment = CrossAxisAlignment.START,
+            crossAxisAlignment=CrossAxisAlignment.START,
             children=[
-                Text(f"Selected Country Code: {self.dropdown_controller.selectedValue}"),
+                Text(
+                    f"Selected Country Code: {self.dropdown_controller.selectedValue}"
+                ),
                 Text(f"Selected Country Name: {current_label}"),
                 SizedBox(height=20),
-                
                 # 2. In your build method, create the Dropdown widget.
                 Dropdown(
                     key=Key("country_selector"),
                     controller=self.dropdown_controller,
                     items=self.countries,
-                    onChanged=self._on_country_changed
+                    onChanged=self._on_country_changed,
+                    theme=DropdownTheme(
+                        backgroundColor=Colors.lightgreen,
+                        borderColor=Colors.hex("#AAA"),
+                        borderWidth=2.0,
+                        width=500.0,
+                        borderRadius=8.0,
+                        dropdownColor=Colors.hex("#F9F9F9"),
+                        selectedItemColor=Colors.hex("#E0E0E0"),
+                        textColor=Colors.hex("#000"),
+                        fontSize=14,
+                        dropdownTextColor=Colors.hex("#000000"),
+                        padding=EdgeInsets.symmetric(vertical=8, horizontal=12),
+                        dropdownMargin=EdgeInsets.only(top=4),
+                    ),
+                ),
+                ElevatedButton(
+                    child=Text("Settings"),
+                    onPressed=lambda: Navigator.of(self).push(
+                        PageRoute(builder=lambda: SettingsPage())
+                    )
                 )
-            ]
+            ],
         )
+
 
 class RadioExample(StatefulWidget):
     def __init__(self, key: Key):
@@ -363,6 +431,7 @@ class RadioExample(StatefulWidget):
 
     def createState(self):
         return RadioExampleState()
+
 
 class RadioExampleState(State):
     def initState(self):
@@ -385,11 +454,11 @@ class RadioExampleState(State):
                         key=Key(value),
                         value=value,
                         groupValue=self._selected_option,
-                        onChanged=self._on_option_changed
+                        onChanged=self._on_option_changed,
                     ),
                     SizedBox(width=8),
-                    Text(text)
-                ]
+                    Text(text),
+                ],
             )
 
         return Column(
@@ -399,11 +468,14 @@ class RadioExampleState(State):
                 create_radio_row("Apple", "apple"),
                 SizedBox(key=Key("sizer_apple"), height=8),
                 create_radio_row("Orange", "orange"),
-                SizedBox(key=Key("sizer_orange"),height=8),
+                SizedBox(key=Key("sizer_orange"), height=8),
                 create_radio_row("Banana", "banana"),
-                SizedBox(key=Key("sizer_banana"),height=16),
-                Text(f"Selected fruit: {self._selected_option.capitalize()}", key=Key("selection_text"))
-            ]
+                SizedBox(key=Key("sizer_banana"), height=16),
+                Text(
+                    f"Selected fruit: {self._selected_option.capitalize()}",
+                    key=Key("selection_text"),
+                ),
+            ],
         )
 
 
@@ -413,6 +485,7 @@ class SwitchExample(StatefulWidget):
 
     def createState(self):
         return SwitchExampleState()
+
 
 class SwitchExampleState(State):
     def initState(self):
@@ -436,10 +509,11 @@ class SwitchExampleState(State):
                         onChanged=self._on_switch_changed,
                         # Optional: override the active color
                         activeColor=Colors.green,
-                    )
-                ]
-            )
+                    ),
+                ],
+            ),
         )
+
 
 class SwitchExample2(StatefulWidget):
     def __init__(self, key: Key):
@@ -447,6 +521,7 @@ class SwitchExample2(StatefulWidget):
 
     def createState(self):
         return SwitchExample2State()
+
 
 class SwitchExample2State(State):
     def initState(self):
@@ -465,17 +540,21 @@ class SwitchExample2State(State):
                 key=Key("switch_ex_row"),
                 mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
                 children=[
-                    Text("Pop up Notifications",key=Key("Pop_up_notification_switch_txt")),
+                    Text(
+                        "Pop up Notifications",
+                        key=Key("Pop_up_notification_switch_txt"),
+                    ),
                     Switch(
                         key=Key("Pop_up_notification_switch"),
                         value=self._is_on,
                         onChanged=self._on_switch_changed,
                         # Optional: override the active color
                         activeColor=Colors.green,
-                    )
-                ]
-            )
+                    ),
+                ],
+            ),
         )
+
 
 class CheckBox(StatefulWidget):
     def __init__(self, key: Key):
@@ -496,7 +575,7 @@ class CheckBoxState(State):
         print(f"Checkbox value changed to: {new_value}")
         self._is_checked = new_value
         self.setState()
-        
+
     def _on_custom_checkbox_changed(self, new_value: bool):
         self._is_custom_checked = new_value
         self.setState()
@@ -507,9 +586,9 @@ class CheckBoxState(State):
             activeColor=Colors.green,
             inactiveColor=Colors.grey,
             checkColor=Colors.white,
-            size=24.0
+            size=24.0,
         )
-        
+
         return Container(
             alignment=Alignment.center(),
             child=Column(
@@ -522,10 +601,10 @@ class CheckBoxState(State):
                             Checkbox(
                                 key=Key("default_checkbox"),
                                 value=self._is_checked,
-                                onChanged=self._on_checkbox_changed
+                                onChanged=self._on_checkbox_changed,
                             ),
                             SizedBox(key=Key("sizer_def_cb"), width=8),
-                            Text("Default Checkbox")
+                            Text("Default Checkbox"),
                         ]
                     ),
                     SizedBox(key=Key("sizer_cb_main"), height=8),
@@ -536,16 +615,19 @@ class CheckBoxState(State):
                                 key=Key("custom_checkbox"),
                                 value=self._is_custom_checked,
                                 onChanged=self._on_custom_checkbox_changed,
-                                theme=custom_theme
+                                theme=custom_theme,
                             ),
                             SizedBox(key=Key("sizer_cus_cb"), width=8),
-                            Text("Custom Themed Checkbox")
+                            Text("Custom Themed Checkbox"),
                         ]
-                    )
-                ]
-            )
+                    ),
+                ],
+            ),
         )
+
+
 # In your main.py or any component's build method
+
 
 class MyComponent(StatefulWidget):
     def __init__(self, key: Key):
@@ -553,6 +635,7 @@ class MyComponent(StatefulWidget):
 
     def createState(self):
         return MyComponentState()
+
 
 class MyComponentState(State):
     def __init__(self):
@@ -586,14 +669,19 @@ class MyComponentState(State):
             inactiveTrackColor=Colors.rgba(255, 0, 0, 0.3),
             thumbColor=Colors.red,
             overlayColor=Colors.rgba(255, 0, 0, 0.2),
-            trackHeight=8.0,
-            thumbSize=12.0
+            trackHeight=10.0,
+            thumbSize=20.0,
+            thumbBorderWidth=5.0,
+            thumbBorderColor=Colors.green,
         )
         return Column(
             key=Key("my_volume_slider_column"),
-            crossAxisAlignment = CrossAxisAlignment.STRETCH,
+            crossAxisAlignment=CrossAxisAlignment.STRETCH,
             children=[
-                Text(f"Current Value: {self.slider_controller.value:.2f}", key=Key("my_volume_slider_value"),),
+                Text(
+                    f"Current Value: {self.slider_controller.value:.2f}",
+                    key=Key("my_volume_slider_value"),
+                ),
                 Slider(
                     key=Key("my_volume_slider"),
                     controller=self.slider_controller,
@@ -602,17 +690,18 @@ class MyComponentState(State):
                     theme=red_slider_theme,
                     min=0.0,
                     max=1.0,
-                    divisions=10, # Creates 10 discrete steps
+                    divisions=10,  # Creates 10 discrete steps
+                    thumbBorderRadius=BorderRadius.circular(4),
                     # activeColor=Colors.green,
                     # thumbColor=Colors.white
                 ),
-                SizedBox(key=Key("sizedbox-for-mv-slider-btn"),height=24),
+                SizedBox(key=Key("sizedbox-for-mv-slider-btn"), height=24),
                 ElevatedButton(
                     key=Key("mv-slider-btn"),
-                        onPressed=self.move_slider,
-                        child=Text("Move"),
-                    ),
-            ]
+                    onPressed=self.move_slider,
+                    child=Text("Move"),
+                ),
+            ],
         )
 
 
@@ -622,6 +711,7 @@ class MyTextField(StatefulWidget):
 
     def createState(self):
         return MyTextFieldState()
+
 
 class MyTextFieldState(State):
     def __init__(self):
@@ -637,7 +727,7 @@ class MyTextFieldState(State):
 
         # Add a listener to a controller to react to changes
         self.username_controller.add_listener(self.on_username_updates)
-        
+
         # State to track login errors
         self.login_error = None
 
@@ -645,10 +735,10 @@ class MyTextFieldState(State):
     def on_username_changed(self, new_value):
         print(f"Username changed to: {new_value}")
         self.username = new_value
-        self.setState() # Trigger a UI rebuild
+        self.setState()  # Trigger a UI rebuild
 
     def on_login(self):
-        self.logged = f'Logged in as {self.username}'
+        self.logged = f"Logged in as {self.username}"
         print(f"Login attempt: {self.username} / {self.password}")
         self.setState()
 
@@ -657,21 +747,20 @@ class MyTextFieldState(State):
         self.password = new_value
         self.setState()
 
-
     def on_username_updates(self):
         print(f"Listener notified! Username is now: {self.username_controller.text}")
         # We still need to call setState if a listener changes other parts of the UI
         # For simple text updates, this isn't necessary, but for validation it is.
         if self.login_error and len(self.username_controller.text) > 3:
             self.login_error = None
-            self.setState() # Re-render to remove the error message
+            self.setState()  # Re-render to remove the error message
 
     def attempt_login(self, args):
         username = self.username_controller.text
         password = self.password_controller.text
         print(args[0], "From attempt_login")
         print(args[1], "From attempt_login")
-        
+
         print(f"Login attempt: {username} / {password}")
         if len(username) <= 3:
             self.login_error = "Username must be longer than 3 characters."
@@ -686,52 +775,60 @@ class MyTextFieldState(State):
 
     def build(self) -> Widget:
         username_decoration = InputDecoration(
-            label="Username",
-            errorText=self.login_error
+            label="Username", errorText=self.login_error
         )
-        
+
         password_decoration = InputDecoration(
             label="Password",
-            focusColor=Colors.tertiary, # Use a different color on focus
-            border=BorderSide(width=1, color=Colors.grey), # Thinner, grey border
-            filled=False
+            focusColor=Colors.tertiary,  # Use a different color on focus
+            border=BorderSide(width=1, color=Colors.grey),  # Thinner, grey border
+            filled=False,
             # You could add a suffix icon to toggle visibility here
         )
         return Column(
             key=Key("my_textfields_column"),
-            crossAxisAlignment = CrossAxisAlignment.STRETCH,
+            crossAxisAlignment=CrossAxisAlignment.STRETCH,
             children=[
                 TextField(
-                        # The Key is CRITICAL for preserving focus!
-                        key=Key("username_field"),
-                        controller=self.username_controller,
-                        decoration= username_decoration,
-                    ),
-                    
-                    SizedBox(key=Key("sizedbox-for-txt-fields"),height=16),
-
-                    TextField(
-                        key=Key("password_field"), # Another unique key
-                        controller=self.password_controller,
-                        decoration= password_decoration,
-                        # enabled= False,
-                        obscureText= True,
-                        # You would add a property to make this a password type input
-                    ),
-                    
-                    SizedBox(key=Key("sizedbox-for-btn"),height=24),
-                    
-                    ElevatedButton(
-                        key=Key("login-btn"),
-                        onPressed=self.attempt_login,
-                        callbackArgs=['clalback', 23],
-                        child=Text("Login"),
-                    ),
-                    SizedBox(key=Key("sizedbox-for-logged-txt"),height=24),
-                    Text(self.username_controller.text, key=Key("logged")),
-            ]
+                    # The Key is CRITICAL for preserving focus!
+                    key=Key("username_field"),
+                    controller=self.username_controller,
+                    decoration=username_decoration,
+                ),
+                SizedBox(key=Key("sizedbox-for-txt-fields"), height=16),
+                TextField(
+                    key=Key("password_field"),  # Another unique key
+                    controller=self.password_controller,
+                    decoration=password_decoration,
+                    # enabled= False,
+                    obscureText=True,
+                    # You would add a property to make this a password type input
+                ),
+                SizedBox(key=Key("sizedbox-for-btn"), height=24),
+                ElevatedButton(
+                    key=Key("login-btn"),
+                    onPressed=self.attempt_login,
+                    callbackArgs=["clalback", 23],
+                    child=Text("Login"),
+                ),
+                SizedBox(key=Key("sizedbox-for-logged-txt"), height=24),
+                Text(self.username_controller.text, key=Key("logged")),
+            ],
         )
 
+class mainAppState(State):
+    def build(self) -> Widget:
+        # The root of your app is now the Navigator
+        return Navigator(
+            key=Key("app_navigator"),
+            initialRoute=PageRoute(builder=lambda: PlayerApp(key=Key("player_app"))),
+            # You can define named routes for convenience
+            routes={
+                "/settings": lambda: SettingsPage(),
+            }
+        )
+
+# ... the rest of main.py remains the same
 
 class MyForm(StatefulWidget):
     def __init__(self, key: Key):
@@ -740,81 +837,179 @@ class MyForm(StatefulWidget):
     def createState(self):
         return MyFormState()
 
+
 class MyFormState(State):
     def __init__(self):
         super().__init__()
         self.my_textfield = MyTextField(key=Key("my_textfields"))
         self.my_slider = MyComponent(key=Key("my_slider"))
         self.my_checkBox = CheckBox(key=Key("my_checkBox_wig"))
-        self.my_switch = SwitchExample(key=Key("my_switch_example")) # <-- Instantiate it
-        self.my_switch2 = SwitchExample2(key=Key("my_switch2_example")) # <-- Instantiate it
-        self.my_radio_group = RadioExample(key=Key("my_radio_group")) # <-- Instantiate it
+        self.my_switch = SwitchExample(
+            key=Key("my_switch_example")
+        )  # <-- Instantiate it
+        self.my_switch2 = SwitchExample2(
+            key=Key("my_switch2_example")
+        )  # <-- Instantiate it
+        self.my_radio_group = RadioExample(
+            key=Key("my_radio_group")
+        )  # <-- Instantiate it
         self.my_dropdown_example = MyDropDown(key=Key("my_dropdown"))
         self.my_gesture_detector = MyGestureDetector(key=Key("my_gesture_detector"))
-        self.my_animated_gradient_border = MyAnimatedGradientBorder(key=Key("my_animated_gradient_border"))
-        self.my_animated_clip_gradient_border = MyAnimatedClipGradientBorder(key=Key("my_animated_clip_gradient_border"))
-
-
-    def build(self):
-        
-        return Container(
-            key=Key("Build_container"),
-            # alignment=Alignment.top_center(),
-            padding=EdgeInsets.all(32),
-            # color=Colors.hex("#282828"),
-            child=Column(
-                key=Key("main__column"),
-                crossAxisAlignment=CrossAxisAlignment.STRETCH,
-                children=[
-                    Row(
-                        mainAxisAlignment = MainAxisAlignment.SPACE_BETWEEN,
-                        children=[
-                            Text("Animated Gradient Clip Path Border Test",key=Key('Login_header'), style=TextStyle(fontSize=24, fontWeight='bold', color=Colors.surfaceVariant,)),
-                            ElevatedButton(
-                                onPressed= self.framework.close,
-                                child=Container(
-                                    height=15,
-                                    width=15,
-                                    color=Colors.red,
-                                    decoration = BoxDecoration(
-                                        borderRadius = BorderRadius.circular(4),
-                                    )
-                                ),
-                                style=ButtonStyle(
-                                    padding=EdgeInsets.all(0),
-                                    margin=EdgeInsets.all(0),
-                                    backgroundColor=Colors.transparent,
-                                    shape = BorderRadius.all(0),
-                                    elevation= 0,
-                                )
-                            )
-                        ]
-                    ),
-                    SizedBox(height=24),
-                    # self.my_textfield,
-                    # SizedBox(height=24),
-                    # self.my_slider,
-                    # SizedBox(height=24),
-                    # self.my_checkBox,
-                    # SizedBox(height=16), # <-- Add some space
-                    # self.my_switch,     # <-- Add the switch example here
-                    # SizedBox(height=24),
-                    # self.my_switch2,     # <-- Add the switch example here
-                    # SizedBox(height=24),
-                    # self.my_radio_group, # <-- Add the radio group here
-                    # SizedBox(height=24),
-                    # self.my_dropdown_example,
-                    # SizedBox(height=24),
-                    # self.my_gesture_detector,
-                    # SizedBox(height=24),
-                    self.my_animated_gradient_border,
-                    SizedBox(height=24),
-                    self.my_animated_clip_gradient_border,
-                ]
-            )
+        self.my_animated_gradient_border = MyAnimatedGradientBorder(
+            key=Key("my_animated_gradient_border")
+        )
+        self.my_animated_clip_gradient_border = MyAnimatedClipGradientBorder(
+            key=Key("my_animated_clip_gradient_border")
         )
 
-if __name__ == '__main__':
+        self.cont1 = True
+        self.cont2 = False
+
+    def _index_1(self):
+        self.cont1 = False
+        self.cont2 = True
+        self.setState()
+
+    def _index_0(self):
+        self.cont1 = True
+        self.cont2 = False
+        self.setState()
+
+    def build(self):
+
+        return Navigator(
+            key=Key("app_navigator"),
+            initialRoute=PageRoute(builder=lambda: self.my_dropdown_example),
+            # You can define named routes for convenience
+            routes={
+                "/settings": lambda: SettingsPage(),
+            }
+        )
+        # Container(
+        #     key=Key("Build_container"),
+        #     # alignment=Alignment.top_center(),
+        #     padding=EdgeInsets.all(32),
+        #     # color=Colors.hex("#282828"),
+        #     child=Column(
+        #         key=Key("main__column"),
+        #         crossAxisAlignment=CrossAxisAlignment.STRETCH,
+        #         children=[
+        #             Row(
+        #                 mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
+        #                 children=[
+        #                     Text(
+        #                         "Animated Gradient Clip Path Border Test",
+        #                         key=Key("Login_header"),
+        #                         style=TextStyle(
+        #                             fontSize=24,
+        #                             fontWeight="bold",
+        #                             color=Colors.surfaceVariant,
+        #                         ),
+        #                     ),
+        #                     ElevatedButton(
+        #                         onPressed=self._index_1,
+        #                         child=Container(
+        #                             height=15,
+        #                             width=15,
+        #                             color=Colors.green,
+        #                             decoration=BoxDecoration(
+        #                                 borderRadius=BorderRadius.circular(4),
+        #                             ),
+        #                         ),
+        #                         style=ButtonStyle(
+        #                             padding=EdgeInsets.all(0),
+        #                             margin=EdgeInsets.all(0),
+        #                             backgroundColor=Colors.transparent,
+        #                             shape=BorderRadius.all(0),
+        #                             elevation=0,
+        #                         ),
+        #                     ),
+        #                     ElevatedButton(
+        #                         onPressed=self._index_0,
+        #                         child=Container(
+        #                             height=15,
+        #                             width=15,
+        #                             color=Colors.green,
+        #                             decoration=BoxDecoration(
+        #                                 borderRadius=BorderRadius.circular(4),
+        #                             ),
+        #                         ),
+        #                         style=ButtonStyle(
+        #                             padding=EdgeInsets.all(0),
+        #                             margin=EdgeInsets.all(0),
+        #                             backgroundColor=Colors.transparent,
+        #                             shape=BorderRadius.all(0),
+        #                             elevation=0,
+        #                         ),
+        #                     ),
+        #                     ElevatedButton(
+        #                         onPressed=self.framework.close,
+        #                         child=Container(
+        #                             height=15,
+        #                             width=15,
+        #                             color=Colors.red,
+        #                             decoration=BoxDecoration(
+        #                                 borderRadius=BorderRadius.circular(4),
+        #                             ),
+        #                         ),
+        #                         style=ButtonStyle(
+        #                             padding=EdgeInsets.all(0),
+        #                             margin=EdgeInsets.all(0),
+        #                             backgroundColor=Colors.transparent,
+        #                             shape=BorderRadius.all(0),
+        #                             elevation=0,
+        #                         ),
+        #                     ),
+        #                 ],
+        #             ),
+        #             Container(
+        #                 child=Column(
+        #                     children=[
+        #                         SizedBox(height=24),
+        #                         self.my_textfield,
+        #                         SizedBox(height=24),
+        #                         self.my_slider,
+        #                     ]
+        #                 ),
+        #                 visible=self.cont1
+        #             ),
+        #             Container(
+        #                 child=Column(
+        #                     children=[
+        #                         SizedBox(height=24),
+        #                         self.my_checkBox,
+        #                         SizedBox(height=16), # <-- Add some space
+        #                         self.my_switch,  
+        #                     ]
+        #                 ),
+        #                 visible=self.cont2
+        #             ),
+        #             # SizedBox(height=24),
+        #             # self.my_textfield,
+        #             # SizedBox(height=24),
+        #             # self.my_slider,
+        #             # SizedBox(height=24),
+        #             # self.my_checkBox,
+        #             # SizedBox(height=16), # <-- Add some space
+        #             # self.my_switch,     # <-- Add the switch example here
+        #             # SizedBox(height=24),
+        #             # self.my_switch2,     # <-- Add the switch example here
+        #             # SizedBox(height=24),
+        #             # self.my_radio_group,  # <-- Add the radio group here
+        #             # SizedBox(height=24),
+        #             # self.my_dropdown_example,
+        #             # SizedBox(height=24),
+        #             # self.my_gesture_detector,
+        #             # SizedBox(height=24),
+        #             # self.my_animated_gradient_border,
+        #             # SizedBox(height=24),
+        #             # self.my_animated_clip_gradient_border,
+        #         ],
+        #     ),
+        # )
+
+
+if __name__ == "__main__":
     app = Framework.instance()
     app.set_root(MyForm(key=Key("my_app_root")))
     app.run(title="Animated Gradient Clip Path Border Test")

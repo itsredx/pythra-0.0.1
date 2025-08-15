@@ -54,7 +54,8 @@ from pythra import (
     Slider,
     SliderController,
     BorderSide,
-    GradientTheme,  # <-- ADD THESE IMPORTS
+    GradientTheme,
+    SliderTheme,  # <-- ADD THESE IMPORTS
 )
 
 # import math  # For the StarClipper
@@ -91,6 +92,15 @@ class MyComponentState(State):
         pass
 
     def build(self) -> Widget:
+        red_slider_theme = SliderTheme(
+            # activeTrackColor=Colors.red,
+            # inactiveTrackColor=Colors.rgba(255, 0, 0, 0.3),
+            # thumbColor=Colors.red,
+            overlayColor=Colors.rgba(20, 20, 20, 0.2),
+            trackHeight=10.0,
+            thumbSize=18.0,
+            thumbBorderColor=Colors.hex("#aaa"),
+        )
         return Slider(
             key=Key("my_volume_slider"),
             controller=self.slider_controller,
@@ -99,7 +109,10 @@ class MyComponentState(State):
             max=1.0,
             divisions=100,
             activeColor=Colors.hex("#363636"),
-            thumbColor=Colors.hex("#FFF"),#FF94DA
+            thumbColor=Colors.hex("#363636"),#FF94DA
+            theme=red_slider_theme,
+            thumbBorderRadius=BorderRadius.circular(4),
+            trackRadius=BorderRadius.circular(4),
         )
 
 
@@ -107,6 +120,7 @@ class ControlsState(State):
     def __init__(self):
         super().__init__()
         self.my_slider = MyComponent(key=Key("my_slider"))
+        print("Initializing control page with visibility: ", True)
         self.rotating_gradient_theme = GradientTheme(
             gradientColors=['red', 'yellow', 'green','blue', 'red'],
             rotationSpeed='4s' # <-- Set a rotation speed to enable rotation

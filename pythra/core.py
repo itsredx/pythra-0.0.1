@@ -1,7 +1,7 @@
 # pythra/core.py
 
 # --- ADD THESE IMPORTS AT THE TOP OF THE FILE ---
-# import cProfile
+import cProfile
 import pstats
 import io
 # --- END OF IMPORTS ---
@@ -394,8 +394,8 @@ class Framework:
         """
 
         # --- PROFILER SETUP ---
-        # profiler = cProfile.Profile()
-        # profiler.enable()
+        profiler = cProfile.Profile()
+        profiler.enable()
         # --- END PROFILER SETUP ---
 
         self._reconciliation_requested = False
@@ -498,14 +498,14 @@ class Framework:
 
         # --- PROFILER REPORTING ---
         # profiler.disable()
-        # s = io.StringIO()
-        # # Sort stats by 'cumulative time' to see the biggest bottlenecks at the top
-        # ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
-        # ps.print_stats(20) # Print the top 20 most time-consuming functions
+        s = io.StringIO()
+        # Sort stats by 'cumulative time' to see the biggest bottlenecks at the top
+        ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
+        ps.print_stats(20) # Print the top 20 most time-consuming functions
 
-        # print("\n--- cProfile Report ---")
-        # print(s.getvalue())
-        # print("--- End of Report ---\n")
+        print("\n--- cProfile Report ---")
+        print(s.getvalue())
+        print("--- End of Report ---\n")
         # --- END PROFILER REPORTING ---
 
     # --- Widget Tree Building ---
@@ -550,6 +550,38 @@ class Framework:
             return widget
 
     # --- HTML and CSS Generation ---
+
+    # --- ADD THIS NEW METHOD ---
+    def find_ancestor_state_of_type(self, start_widget: Widget, state_type: type) -> Optional[State]:
+        """
+        Traverses up the widget tree from a given widget to find the state
+        of the nearest ancestor that is an instance of a specific StatefulWidget type,
+        or whose State is of state_type.
+        """
+        main_context_map = self.reconciler.get_map_for_context("main")
+        if not main_context_map:
+            return None
+
+        current_key = start_widget.get_unique_id()
+        
+        # Loop up the tree using parent references stored in the reconciler's map
+        while current_key in main_context_map:
+            node_data = main_context_map[current_key]
+            widget_instance = node_data.get('widget_instance')
+
+            # Check if the current widget's state is the type we're looking for
+            if isinstance(widget_instance, StatefulWidget):
+                state = widget_instance.get_state()
+                if isinstance(state, state_type):
+                    return state
+
+            # Move up to the parent
+            parent_key = node_data.get('parent_key') # We'll need to add this to the map
+            if not parent_key:
+                break
+            current_key = parent_key
+            
+        return None
 
     def _generate_html_from_map(
         self, root_key: Optional[Union[Key, str]], rendered_map: Dict
@@ -813,6 +845,17 @@ class Framework:
                         }}, 0);
                     """
                 # --- END ADDITION ---
+                if props.get("init_simplebar"):
+                    options_json = json.dumps(props.get("simplebar_options", {}))
+                    command_js += f"""
+                    setTimeout(() => {{
+                        var el_{target_id} = document.getElementById('{target_id}');
+                        if (el_{target_id} && !el_{target_id}.simplebar) {{
+                            new SimpleBar(el_{target_id}, {options_json} );
+                        }}
+                        }}, 0);
+                    """
+                    # print("new SimpleBar: ", options_json)
 
                 if 'responsive_clip_path' in props:
                     # print("INITIALIZERS: ", js_initializers)
@@ -840,68 +883,27 @@ class Framework:
                     # commands_js = 
 
 
-                    js_commands.append(f"""// Step 0: Convert Python's array-of-arrays to JS's array-of-objects
+                    js_commands.append(f"""
+                    setTimeout(() => {{
+                        // Step 0: Convert Python's array-of-arrays to JS's array-of-objects
                         const pointsForGenerator_{target_id} = {points_json}.map(p => ({{x: p[0], y: p[1]}}));
                         
                         // Step 1: Call generateRoundedPath with the points and radius
                         const initialPathString_{target_id} = generateRoundedPath(pointsForGenerator_{target_id}, {radius_json});
                         
                         // Step 2: Feed the generated path into ResponsiveClipPath
-                        window._pythra_instances['{initializer_data["before_id"]}'] = new ResponsiveClipPath(
-                            '{initializer_data["before_id"]}', 
+                        window._pythra_instances['{initializer_data["before_id"] if initializer_data["before_id"] else target_id}'] = new ResponsiveClipPath(
+                            '{initializer_data["before_id"] if initializer_data["before_id"] else target_id}', 
                             initialPathString_{target_id}, 
                             {ref_w_json}, 
                             {ref_h_json}, 
                             {{ uniformArc: true, decimalPlaces: 2 }}
                         );
+                        }}, 0);
                     """)
                     
                     
-                # if "responsive_clip_path" in props:
-                #     print("PROPS: ",props)
-                #     # imports.add(
-                #     #     "import { generateRoundedPath } from './js/pathGenerator.js';"
-                #     # )
-                #     # imports.add(
-                #     #     "import { ResponsiveClipPath } from './js/clipPathUtils.js';"
-                #     # )
-                #     target_id = target_id
-                #     clip_data = props["responsive_clip_path"]
-
-                #     # Serialize the Python data into JSON strings for JS
-                #     points_json = json.dumps(clip_data["points"])
-                #     radius_json = json.dumps(clip_data["radius"])
-                #     ref_w_json = json.dumps(clip_data["viewBox"][0])
-                #     ref_h_json = json.dumps(clip_data["viewBox"][1])
-
-                #     # This JS code performs the exact two-step process you described.
-                #     js_commands.append(
-                #         f"""
-                #         // Step 0: Convert Python's array-of-arrays to JS's array-of-objects
-                #         const pointsForGenerator_{target_id} = {points_json}.map(p => ({{x: p[0], y: p[1]}}));
-                        
-                #         // Step 1: Call generateRoundedPath with the points and radius
-                #         const initialPathString_{target_id} = generateRoundedPath(pointsForGenerator_{target_id}, {radius_json});
-                        
-                #         // Step 2: Feed the generated path into ResponsiveClipPath
-                #         window._pythra_instances['{target_id}'] = new ResponsiveClipPath(
-                #             '{target_id}', 
-                #             initialPathString_{target_id}, 
-                #             {ref_w_json}, 
-                #             {ref_h_json}, 
-                #             {{ uniformArc: true, decimalPlaces: 2 }}
-                #         );
-                #     """
-                #     )
-                if props.get("init_simplebar"):
-                    options_json = json.dumps(props.get("simplebar_options", {}))
-                    command_js += f"""
-                        var el_{target_id} = document.getElementById('{target_id}');
-                        if (el_{target_id} && !el_{target_id}.simplebar) {{
-                            new SimpleBar(el_{target_id}, {options_json} );
-                        }}
-                    """
-                    # print("new SimpleBar: ", options_json)
+                
 
             elif action == "REMOVE":
                 command_js = f"""
@@ -1751,7 +1753,7 @@ class Framework:
                 css_prop_kebab = "".join(
                     ["-" + c.lower() if c.isupper() else c for c in style_key]
                 ).lstrip("")
-                print("css_prop_kebab: ", css_prop_kebab, f"{json.dumps(style_value)}")
+                # print("css_prop_kebab: ", css_prop_kebab, f"{json.dumps(style_value)}")
                 if css_prop_kebab == "--slider-percentage" and props["isDragEnded"]:
                     print("drag css", props["isDragEnded"])
                     js_prop_updates.append(

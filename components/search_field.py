@@ -1,5 +1,3 @@
-
-
 # You can create a new file, e.g., components/search_field.py, or add this to main.py
 from pythra import (
     Framework,
@@ -56,20 +54,22 @@ from pythra import (
 )
 
 
-
 class SearchComponent(StatefulWidget):
     """A self-contained component for the search text field."""
+
     def __init__(self, key: Key):
         super().__init__(key=key)
 
     def createState(self):
         return _SearchComponentState()
 
+
 class _SearchComponentState(State):
     def __init__(self):
         super().__init__()
         self.search_controller = TextEditingController()
         self.is_field_populated = False
+        self.search_controller.add_listener(self.on_search_updated)
         # The decoration is now part of this component's state
         self.search_field_decoration = InputDecoration(
             hintText="Search",
@@ -79,17 +79,13 @@ class _SearchComponentState(State):
             focusColor=Colors.hex("#FF94DA"),
         )
 
-    def initState(self):
-        """Called once when the state is initialized."""
-        # It's good practice to add listeners in initState
-        self.search_controller.add_listener(self.on_search_updated)
-
     def on_search_updated(self):
         """Listener that updates the internal state of THIS component."""
         new_value = self.search_controller.text != ""
-        # print("New Value: ", self.search_controller.text, " ", new_value)
+        print("New Value: ", self.search_controller.text, " ", new_value)
         if self.is_field_populated != new_value:
             self.is_field_populated = new_value
+            print("is_field_populated: ", self.is_field_populated)
             # This setState call is now LOCAL. It only rebuilds the SearchComponent.
             self.setState()
 
@@ -107,7 +103,7 @@ class _SearchComponentState(State):
         # This build method is tiny and fast!
         return Column(
             key=Key("search_component_root_col"),
-            crossAxisAlignment = CrossAxisAlignment.STRETCH,
+            crossAxisAlignment=CrossAxisAlignment.STRETCH,
             children=[
                 TextField(
                     key=Key("search_field_input"),
@@ -121,31 +117,52 @@ class _SearchComponentState(State):
                         key=Key("search_icons_row"),
                         mainAxisAlignment=MainAxisAlignment.END,
                         children=[
-                            
-                                Container(
-                                    height=16,
-                                    width=16,
-                                    key=Key("clear_icons_container"),
-                                    margin=EdgeInsets.only(left=-20, right=5), 
-                                    visible=self.is_field_populated,
-                                    child=ElevatedButton(
-                                    key=Key("clear_search_button"), # Stable key
-                                    child=Icon(key=Key("clear_icon"), icon=Icons.close_rounded, color=Colors.hex("#D9D9D9"), size=16),
+                            Container(
+                                height=16,
+                                width=16,
+                                key=Key("clear_icons_container"),
+                                margin=EdgeInsets.only(left=-40, right=25),
+                                visible=self.is_field_populated,
+                                child=ElevatedButton(
+                                    key=Key("clear_search_button"),  # Stable key
+                                    child=Icon(
+                                        key=Key("clear_icon"),
+                                        icon=Icons.close_rounded,
+                                        color=Colors.hex("#D9D9D9"),
+                                        size=16,
+                                    ),
                                     onPressed=self.clear_search,
-                                    style=ButtonStyle(padding=EdgeInsets.all(0), margin=EdgeInsets.all(0), 
-                                    backgroundColor=Colors.transparent, elevation=0)
-                                ),),
-                                # if self.is_field_populated
-                                # else SizedBox(key=Key("clear_button_placeholder")) # Stable key for the "else" case,
+                                    style=ButtonStyle(
+                                        padding=EdgeInsets.all(0),
+                                        margin=EdgeInsets.all(0),
+                                        backgroundColor=Colors.transparent,
+                                        elevation=0,
+                                    ),
+                                ),
+                            )
+                            if self.is_field_populated
+                            else SizedBox(key=Key("clear_button_placeholder")),
+                              # Stable key for the "else" case,
                             ElevatedButton(
-                                    key=Key("search_icon_button"), # Stable key
-                                    child=Icon(key=Key("search_icon"), icon=Icons.search_rounded, color=Colors.hex("#D9D9D9"), size=16),
-                                    onPressed=self.search,
-                                    style=ButtonStyle(padding=EdgeInsets.all(0), margin=EdgeInsets.only(left=2,), backgroundColor=Colors.transparent, elevation=0)
-                                )
-                            
-                        ]
-                    )
+                                key=Key("search_icon_button"),  # Stable key
+                                child=Icon(
+                                    key=Key("search_icon"),
+                                    icon=Icons.search_rounded,
+                                    color=Colors.hex("#D9D9D9"),
+                                    size=16,
+                                ),
+                                onPressed=self.search,
+                                style=ButtonStyle(
+                                    padding=EdgeInsets.all(0),
+                                    margin=EdgeInsets.only(
+                                        left=2,
+                                    ),
+                                    backgroundColor=Colors.transparent,
+                                    elevation=0,
+                                ),
+                            ),
+                        ],
+                    ),
                 ),
-            ]
+            ],
         )
