@@ -6,149 +6,87 @@
     <!-- ADD SIMPLEBAR CSS -->
     <link rel="stylesheet" href="./js/scroll-bar/simplebar.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1754853203">
-    <style id="dynamic-styles">
-.shared-container-4 { box-sizing: border-box; background: #282828; padding: 32px; }
-.shared-column-1 { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; height: 100%; direction: ltr; }
-.shared-row-0 { display: flex; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; direction: ltr; }
+    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1755278866">
+    <style id="dynamic-styles">.shared-stack-0 { position: relative; display: grid; width: fit-content; height: fit-content; justify-items: start; align-items: start; direction: ltr; overflow: hidden; }
+.shared-stack-0 > * { grid-area: 1 / 1; }
+.shared-column-1 { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; height: 100%; direction: ltr; }
 
             .shared-text-0 {
                 margin: 0; /* Reset default paragraph margin */
                 padding: 0;
-                color: #E7E0EC; font-size: 24px; font-weight: bold;
+                
                 
                 
             }
             
-.shared-elevatedbutton-0 { display: inline-flex; align-items: center; justify-content: center; padding: 0px; margin: 0px; border: none; border-radius: 0.0px; background-color: transparent; color: white; cursor: pointer; text-align: center; text-decoration: none; outline: none; box-sizing: border-box; overflow: hidden; position: relative; transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s linear; -webkit-appearance: none; -moz-appearance: none; appearance: none; }
-.shared-elevatedbutton-0:hover {  /* Add background overlay? */ }
+
+        .shared-dropdown-0.dropdown-container {
+            position: relative;
+            width: 500.0px;
+            font-family: sans-serif;
+        }
+        .shared-dropdown-0 .dropdown-value-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background-color: lightgreen;
+            color: #000;
+            border: 2.0px solid #AAA;
+            border-radius: 8.0px;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+        .shared-dropdown-0.open .dropdown-value-container {
+            border-color: #6750A4; /* Highlight when open */
+        }
+        .shared-dropdown-0 .dropdown-caret {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            transition: transform 0.2s ease-in-out;
+        }
+        .shared-dropdown-0.open .dropdown-caret {
+            transform: rotate(180deg);
+        }
+        .shared-dropdown-0 .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: #F9F9F9;
+            color: #000000,
+            border: 1px solid #AAA;
+            border-radius: 8.0px;
+            list-style: none;
+            margin: 4px 0.0px 0.0px;
+            padding: 4px 0;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .shared-dropdown-0.open .dropdown-menu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .shared-dropdown-0 .dropdown-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .shared-dropdown-0 .dropdown-item:hover {
+            background-color: rgba(103, 80, 164, 0.1); /* Hover color */
+        }
+        
+.shared-elevatedbutton-0 { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; margin: 4px; border: none; border-radius: 20px; background-color: blue; color: white; cursor: pointer; text-align: center; text-decoration: none; outline: none; box-sizing: border-box; overflow: hidden; position: relative; transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s linear; -webkit-appearance: none; -moz-appearance: none; appearance: none; box-shadow: 0px 1.0px 2.0px 0px rgba(0,0,0,0.15), 0px 2.0px 4.0px 1px rgba(0,0,0,0.10); }
+.shared-elevatedbutton-0:hover { box-shadow: 0px 1.5px 3.0px 0px rgba(0,0,0,0.18), 0px 3.0px 6.0px 1px rgba(0,0,0,0.13); /* Add background overlay? */ }
 .shared-elevatedbutton-0:active { box-shadow: none; /* Add background overlay? */ }
 .shared-elevatedbutton-0.disabled { background-color: rgba(0, 0, 0, 0.12); color: rgba(0, 0, 0, 0.38); box-shadow: none; cursor: default; pointer-events: none; }
-
-
-.shared-container-3 { box-sizing: border-box; border-radius: 4px; background: red; width: 15px; height: 15px; }
-.shared-column-2 { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; direction: ltr; }
-
-        @keyframes borderShift-shared-gradient-border-0 {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .shared-gradient-border-0 {
-            padding: var(--gradient-border-size);
-            border-radius: var(--gradient-border-radius);
-            background: linear-gradient(270deg, #ff4d4d, #ffb86b, #ffd166, #7bed9f, #6ad3ff, #a78bfa, #ff4d4d);
-            background-size: 400% 400%;
-            animation: borderShift-shared-gradient-border-0 5s linear infinite;
-            /* Ensure it doesn't add extra layout space */
-            display: inline-block;
-            line-height: 0; /* Fix for extra space below inline elements */
-        }
-        
-
-            .shared-gradient-border-0 > * {
-                border-radius: var(--gradient-child-radius) !important;
-            }
-            
-
-.shared-container-5 { box-sizing: border-box; background: #FFFBFE; border-radius: 14px; padding: 20px 36px; }
-
-            .shared-text-1 {
-                margin: 0; /* Reset default paragraph margin */
-                padding: 0;
-                
-                
-                
-            }
-            
-
-            .shared-gradient-border-1 > * {
-                border-radius: var(--gradient-child-radius) !important;
-            }
-            
-
-        @keyframes borderShift-shared-gradient-border-1 {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .shared-gradient-border-1 {
-            padding: var(--gradient-border-size);
-            border-radius: var(--gradient-border-radius);
-            background: linear-gradient(270deg, cyan, magenta, yellow, cyan);
-            background-size: 400% 400%;
-            animation: borderShift-shared-gradient-border-1 3s linear infinite;
-            /* Ensure it doesn't add extra layout space */
-            display: inline-block;
-            line-height: 0; /* Fix for extra space below inline elements */
-        }
-        
-
-.shared-container-6 { box-sizing: border-box; background: #ddd; border-radius: 50px; padding: 25px; }
-
-.shared-container-7 { box-sizing: border-box; background: #ddd; padding: 20px; }
-.shared-center-0 { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;  }
-.shared-column-3 { display: flex; flex-direction: column; justify-content: flex-start; align-items: center; height: 100%; direction: ltr; }
-
-                    @keyframes bgShift-shared-container-9 {
-                        0% { background-position: 0% 50%; }
-                        50% { background-position: 100% 50%; }
-                        100% { background-position: 0% 50%; }
-                    }
-                    
-.shared-container-9 { box-sizing: border-box; background: linear-gradient(270deg, #a78bfa, #ff4d4d, #a78bfa); background-size: 400% 400%; animation: bgShift-shared-container-9 4s linear infinite; padding: 4px; }
-
-.shared-container-8 { box-sizing: border-box; background: transparent; padding: 20px; }
-
-            .shared-text-2 {
-                margin: 0; /* Reset default paragraph margin */
-                padding: 0;
-                color: #E7E0EC;
-                
-                
-            }
-            
-
-                    @property --gradient-angle-shared-container-11 {
-                        syntax: '<angle>';
-                        initial-value: 0deg;
-                        inherits: false;
-                    }
-                    
-
-                    @keyframes bgRotate-shared-container-11 {
-                        0% { --gradient-angle-shared-container-11: 0deg; }
-                        100% { --gradient-angle-shared-container-11: 360deg; }
-                    }
-                    
-.shared-container-11 { box-sizing: border-box; background: repeating-conic-gradient(from var(--gradient-angle-shared-container-11), red, yellow, green, blue, red); animation: bgRotate-shared-container-11 8s linear infinite; padding: 4px; }
-
-.shared-container-10 { box-sizing: border-box; background: #E7E0EC; padding: 20px; }
-
-.shared-container-12 { box-sizing: border-box; padding: 14px; width: 323px; }
-
-                    @property --gradient-angle-shared-container-2 {
-                        syntax: '<angle>';
-                        initial-value: 0deg;
-                        inherits: false;
-                    }
-                    
-
-                    @keyframes bgRotate-shared-container-2 {
-                        0% { --gradient-angle-shared-container-2: 0deg; }
-                        100% { --gradient-angle-shared-container-2: 360deg; }
-                    }
-                    
-.shared-container-2 { box-sizing: border-box; background: repeating-conic-gradient(from var(--gradient-angle-shared-container-2), red, yellow, green, blue, red); animation: bgRotate-shared-container-2 4s linear infinite; padding: 5px; width: 100%; height: 100%; }
-
-.shared-container-1 { box-sizing: border-box; background: #363636; padding: 9px; width: 100%; height: 330px; }
-.shared-column-0 { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; height: 100%; direction: ltr; }
-
-.shared-container-0 { box-sizing: border-box; width: 262px; height: 262px; }
-.shared-image-0 { display: block; object-fit: contain; width: 261px; height: 261px; object-position: center;border-radius: 6px;}
-.shared-image-1 { display: block; object-fit: contain; width: 42px; height: 42px; object-position: center;border-radius: 5px;}</style>
+</style>
     
         <script src="qwebchannel.js"></script>
         <script>
@@ -260,7 +198,17 @@ PythraSlider.prototype.destroy = function() {
         
 </head>
 <body>
-    <div id="root-container"><div id="fw_id_1" class="shared-container-4"><div id="fw_id_2" class="shared-column-1"><div id="fw_id_3" class="shared-row-0"><p id="fw_id_4" class="shared-text-0" style="color: #E7E0EC; font-size: 24; font-weight: bold">Animated Gradient Clip Path Border Test</p><button id="fw_id_5" class="shared-elevatedbutton-0" onclick="handleClick('close')"><div id="fw_id_6" class="shared-container-3"></div></button></div><div id="fw_id_7" class="" style="height: 24px"></div><div id="fw_id_8" class=""><div id="fw_id_9" class="shared-column-2"><div id="fw_id_10" class="shared-gradient-border-0" style="--gradient-border-size: 4px; --gradient-border-radius: 18px; --gradient-child-radius: 14px;"><div id="fw_id_11" class="shared-container-5"><p id="fw_id_12" class="shared-text-1">Adapts to Child&#x27;s Radius</p></div></div><div id="fw_id_13" class="" style="height: 12px"></div><div id="fw_id_14" class="shared-gradient-border-1" style="--gradient-border-size: 8px; --gradient-border-radius: 58px; --gradient-child-radius: 50px;"><div id="fw_id_15" class="shared-container-6"><p id="fw_id_16" class="shared-text-1">Custom Theme</p></div></div><div id="fw_id_17" class="" style="height: 12px"></div><div id="fw_id_18" class="shared-gradient-border-0" style="--gradient-border-size: 5px; --gradient-border-radius: 5.0px; --gradient-child-radius: 0.0px;"><div id="fw_id_19" class="shared-container-7"><p id="fw_id_20" class="shared-text-1">No Child Radius</p></div></div></div></div><div id="fw_id_21" class="" style="height: 24px"></div><div id="fw_id_22" class=""><div id="fw_id_23" class="shared-center-0"><div id="fw_id_24" class="shared-column-3"><div id="fw_id_25" class="shared-container-9"><div id="fw_id_26" class="shared-container-8"><p id="fw_id_27" class="shared-text-2" style="color: #E7E0EC">This Container has an animated background!</p></div></div><div id="fw_id_28" class="" style="height: 12px"></div><div id="fw_id_29" class="shared-container-11"><div id="fw_id_30" class="shared-container-10"><p id="fw_id_31" class="shared-text-1">This is a normal container.</p></div></div><div id="fw_id_32" class="" style="height: 6px"></div><div id="fw_id_33" class="shared-container-12"><div id="fw_id_34" class="" style="width: 100%; height: 100%"><div id="fw_id_35" class="shared-container-2"><div id="fw_id_36" class="" style="width: 100%; height: 100%"><div id="fw_id_37" class="shared-container-1"><div id="fw_id_38" class="shared-column-0"><div id="fw_id_39" class="shared-container-0"><img id="fw_id_40" class="shared-image-0" src="http://localhost:8004/assets/artwork.jpeg" alt=""></div><img id="fw_id_41" class="shared-image-1" src="http://localhost:8004/assets/avatar.jpg" alt=""></div></div></div></div></div></div></div></div></div></div></div></div>
+    <div id="root-container"><div id="fw_id_1" class=""><div id="fw_id_2" class="shared-stack-0"><div id="fw_id_3" class=""><div id="fw_id_4" class="shared-column-1"><p id="fw_id_5" class="shared-text-0">Selected Country Code: usa</p><p id="fw_id_6" class="shared-text-0">Selected Country Name: United States</p><div id="fw_id_7" class="" style="height: 20px"></div>
+        <div id="fw_id_8" class="dropdown-container shared-dropdown-0">
+            <div class="dropdown-value-container">
+                <span>United States</span>
+                <svg class="dropdown-caret" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"></path></svg>
+            </div>
+            <ul class="dropdown-menu">
+                <li class="dropdown-item" data-value="usa">United States</li><li class="dropdown-item" data-value="can">Canada</li><li class="dropdown-item" data-value="mex">Mexico</li>
+            </ul>
+        </div>
+        <button id="fw_id_9" class="shared-elevatedbutton-0" onclick="handleClick('&lt;lambda&gt;')"><p id="fw_id_10" class="shared-text-0">Settings</p></button></div></div></div></div></div>
     <div id="overlay-container"></div>
 
     <!-- ADD SIMPLEBAR JS -->
@@ -737,6 +685,7 @@ class PythraGestureDetector {
         this.element.addEventListener('pointerdown', this.handlePointerDown);
     }
 
+    
     handlePointerDown(event) {
         // Only respond to the primary button (e.g., left mouse click)
         if (event.button !== 0) return;
@@ -814,7 +763,7 @@ class PythraGestureDetector {
             // --- End Panning ---
             this.isPanning = false;
             if (this.options.onPanEndName) {
-                window.pywebview.on_gesture_event(this.options.onPanEndName, {});
+                window.pywebview.on_gesture_event(this.options.onPanEndName, );
             }
         }
     }
@@ -983,37 +932,7 @@ class PythraGradientClipPath {
 }
 
                     // Then, RUN the initialization commands
-                    
-                    // Step 0: Convert Python's array-of-arrays to JS's array-of-objects
-                    const pointsForGenerator_fw_id_34 = [[0, 343], [72, 343], [72, 290], [290, 290], [290, 0], [0, 0]].map(p => ({x: p[0], y: p[1]}));
-                    
-                    // Step 1: Call generateRoundedPath with the points and radius
-                    const initialPathString_fw_id_34 = generateRoundedPath(pointsForGenerator_fw_id_34, 15.0);
-                    
-                    // Step 2: Feed the generated path into ResponsiveClipPath
-                    window._pythra_instances['fw_id_34'] = new ResponsiveClipPath(
-                        'fw_id_34', 
-                        initialPathString_fw_id_34, 
-                        290, 
-                        347, 
-                        { uniformArc: true, decimalPlaces: 2 }
-                    );
-                
-                    // Step 0: Convert Python's array-of-arrays to JS's array-of-objects
-                    const pointsForGenerator_fw_id_36 = [[0, 333], [62, 333], [62, 280], [280, 280], [280, 0], [0, 0]].map(p => ({x: p[0], y: p[1]}));
-                    
-                    // Step 1: Call generateRoundedPath with the points and radius
-                    const initialPathString_fw_id_36 = generateRoundedPath(pointsForGenerator_fw_id_36, 10.0);
-                    
-                    // Step 2: Feed the generated path into ResponsiveClipPath
-                    window._pythra_instances['fw_id_36'] = new ResponsiveClipPath(
-                        'fw_id_36', 
-                        initialPathString_fw_id_36, 
-                        280, 
-                        337, 
-                        { uniformArc: true, decimalPlaces: 2 }
-                    );
-                
+                    window._pythra_instances['fw_id_8'] = new PythraDropdown('fw_id_8', {"onChangedName": "dropdown_change_1583296979904"});
                 } catch (e) {
                     console.error("Error running Pythra initializers:", e);
                 }

@@ -13,6 +13,10 @@ from .base import make_hashable
 from typing import Union
 
 class EdgeInsets:
+    left_c=0
+    top_c=0
+    right_c=0 
+    bottom_c=0
     """
     Represents padding or margin for a widget's edges.
     Compatible with reconciliation (hashable).
@@ -50,7 +54,27 @@ class EdgeInsets:
     def only(left: float = 0.0, top: float = 0.0, right: float = 0.0, bottom: float = 0.0) -> 'EdgeInsets':
          """Creates EdgeInsets with only the specified values set, others default to 0."""
          # Alias for the main constructor with clearer intent
+         EdgeInsets.left_c=left
+         EdgeInsets.top_c=top
+         EdgeInsets.right_c=right
+         EdgeInsets.bottom_c=bottom
          return EdgeInsets(left=left, top=top, right=right, bottom=bottom)
+
+    @staticmethod
+    def edit(operation: str='+',left: float = 0.0, top: float = 0.0, right: float = 0.0, bottom: float = 0.0) -> 'EdgeInsets':
+        if operation == '+':
+            left += EdgeInsets.left_c
+            top += EdgeInsets.top_c
+            right += EdgeInsets.right_c
+            bottom += EdgeInsets.bottom_c
+        elif operation == '-':
+            left = EdgeInsets.left_c - left 
+            top = EdgeInsets.top_c - top
+            right = EdgeInsets.right_c - right
+            bottom = EdgeInsets.bottom_c - bottom
+        return EdgeInsets(left=left, top=top, right=right, bottom=bottom)
+
+    
 
     # Deprecate or remove LRTB if 'only' is preferred for clarity
     # @staticmethod
@@ -127,6 +151,9 @@ class EdgeInsets:
     def to_tuple(self) -> Tuple[float, float, float, float]:
          """Returns a hashable tuple representation (left, top, right, bottom)."""
          return (self.left, self.top, self.right, self.bottom)
+
+
+print("Edge Insets", EdgeInsets.only(top=40, left=20).edit(operation='-',top=10))
 
 class Alignment:
     """
@@ -1881,14 +1908,17 @@ class SliderTheme:
     trackHeight: float = 4.0
     thumbSize: float = 14.0
     thumbBorderWidth: float = 2.0
+    thumbBorderColor: Optional[str] = None
     overlaySize: float = 8.0 # The 'spread' of the overlay halo in pixels
+
 
     def to_tuple(self) -> Tuple:
         """Creates a hashable tuple for use in style keys."""
+        print("thumbBorderColor: ", self.thumbBorderColor)
         return (
             self.activeTrackColor, self.inactiveTrackColor, self.thumbColor,
             self.overlayColor, self.trackHeight, self.thumbSize,
-            self.thumbBorderWidth, self.overlaySize
+            self.thumbBorderWidth, self.thumbBorderColor, self.overlaySize
         )
 
 # In pythra/styles.py
@@ -1966,40 +1996,41 @@ class RadioTheme:
         return (self.fillColor, self.splashColor)
 
 
-# In pythra/styles.py
 
-# ... (keep your existing style classes)
-
-@dataclass
 class DropdownTheme:
-    """Defines the visual properties for a Dropdown widget."""
-    # Main button/display area
-    backgroundColor: str = Colors.surfaceContainerHighest
-    padding: EdgeInsets = field(default_factory=lambda: EdgeInsets.symmetric(horizontal=12, vertical=8))
-    borderRadius: BorderRadius = field(default_factory=lambda: BorderRadius.all(4))
-    border: BorderSide = field(default_factory=lambda: BorderSide(width=1, color=Colors.outline))
-    
-    # Dropdown menu overlay
-    menuBackgroundColor: str = Colors.surfaceContainer
-    menuElevation: float = 2.0
-    menuBorderRadius: BorderRadius = field(default_factory=lambda: BorderRadius.all(4))
-    
-    # Items within the menu
-    itemHeight: int = 40
-    itemHoverColor: str = Colors.rgba(103, 80, 164, 0.1) # primary with alpha
+    """Encapsulates the styling properties for the Dropdown widget."""
 
-    # Icon
-    iconColor: str = Colors.onSurfaceVariant
-    iconSize: int = 24
-
-    def to_tuple(self) -> Tuple:
-        """Creates a hashable tuple for use in style keys."""
-        return (
-            self.backgroundColor, make_hashable(self.padding), make_hashable(self.borderRadius),
-            make_hashable(self.border), self.menuBackgroundColor, self.menuElevation,
-            make_hashable(self.menuBorderRadius), self.itemHeight, self.itemHoverColor,
-            self.iconColor, self.iconSize
-        )
+    def __init__(
+        self,
+        backgroundColor=Colors.hex("#FFFFFF"),
+        borderColor=Colors.hex("#AAAAAA"),
+        width = "100%",
+        borderWidth=1.0,
+        borderRadius=8.0,
+        textColor=Colors.hex("#000000"),
+        fontSize=14.0,
+        padding=EdgeInsets.symmetric(vertical=8, horizontal=12),
+        dropdownColor=Colors.hex("#FFFFFF"),
+        dropdownTextColor=Colors.hex("#000000"),
+        selectedItemColor=Colors.hex("#E0E0E0"),
+        selectedItemShape= BorderRadius.all(4),
+        dropdownMargin=EdgeInsets.only(top=45),
+        itemPadding = EdgeInsets.symmetric(horizontal=12, vertical=8),
+    ):
+        self.backgroundColor = backgroundColor
+        self.borderColor = borderColor
+        self.width = width
+        self.borderWidth = borderWidth
+        self.borderRadius = borderRadius
+        self.textColor = textColor
+        self.fontSize = fontSize
+        self.padding = padding
+        self.dropdownColor = dropdownColor
+        self.dropdownTextColor = dropdownTextColor
+        self.selectedItemColor = selectedItemColor
+        self.selectedItemShape = selectedItemShape
+        self.dropdownMargin = dropdownMargin
+        self.itemPadding = itemPadding
 
 
 

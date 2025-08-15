@@ -33,6 +33,7 @@ export class PythraGestureDetector {
         this.element.addEventListener('pointerdown', this.handlePointerDown);
     }
 
+    
     handlePointerDown(event) {
         // Only respond to the primary button (e.g., left mouse click)
         if (event.button !== 0) return;
@@ -110,7 +111,7 @@ export class PythraGestureDetector {
             // --- End Panning ---
             this.isPanning = false;
             if (this.options.onPanEndName) {
-                window.pywebview.on_gesture_event(this.options.onPanEndName, {});
+                window.pywebview.on_gesture_event(this.options.onPanEndName, );
             }
         }
     }

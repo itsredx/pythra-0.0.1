@@ -70,7 +70,9 @@ def play_music():
 class MusicListBodyState(State):
     def __init__(self):
         super().__init__()
-        self.control_widget = Controls(key=Key("my_control_widget_with_slider"))
+        self.visible = True
+        print("Initializing music page with visibility: ", self.visible)
+        print("MusicListBodyState self.visible: ",self.visible)
         # 1) at startup, build your library
         library_path = Path.home() / "Music"
         artwork_cache_dir = Path.home() / ".artwork_cache"
@@ -409,6 +411,7 @@ class MusicListBodyState(State):
                 key=Key("body_content_root_column"),
                 height="100%",
                 width=1190,
+                visible= self.visible,
                 # color= Colors.hex("#484848"),
                 decoration=BoxDecoration(
                     color=Colors.transparent,
@@ -1022,5 +1025,8 @@ class MusicListBodyState(State):
 
 
 class MusicListBody(StatefulWidget):
+    def __init__(self, key: Key):
+        super().__init__(key=key)
+
     def createState(self) -> MusicListBodyState:
         return MusicListBodyState()

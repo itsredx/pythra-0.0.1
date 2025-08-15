@@ -21,6 +21,9 @@ from .state import State, StatefulWidget, StatelessWidget
 from .icons import Icons, IconData
 from .controllers import TextEditingController, SliderController
 from .events import TapDetails, PanUpdateDetails
+from .drived_widgets.dropdown.dropdown import DerivedDropdown
+from .drived_widgets.dropdown.controller import DerivedDropdownController
+from .drived_widgets.dropdown.style import DerivedDropdownTheme
 
 
 # --- Styling Utilities and Constants ---
@@ -34,7 +37,7 @@ from .styles import (
     Colors, BoxDecoration, BoxShadow, Offset,
     BorderRadius, BorderSide, BorderStyle,
     TextStyle, ScrollbarTheme, GradientBorderTheme,
-    GradientTheme,
+    GradientTheme,SliderTheme, DropdownTheme,
     # Behavior/Misc
     ClipBehavior, ImageFit, BoxFit, Overflow, StackFit, ScrollPhysics,
     TextDirection, TextBaseline, VerticalDirection,
@@ -116,6 +119,7 @@ from .widgets import (
     Dialog,
     BottomSheet,
     SnackBar,
+    Dropdown,
 
     # --- Path / Painters ---
     ClipPath,

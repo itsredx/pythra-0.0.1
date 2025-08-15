@@ -16,6 +16,7 @@ class Api(WebWidgetApi):
 
         Calls the initializer of the parent WebWidgetApi class.
         """
+
         super().__init__()
 
     # Add any additional methods or overrides as needed
