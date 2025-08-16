@@ -2,16 +2,25 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Animated Gradient Clip Path Border Test</title>
+    <title>Pythra Virtual List Test</title>
     <!-- ADD SIMPLEBAR CSS -->
     <link rel="stylesheet" href="./js/scroll-bar/simplebar.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1755278866">
-    <style id="dynamic-styles">.shared-stack-0 { position: relative; display: grid; width: fit-content; height: fit-content; justify-items: start; align-items: start; direction: ltr; overflow: hidden; }
-.shared-stack-0 > * { grid-area: 1 / 1; }
-.shared-column-1 { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; height: 100%; direction: ltr; }
+    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1755370162">
+    <style id="dynamic-styles">
+.shared-container-1 { box-sizing: border-box; background: #FFFBFE; padding: 20px; width: 100vw; height: 100vh; }
+.shared-column-0 { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; height: 100%; direction: ltr; }
 
             .shared-text-0 {
+                margin: 0; /* Reset default paragraph margin */
+                padding: 0;
+                font-size: 24px; font-weight: bold;
+                
+                
+            }
+            
+
+            .shared-text-1 {
                 margin: 0; /* Reset default paragraph margin */
                 padding: 0;
                 
@@ -20,73 +29,57 @@
             }
             
 
-        .shared-dropdown-0.dropdown-container {
-            position: relative;
-            width: 500.0px;
-            font-family: sans-serif;
-        }
-        .shared-dropdown-0 .dropdown-value-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 12px;
-            background-color: lightgreen;
-            color: #000;
-            border: 2.0px solid #AAA;
-            border-radius: 8.0px;
-            cursor: pointer;
-            transition: border-color 0.2s;
-        }
-        .shared-dropdown-0.open .dropdown-value-container {
-            border-color: #6750A4; /* Highlight when open */
-        }
-        .shared-dropdown-0 .dropdown-caret {
-            width: 20px;
-            height: 20px;
-            fill: currentColor;
-            transition: transform 0.2s ease-in-out;
-        }
-        .shared-dropdown-0.open .dropdown-caret {
-            transform: rotate(180deg);
-        }
-        .shared-dropdown-0 .dropdown-menu {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background-color: #F9F9F9;
-            color: #000000,
-            border: 1px solid #AAA;
-            border-radius: 8.0px;
-            list-style: none;
-            margin: 4px 0.0px 0.0px;
-            padding: 4px 0;
-            z-index: 100;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .shared-dropdown-0.open .dropdown-menu {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-        .shared-dropdown-0 .dropdown-item {
-            padding: 8px 12px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-        .shared-dropdown-0 .dropdown-item:hover {
-            background-color: rgba(103, 80, 164, 0.1); /* Hover color */
-        }
-        
-.shared-elevatedbutton-0 { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; margin: 4px; border: none; border-radius: 20px; background-color: blue; color: white; cursor: pointer; text-align: center; text-decoration: none; outline: none; box-sizing: border-box; overflow: hidden; position: relative; transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s linear; -webkit-appearance: none; -moz-appearance: none; appearance: none; box-shadow: 0px 1.0px 2.0px 0px rgba(0,0,0,0.15), 0px 2.0px 4.0px 1px rgba(0,0,0,0.10); }
-.shared-elevatedbutton-0:hover { box-shadow: 0px 1.5px 3.0px 0px rgba(0,0,0,0.18), 0px 3.0px 6.0px 1px rgba(0,0,0,0.13); /* Add background overlay? */ }
-.shared-elevatedbutton-0:active { box-shadow: none; /* Add background overlay? */ }
-.shared-elevatedbutton-0.disabled { background-color: rgba(0, 0, 0, 0.12); color: rgba(0, 0, 0, 0.38); box-shadow: none; cursor: default; pointer-events: none; }
-</style>
+.shared-container-0 { box-sizing: border-box; border-width: 1px; border-style: solid; border-color: #CAC4D0; height: 80vh; }
+
+                /* Style the scrollbar track (the groove it runs in) */
+                .simplebar-themed-0 .simplebar-track.simplebar-vertical {
+                    background: #3535353e;
+                    width: 14px;
+                    border-radius: 8px;
+                    margin: 0;
+                }
+                .simplebar-themed-0 .simplebar-track.simplebar-horizontal {
+                    background: #3535353e;
+                    height: 12px;
+                    border-radius: 8px;
+                }
+
+                /* Style the draggable scrollbar thumb */
+                .simplebar-themed-0 .simplebar-scrollbar::before {
+                    background-color: lightpink;
+                    border-radius: 6px;
+                    /* Use a transparent border to create padding inside the thumb */
+                    border: 3px solid transparent;
+                    background-clip: content-box;
+                    opacity: 1; /* Override auto-hide opacity if needed */
+                }
+
+                .simplebar-themed-0 .simplebar-scrollbar::after {
+                    background-color: lightpink;
+                    border-radius: 6px;
+                    /* Use a transparent border to create padding inside the thumb */
+                    border: 3px solid transparent;
+                    background-clip: content-box;
+                    opacity: 1; /* Override auto-hide opacity if needed */
+                }
+
+                /* Style the thumb on hover */
+                .simplebar-themed-0 .simplebar-track:hover .simplebar-scrollbar::before {
+                    background-color: #9c9b9b;
+                }
+                .simplebar-themed-0 {
+                    /* height: -webkit-fill-available; */
+                    height: inherit;
+                }
+                .simplebar-themed-0  .simplebar-track.simplebar-horizontal {
+                    display: none;
+                }
+                .simplebar-scrollbar {
+                    display: none;
+                }
+            
+
+.shared-container-3 { box-sizing: border-box; }</style>
     
         <script src="qwebchannel.js"></script>
         <script>
@@ -198,21 +191,10 @@ PythraSlider.prototype.destroy = function() {
         
 </head>
 <body>
-    <div id="root-container"><div id="fw_id_1" class=""><div id="fw_id_2" class="shared-stack-0"><div id="fw_id_3" class=""><div id="fw_id_4" class="shared-column-1"><p id="fw_id_5" class="shared-text-0">Selected Country Code: usa</p><p id="fw_id_6" class="shared-text-0">Selected Country Name: United States</p><div id="fw_id_7" class="" style="height: 20px"></div>
-        <div id="fw_id_8" class="dropdown-container shared-dropdown-0">
-            <div class="dropdown-value-container">
-                <span>United States</span>
-                <svg class="dropdown-caret" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"></path></svg>
-            </div>
-            <ul class="dropdown-menu">
-                <li class="dropdown-item" data-value="usa">United States</li><li class="dropdown-item" data-value="can">Canada</li><li class="dropdown-item" data-value="mex">Mexico</li>
-            </ul>
-        </div>
-        <button id="fw_id_9" class="shared-elevatedbutton-0" onclick="handleClick('&lt;lambda&gt;')"><p id="fw_id_10" class="shared-text-0">Settings</p></button></div></div></div></div></div>
+    <div id="root-container"><div id="fw_id_121" class="shared-container-1" style="display: block"><div id="fw_id_122" class="shared-column-0"><p id="fw_id_123" class="shared-text-0" style="font-size: 24; font-weight: bold">Virtual List Test (10,000 Items)</p><p id="fw_id_124" class="shared-text-1">0 item(s) selected. Scroll to see virtualization in action.</p><div id="fw_id_125" class="" style="height: 16px"></div><div id="fw_id_126" class="shared-container-0" style="display: block"><div id="fw_id_128" class="simplebar-themed-0"><div id="fw_id_129" class="shared-container-3" style="display: block"></div></div></div></div></div></div>
     <div id="overlay-container"></div>
 
     <!-- ADD SIMPLEBAR JS -->
-    <script src="./js/virtualList.js"></script>
     <script src="./js/scroll-bar/simplebar.min.js"></script>
     <!-- ADD THE NEW SLIDER JS ENGINE -->
     
@@ -223,6 +205,7 @@ PythraSlider.prototype.destroy = function() {
             // import { ResponsiveClipPath } from './js/clipPathUtils.js';
             import { PythraSlider } from './js/slider.js';
             import { PythraDropdown } from './js/dropdown.js';
+            // import { PythraVirtuaList } from './js/virtual_list.js';
             
 
             document.addEventListener('DOMContentLoaded', () => {
@@ -930,9 +913,192 @@ class PythraGradientClipPath {
         }
     }
 }
+/**
+ * PythraVirtualList: A client-side engine for virtual scrolling. (Final Version)
+ *
+ * This engine creates its own SimpleBar instance to avoid race conditions.
+ * It handles pre-rendered initial items (HTML and CSS) for an instant first paint.
+ * It asynchronously fetches additional items from Python as the user scrolls.
+ * Most importantly, it dynamically attaches event listeners to both pre-rendered
+ * and asynchronously loaded content to ensure full interactivity.
+ */
+class PythraVirtualList {
+    constructor(elementId, options) {
+        this.container = document.getElementById(elementId);
+        if (!this.container) {
+            console.error(`VirtualList Error: Container element #${elementId} not found.`);
+            return;
+        }
+
+        console.log(`✅ PythraVirtualList engine is initializing for #${elementId}`);
+        
+        this.options = options;
+        this.simplebar = new SimpleBar(this.container, this.options.simplebarOptions || {});
+        this.scrollEl = this.simplebar.getScrollElement();
+        this.contentEl = this.simplebar.getContentElement();
+        
+        this.itemCache = {}; // Cache will ONLY store HTML strings.
+        this.visibleItemElements = [];
+
+        // Process the initialItems object from Python.
+        if (this.options.initialItems) {
+            const initialCss = new Set();
+            for (const index in this.options.initialItems) {
+                const itemData = this.options.initialItems[index];
+                // 1. Store ONLY the HTML string in the cache.
+                this.itemCache[index] = itemData.html;
+                // 2. Collect all unique CSS rules.
+                if (itemData.css) {
+                    initialCss.add(itemData.css);
+                }
+            }
+            // 3. Inject all collected CSS into the dynamic stylesheet in one go.
+            if (initialCss.size > 0) {
+                const styleSheet = document.getElementById('dynamic-styles');
+                if (styleSheet) {
+                    styleSheet.textContent += `\n${[...initialCss].join('\n')}`;
+                }
+            }
+        }
+
+        // Setup DOM for virtualization
+        this.sizer = document.createElement('div');
+        this.sizer.style.position = 'absolute';
+        this.sizer.style.top = '0';
+        this.sizer.style.left = '0';
+        this.sizer.style.width = '1px';
+        this.sizer.style.height = `${this.options.itemCount * this.options.itemExtent}px`;
+        this.contentEl.appendChild(this.sizer);
+        this.contentEl.style.position = 'relative';
+
+        this.render = this.render.bind(this);
+        this.scrollEl.addEventListener('scroll', this.render);
+        
+        this.render();
+    }
+
+    /**
+     * Scans a newly rendered HTML fragment and attaches reliable event listeners
+     * to elements that have an inline `onclick` attribute from the Python side.
+     * @param {HTMLElement} element - The container element whose children to scan (e.g., the recycled list item div).
+     */
+    attachEventListeners(element) {
+        const clickableElements = element.querySelectorAll('[onclick]');
+        clickableElements.forEach(clickable => {
+            const onclickAttr = clickable.getAttribute('onclick');
+            
+            // Regex to parse out the callback name from "handleClick('callback_name')"
+            const match = onclickAttr.match(/handleClick\('([^']+)'\)/);
+
+            if (match && match[1]) {
+                const callbackName = match[1];
+                // 1. Remove the inline attribute, as it's now redundant and less reliable.
+                clickable.removeAttribute('onclick');
+                // 2. Add a proper, trusted event listener.
+                clickable.addEventListener('click', () => {
+                    if (window.pywebview && typeof handleClick === 'function') {
+                        // 3. Call the global handleClick function that communicates with Python.
+                        handleClick(callbackName);
+                    }
+                });
+            }
+        });
+    }
+
+    render() {
+        const scrollTop = this.scrollEl.scrollTop;
+        const viewportHeight = this.scrollEl.clientHeight;
+
+        const startIndex = Math.max(0, Math.floor(scrollTop / this.options.itemExtent));
+        const endIndex = Math.min(
+            this.options.itemCount - 1,
+            Math.ceil((scrollTop + viewportHeight) / this.options.itemExtent)
+        );
+        
+        const itemsToRender = [];
+        for (let i = startIndex; i <= endIndex; i++) {
+            itemsToRender.push({ index: i, top: i * this.options.itemExtent });
+        }
+        
+        for (let i = 0; i < itemsToRender.length; i++) {
+            const item = itemsToRender[i];
+            let el = this.visibleItemElements[i];
+
+            if (!el) {
+                el = document.createElement('div');
+                el.style.position = 'absolute';
+                el.style.width = '100%';
+                el.style.height = `${this.options.itemExtent}px`;
+                el.style.left = '0';
+                this.contentEl.appendChild(el);
+                this.visibleItemElements.push(el);
+            }
+
+            el.style.transform = `translateY(${item.top}px)`;
+            
+            if (el.dataset.index !== String(item.index)) {
+                el.dataset.index = item.index;
+                
+                if (this.itemCache[item.index]) {
+                    // Item was pre-rendered or fetched before.
+                    el.innerHTML = this.itemCache[item.index];
+                    // IMPORTANT: We must re-attach listeners every time we set innerHTML.
+                    this.attachEventListeners(el);
+                } else {
+                    // Item needs to be fetched from Python.
+                    el.innerHTML = '<div>Loading...</div>';
+                    if (window.pywebview && this.options.itemBuilderName) {
+                        window.pywebview.build_list_item(this.options.itemBuilderName, item.index)
+                            .then(response => {
+                                const { html, css } = response;
+                                this.itemCache[item.index] = html;
+
+                                if (css) {
+                                    const styleSheet = document.getElementById('dynamic-styles');
+                                    if (styleSheet && !styleSheet.textContent.includes(css)) {
+                                        styleSheet.textContent += `\n${css}`;
+                                    }
+                                }
+                                
+                                if (el.dataset.index === String(item.index)) {
+                                    el.innerHTML = html;
+                                    // Attach event listeners to the newly created DOM nodes.
+                                    this.attachEventListeners(el);
+                                }
+                            })
+                            .catch(e => {
+                                console.error(`Error building virtual item ${item.index}:`, e);
+                                if (el.dataset.index === String(item.index)) {
+                                    el.innerHTML = '<div>Error</div>';
+                                }
+                            });
+                    }
+                }
+            }
+        }
+        
+        for (let i = itemsToRender.length; i < this.visibleItemElements.length; i++) {
+            this.visibleItemElements[i].style.transform = 'translateY(-9999px)';
+        }
+    }
+
+    destroy() {
+        if (this.simplebar && typeof this.simplebar.unMount === 'function') {
+            this.simplebar.unMount();
+        }
+    }
+}
 
                     // Then, RUN the initialization commands
-                    window._pythra_instances['fw_id_8'] = new PythraDropdown('fw_id_8', {"onChangedName": "dropdown_change_1583296979904"});
+                    window._pythra_instances['fw_id_128_vlist'] = new PythraVirtualList('fw_id_128', {"itemCount": 5000, "itemExtent": 50.0, "itemBuilderName": "vlist_item_builder_my_virtual_list", "initialItems": {"0": {"html": "<div id=\"fw_id_1\" class=\"\"><div id=\"fw_id_2\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_3\" class=\"shared-row-0\"><div id=\"fw_id_4\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_0_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_5\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_6\" class=\"shared-text-1\">List Item Number 1</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_0_checkbox"]}, "1": {"html": "<div id=\"fw_id_7\" class=\"\"><div id=\"fw_id_8\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_9\" class=\"shared-row-0\"><div id=\"fw_id_10\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_1_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_11\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_12\" class=\"shared-text-1\">List Item Number 2</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_1_checkbox"]}, "2": {"html": "<div id=\"fw_id_13\" class=\"\"><div id=\"fw_id_14\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_15\" class=\"shared-row-0\"><div id=\"fw_id_16\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_2_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_17\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_18\" class=\"shared-text-1\">List Item Number 3</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_2_checkbox"]}, "3": {"html": "<div id=\"fw_id_19\" class=\"\"><div id=\"fw_id_20\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_21\" class=\"shared-row-0\"><div id=\"fw_id_22\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_3_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_23\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_24\" class=\"shared-text-1\">List Item Number 4</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_3_checkbox"]}, "4": {"html": "<div id=\"fw_id_25\" class=\"\"><div id=\"fw_id_26\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_27\" class=\"shared-row-0\"><div id=\"fw_id_28\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_4_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_29\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_30\" class=\"shared-text-1\">List Item Number 5</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_4_checkbox"]}, "5": {"html": "<div id=\"fw_id_31\" class=\"\"><div id=\"fw_id_32\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_33\" class=\"shared-row-0\"><div id=\"fw_id_34\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_5_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_35\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_36\" class=\"shared-text-1\">List Item Number 6</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_5_checkbox"]}, "6": {"html": "<div id=\"fw_id_37\" class=\"\"><div id=\"fw_id_38\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_39\" class=\"shared-row-0\"><div id=\"fw_id_40\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_6_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_41\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_42\" class=\"shared-text-1\">List Item Number 7</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_6_checkbox"]}, "7": {"html": "<div id=\"fw_id_43\" class=\"\"><div id=\"fw_id_44\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_45\" class=\"shared-row-0\"><div id=\"fw_id_46\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_7_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_47\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_48\" class=\"shared-text-1\">List Item Number 8</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_7_checkbox"]}, "8": {"html": "<div id=\"fw_id_49\" class=\"\"><div id=\"fw_id_50\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_51\" class=\"shared-row-0\"><div id=\"fw_id_52\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_8_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_53\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_54\" class=\"shared-text-1\">List Item Number 9</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_8_checkbox"]}, "9": {"html": "<div id=\"fw_id_55\" class=\"\"><div id=\"fw_id_56\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_57\" class=\"shared-row-0\"><div id=\"fw_id_58\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_9_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_59\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_60\" class=\"shared-text-1\">List Item Number 10</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_9_checkbox"]}, "10": {"html": "<div id=\"fw_id_61\" class=\"\"><div id=\"fw_id_62\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_63\" class=\"shared-row-0\"><div id=\"fw_id_64\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_10_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_65\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_66\" class=\"shared-text-1\">List Item Number 11</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_10_checkbox"]}, "11": {"html": "<div id=\"fw_id_67\" class=\"\"><div id=\"fw_id_68\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_69\" class=\"shared-row-0\"><div id=\"fw_id_70\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_11_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_71\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_72\" class=\"shared-text-1\">List Item Number 12</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_11_checkbox"]}, "12": {"html": "<div id=\"fw_id_73\" class=\"\"><div id=\"fw_id_74\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_75\" class=\"shared-row-0\"><div id=\"fw_id_76\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_12_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_77\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_78\" class=\"shared-text-1\">List Item Number 13</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_12_checkbox"]}, "13": {"html": "<div id=\"fw_id_79\" class=\"\"><div id=\"fw_id_80\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_81\" class=\"shared-row-0\"><div id=\"fw_id_82\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_13_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_83\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_84\" class=\"shared-text-1\">List Item Number 14</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_13_checkbox"]}, "14": {"html": "<div id=\"fw_id_85\" class=\"\"><div id=\"fw_id_86\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_87\" class=\"shared-row-0\"><div id=\"fw_id_88\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_14_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_89\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_90\" class=\"shared-text-1\">List Item Number 15</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_14_checkbox"]}, "15": {"html": "<div id=\"fw_id_91\" class=\"\"><div id=\"fw_id_92\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_93\" class=\"shared-row-0\"><div id=\"fw_id_94\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_15_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_95\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_96\" class=\"shared-text-1\">List Item Number 16</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_15_checkbox"]}, "16": {"html": "<div id=\"fw_id_97\" class=\"\"><div id=\"fw_id_98\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_99\" class=\"shared-row-0\"><div id=\"fw_id_100\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_16_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_101\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_102\" class=\"shared-text-1\">List Item Number 17</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_16_checkbox"]}, "17": {"html": "<div id=\"fw_id_103\" class=\"\"><div id=\"fw_id_104\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_105\" class=\"shared-row-0\"><div id=\"fw_id_106\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_17_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_107\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_108\" class=\"shared-text-1\">List Item Number 18</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_17_checkbox"]}, "18": {"html": "<div id=\"fw_id_109\" class=\"\"><div id=\"fw_id_110\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_111\" class=\"shared-row-0\"><div id=\"fw_id_112\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_18_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_113\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_114\" class=\"shared-text-1\">List Item Number 19</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_18_checkbox"]}, "19": {"html": "<div id=\"fw_id_115\" class=\"\"><div id=\"fw_id_116\" class=\"shared-container-2\" style=\"display: block\"><div id=\"fw_id_117\" class=\"shared-row-0\"><div id=\"fw_id_118\" class=\"checkbox-container shared-checkbox-0\" onclick=\"handleClick('checkbox_press_cb_19_checkbox')\">\n            <svg class=\"checkbox-svg\" viewBox=\"0 0 24 24\">\n                <path class=\"checkbox-checkmark\" d=\"M1.73,12.91 8.1,19.28 22.79,4.59\"/>\n            </svg>\n        </div><div id=\"fw_id_119\" class=\"\" style=\"width: 16px\"></div><p id=\"fw_id_120\" class=\"shared-text-1\">List Item Number 20</p></div></div></div>", "css": "\n.shared-container-2 { box-sizing: border-box; background: transparent; padding: 0.0px 16px; margin: 10px 16px; height: 60px; }\n.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }\n\n        .shared-checkbox-0.checkbox-container {\n            position: relative;\n            width: 18.0px; height: 18.0px;\n            border: 2.0px solid #49454F;\n            border-radius: 4px;\n            background-color: transparent;\n            cursor: pointer;\n            display: inline-flex; align-items: center; justify-content: center;\n            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;\n            -webkit-tap-highlight-color: transparent;\n        }\n        .shared-checkbox-0 .checkbox-svg {\n            width: 100%; height: 100%;\n            fill: none;\n            stroke: #FFFFFF;\n            stroke-width: 3.0;\n            stroke-linecap: round; stroke-linejoin: round;\n        }\n        .shared-checkbox-0 .checkbox-checkmark {\n            stroke-dasharray: 29;\n            stroke-dashoffset: 29;\n            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);\n        }\n        .shared-checkbox-0.checkbox-container:active::before {\n            content: '';\n            position: absolute; top: 50%; left: 50%;\n            width: 0; height: 0;\n            background-color: rgba(103, 80, 164, 0.15);\n            border-radius: 50%;\n            transform: translate(-50%, -50%);\n            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;\n        }\n        @keyframes checkbox-ripple-shared-checkbox-0 {\n            from { width: 0; height: 0; opacity: 1; }\n            to { width: 40.0px; height: 40.0px; opacity: 0; }\n        }\n        \n\n            .shared-text-1 {\n                margin: 0; /* Reset default paragraph margin */\n                padding: 0;\n                \n                \n                \n            }\n            ", "callback_names": ["checkbox_press_cb_19_checkbox"]}}, "simplebarOptions": {"autoHide": true}});
+                    const el_fw_id_128 = document.getElementById('fw_id_128');
+                    if (el_fw_id_128 && !el_fw_id_128.simplebar) { // Check if not already initialized
+                        new SimpleBar(el_fw_id_128, {} );
+                        console.log('SimpleBar initialized for #fw_id_128');
+                        //console.log(!el_fw_id_128.simplebar);
+                    };
+                    
+                
                 } catch (e) {
                     console.error("Error running Pythra initializers:", e);
                 }

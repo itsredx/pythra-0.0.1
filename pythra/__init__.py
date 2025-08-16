@@ -120,6 +120,7 @@ from .widgets import (
     BottomSheet,
     SnackBar,
     Dropdown,
+    Checkbox,
 
     # --- Path / Painters ---
     ClipPath,

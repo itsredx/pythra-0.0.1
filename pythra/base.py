@@ -93,6 +93,10 @@ class Widget:
         # Internal ID used if key is None, or for mapping during reconciliation
         self._internal_id: str = str(uuid.uuid4())
         # Note: parent relationship is implicit in the tree built by State.build()
+        # --- THIS IS THE FIX ---
+        # Every widget, upon creation, gets a direct reference to the framework.
+        self.framework: Optional['Framework'] = self._framework_ref() if self._framework_ref else None
+        # --- END OF FIX ---
 
     def get_unique_id(self) -> Union[Key, str]:
         """
