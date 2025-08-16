@@ -7,7 +7,7 @@ import os
 # os.environ["QT_OPENGL"] = "software"
 
 from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout
-from PySide6.QtCore import Qt, QObject, Slot, QUrl, QSize
+from PySide6.QtCore import Qt, QObject, Slot, QUrl, QSize 
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWebEngineCore import QWebEngineSettings
 from PySide6.QtWebChannel import QWebChannel
@@ -83,6 +83,7 @@ class Api(QObject):
     @Slot(str, result=str)
     def on_pressed_str(self, callback_name):
         if callback_name in self.callbacks:
+            # print("callbacks: ", self.callbacks)
             self.callbacks[callback_name]()
 
             return f"Callback '{callback_name}' executed successfully."
@@ -131,6 +132,27 @@ class Api(QObject):
     @Slot(str)
     def on_button_clicked(self, message):
         print(f"Message from JavaScript: {message}")
+
+    # --- THIS IS THE NEW SLOT ---
+    # It's specifically for building virtual list items.
+    # It returns a QVariantMap, which maps to a JavaScript object.
+    @Slot(str, int, result='QVariantMap')
+    def build_list_item(self, builder_name, index):
+        """
+        Called by the virtual list JS engine to build the HTML and CSS
+        for a single item.
+        """
+        callback = self.callbacks.get(builder_name)
+        if callback and callable(callback):
+            try:
+                # This call now returns a dict: {"html": "...", "css": "..."}
+                return callback(index)
+            except Exception as e:
+                print(f"Error executing item builder '{builder_name}' for index {index}: {e}")
+                return {"html": "<div>Error</div>", "css": ""}
+        else:
+            print(f"Warning: Item builder '{builder_name}' not found.")
+            return {"html": "<div>Builder not found</div>", "css": ""}
 
     # --- ADD THIS NEW GENERIC SLOT ---
     @Slot(str, 'QVariantMap', result=None)

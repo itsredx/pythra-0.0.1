@@ -39,25 +39,34 @@ from pythra import (
 
 # In main.py
 # Import the new navigation classes
-from pythra.navigation import Navigator, PageRoute
+from pythra.navigation import Navigator, PageRoute, NavigatorState
+
 
 # Let's imagine you have another page for settings
 class SettingsPage(StatelessWidget):
+    def __init__(self, navigator: NavigatorState, key: Optional[Key] = None):
+        super().__init__(key=key)
+        self.navigator = navigator
+
     def build(self) -> Widget:
         return Container(
-            color=Colors.blue,
+            height='80vh',
+            padding=EdgeInsets.all(32),
+            color=Colors.surfaceVariant,
             alignment=Alignment.center(),
-            child=Column(children=[
-                Text("Settings Page", style=TextStyle(color=Colors.white)),
-                ElevatedButton(
-                    child=Text("Go Back"),
-                    # Use Navigator.of() to find the navigator and pop the route
-                    onPressed=lambda: Navigator.of(self).pop()
-                )
-            ])
+            child=Column(
+                children=[
+                    Text("Settings Page", style=TextStyle(color=Colors.grey)),
+                    ElevatedButton(
+                        key=Key("Go_Back"),
+                        child=Text("Go Back"),
+                        # Use Navigator.of() to find the navigator and pop the route
+                        onPressed=lambda: self.navigator.pop(),
+                        onPressedName="nav.pop",
+                    ),
+                ]
+            ),
         )
-
-
 
 
 class MyAnimatedClipGradientBorder(StatefulWidget):
@@ -353,7 +362,10 @@ class MyGestureDetectorState(State):
 
 
 class MyDropDown(StatefulWidget):
-    def __init__(self, key: Key):
+    def __init__(
+        self,
+        key: Key,
+    ):
         super().__init__(key=key)
 
     def createState(self):
@@ -361,7 +373,10 @@ class MyDropDown(StatefulWidget):
 
 
 class DropDownState(State):
-    def initState(self):
+    def __init__(
+        self,
+    ):
+        super().__init__()
         # 1. Create and hold the controller in your state.
         #    Initialize with a value if you have a default selection.
         self.dropdown_controller = DropdownController(selectedValue="usa")
@@ -415,12 +430,6 @@ class DropDownState(State):
                         dropdownMargin=EdgeInsets.only(top=4),
                     ),
                 ),
-                ElevatedButton(
-                    child=Text("Settings"),
-                    onPressed=lambda: Navigator.of(self).push(
-                        PageRoute(builder=lambda: SettingsPage())
-                    )
-                )
             ],
         )
 
@@ -626,9 +635,6 @@ class CheckBoxState(State):
         )
 
 
-# In your main.py or any component's build method
-
-
 class MyComponent(StatefulWidget):
     def __init__(self, key: Key):
         super().__init__(key=key)
@@ -816,31 +822,49 @@ class MyTextFieldState(State):
             ],
         )
 
+
 class mainAppState(State):
     def build(self) -> Widget:
-        # The root of your app is now the Navigator
-        return Navigator(
+        navigator = Navigator(
             key=Key("app_navigator"),
             initialRoute=PageRoute(builder=lambda: PlayerApp(key=Key("player_app"))),
             # You can define named routes for convenience
             routes={
                 "/settings": lambda: SettingsPage(),
-            }
+            },
         )
+        # The root of your app is now the Navigator
+        return Container(
+            key=Key("navigator_root_container"),
+            width="100vw",  # 100% of the viewport width
+            height="100vh",  # 100% of the viewport height
+            child=navigator,
+        )
+
 
 # ... the rest of main.py remains the same
 
+
 class MyForm(StatefulWidget):
-    def __init__(self, key: Key):
+    def __init__(
+        self,
+        key: Key,
+        navigator: NavigatorState,
+    ):
+        self.navigator = navigator
         super().__init__(key=key)
 
     def createState(self):
-        return MyFormState()
+        return MyFormState(self.navigator)
 
 
 class MyFormState(State):
-    def __init__(self):
+    def __init__(
+        self,
+        navigator: NavigatorState,
+    ):
         super().__init__()
+        self.navigator = navigator
         self.my_textfield = MyTextField(key=Key("my_textfields"))
         self.my_slider = MyComponent(key=Key("my_slider"))
         self.my_checkBox = CheckBox(key=Key("my_checkBox_wig"))
@@ -876,140 +900,188 @@ class MyFormState(State):
         self.setState()
 
     def build(self):
-
-        return Navigator(
-            key=Key("app_navigator"),
-            initialRoute=PageRoute(builder=lambda: self.my_dropdown_example),
-            # You can define named routes for convenience
-            routes={
-                "/settings": lambda: SettingsPage(),
-            }
+        # Example of how you would now use the navigator in an event handler:
+        settings_button = ElevatedButton(
+            child=Text("Go to Settings"),
+            onPressed=lambda: self.navigator.push(
+                PageRoute(
+                    builder=lambda nav: SettingsPage(
+                        navigator=nav, key=Key("settings_page")
+                    )
+                )
+            ),
         )
-        # Container(
-        #     key=Key("Build_container"),
-        #     # alignment=Alignment.top_center(),
-        #     padding=EdgeInsets.all(32),
-        #     # color=Colors.hex("#282828"),
-        #     child=Column(
-        #         key=Key("main__column"),
-        #         crossAxisAlignment=CrossAxisAlignment.STRETCH,
-        #         children=[
-        #             Row(
-        #                 mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
-        #                 children=[
-        #                     Text(
-        #                         "Animated Gradient Clip Path Border Test",
-        #                         key=Key("Login_header"),
-        #                         style=TextStyle(
-        #                             fontSize=24,
-        #                             fontWeight="bold",
-        #                             color=Colors.surfaceVariant,
-        #                         ),
-        #                     ),
-        #                     ElevatedButton(
-        #                         onPressed=self._index_1,
-        #                         child=Container(
-        #                             height=15,
-        #                             width=15,
-        #                             color=Colors.green,
-        #                             decoration=BoxDecoration(
-        #                                 borderRadius=BorderRadius.circular(4),
-        #                             ),
-        #                         ),
-        #                         style=ButtonStyle(
-        #                             padding=EdgeInsets.all(0),
-        #                             margin=EdgeInsets.all(0),
-        #                             backgroundColor=Colors.transparent,
-        #                             shape=BorderRadius.all(0),
-        #                             elevation=0,
-        #                         ),
-        #                     ),
-        #                     ElevatedButton(
-        #                         onPressed=self._index_0,
-        #                         child=Container(
-        #                             height=15,
-        #                             width=15,
-        #                             color=Colors.green,
-        #                             decoration=BoxDecoration(
-        #                                 borderRadius=BorderRadius.circular(4),
-        #                             ),
-        #                         ),
-        #                         style=ButtonStyle(
-        #                             padding=EdgeInsets.all(0),
-        #                             margin=EdgeInsets.all(0),
-        #                             backgroundColor=Colors.transparent,
-        #                             shape=BorderRadius.all(0),
-        #                             elevation=0,
-        #                         ),
-        #                     ),
-        #                     ElevatedButton(
-        #                         onPressed=self.framework.close,
-        #                         child=Container(
-        #                             height=15,
-        #                             width=15,
-        #                             color=Colors.red,
-        #                             decoration=BoxDecoration(
-        #                                 borderRadius=BorderRadius.circular(4),
-        #                             ),
-        #                         ),
-        #                         style=ButtonStyle(
-        #                             padding=EdgeInsets.all(0),
-        #                             margin=EdgeInsets.all(0),
-        #                             backgroundColor=Colors.transparent,
-        #                             shape=BorderRadius.all(0),
-        #                             elevation=0,
-        #                         ),
-        #                     ),
-        #                 ],
-        #             ),
-        #             Container(
-        #                 child=Column(
-        #                     children=[
-        #                         SizedBox(height=24),
-        #                         self.my_textfield,
-        #                         SizedBox(height=24),
-        #                         self.my_slider,
-        #                     ]
-        #                 ),
-        #                 visible=self.cont1
-        #             ),
-        #             Container(
-        #                 child=Column(
-        #                     children=[
-        #                         SizedBox(height=24),
-        #                         self.my_checkBox,
-        #                         SizedBox(height=16), # <-- Add some space
-        #                         self.my_switch,  
-        #                     ]
-        #                 ),
-        #                 visible=self.cont2
-        #             ),
-        #             # SizedBox(height=24),
-        #             # self.my_textfield,
-        #             # SizedBox(height=24),
-        #             # self.my_slider,
-        #             # SizedBox(height=24),
-        #             # self.my_checkBox,
-        #             # SizedBox(height=16), # <-- Add some space
-        #             # self.my_switch,     # <-- Add the switch example here
-        #             # SizedBox(height=24),
-        #             # self.my_switch2,     # <-- Add the switch example here
-        #             # SizedBox(height=24),
-        #             # self.my_radio_group,  # <-- Add the radio group here
-        #             # SizedBox(height=24),
-        #             # self.my_dropdown_example,
-        #             # SizedBox(height=24),
-        #             # self.my_gesture_detector,
-        #             # SizedBox(height=24),
-        #             # self.my_animated_gradient_border,
-        #             # SizedBox(height=24),
-        #             # self.my_animated_clip_gradient_border,
-        #         ],
-        #     ),
-        # )
+        return Container(
+            key=Key("Build_container"),
+            # alignment=Alignment.top_center(),
+            height='80vh',
+            padding=EdgeInsets.all(32),
+            color=Colors.surfaceVariant,
+            child=Column(
+                key=Key("main__column"),
+                crossAxisAlignment=CrossAxisAlignment.STRETCH,
+                children=[
+                    # Row(
+                    #     mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
+                    #     children=[
+                    #         Text(
+                    #             "Animated Gradient Clip Path Border Test",
+                    #             key=Key("Login_header"),
+                    #             style=TextStyle(
+                    #                 fontSize=24,
+                    #                 fontWeight="bold",
+                    #                 color=Colors.surfaceVariant,
+                    #             ),
+                    #         ),
+                    #         ElevatedButton(
+                    #             onPressed=self._index_1,
+                    #             child=Container(
+                    #                 height=15,
+                    #                 width=15,
+                    #                 color=Colors.green,
+                    #                 decoration=BoxDecoration(
+                    #                     borderRadius=BorderRadius.circular(4),
+                    #                 ),
+                    #             ),
+                    #             style=ButtonStyle(
+                    #                 padding=EdgeInsets.all(0),
+                    #                 margin=EdgeInsets.all(0),
+                    #                 backgroundColor=Colors.transparent,
+                    #                 shape=BorderRadius.all(0),
+                    #                 elevation=0,
+                    #             ),
+                    #         ),
+                    #         ElevatedButton(
+                    #             onPressed=self._index_0,
+                    #             child=Container(
+                    #                 height=15,
+                    #                 width=15,
+                    #                 color=Colors.green,
+                    #                 decoration=BoxDecoration(
+                    #                     borderRadius=BorderRadius.circular(4),
+                    #                 ),
+                    #             ),
+                    #             style=ButtonStyle(
+                    #                 padding=EdgeInsets.all(0),
+                    #                 margin=EdgeInsets.all(0),
+                    #                 backgroundColor=Colors.transparent,
+                    #                 shape=BorderRadius.all(0),
+                    #                 elevation=0,
+                    #             ),
+                    #         ),
+                    #         ElevatedButton(
+                    #             onPressed=self.framework.close,
+                    #             child=Container(
+                    #                 height=15,
+                    #                 width=15,
+                    #                 color=Colors.red,
+                    #                 decoration=BoxDecoration(
+                    #                     borderRadius=BorderRadius.circular(4),
+                    #                 ),
+                    #             ),
+                    #             style=ButtonStyle(
+                    #                 padding=EdgeInsets.all(0),
+                    #                 margin=EdgeInsets.all(0),
+                    #                 backgroundColor=Colors.transparent,
+                    #                 shape=BorderRadius.all(0),
+                    #                 elevation=0,
+                    #             ),
+                    #         ),
+                    #     ],
+                    # ),
+                    # Container(
+                    #     child=Column(
+                    #         children=[
+                    #             SizedBox(height=24),
+                    #             self.my_textfield,
+                    #             SizedBox(height=24),
+                    #             self.my_slider,
+                    #         ]
+                    #     ),
+                    #     visible=self.cont1,
+                    # ),
+                    # Container(
+                    #     child=Column(
+                    #         children=[
+                    #             SizedBox(height=24),
+                    #             self.my_checkBox,
+                    #             SizedBox(height=16),  # <-- Add some space
+                    #             self.my_switch,
+                    #         ]
+                    #     ),
+                    #     visible=self.cont2,
+                    # ),
+                    SizedBox(height=24),
+                    settings_button,
+                    # SizedBox(height=24),
+                    # self.my_textfield,
+                    # SizedBox(height=24),
+                    # self.my_slider,
+                    SizedBox(height=24),
+                    self.my_checkBox,
+                    SizedBox(height=16), # <-- Add some space
+                    self.my_switch,     # <-- Add the switch example here
+                    # SizedBox(height=24),
+                    # self.my_switch2,     # <-- Add the switch example here
+                    # SizedBox(height=24),
+                    # self.my_radio_group,  # <-- Add the radio group here
+                    # SizedBox(height=24),
+                    # self.my_dropdown_example,
+                    # SizedBox(height=24),
+                    # self.my_gesture_detector,
+                    # SizedBox(height=24),
+                    # self.my_animated_gradient_border,
+                    # SizedBox(height=24),
+                    # self.my_animated_clip_gradient_border,
+                ],
+            ),
+        )
+
+
+class mainApp(StatefulWidget):
+    def __init__(self, key: Key):
+        super().__init__(key=key)
+
+    def createState(self):
+        return mainAppState()
+
+
+class mainAppState(State):
+    def build(self) -> Widget:
+        rotating_gradient_theme = GradientTheme(
+            gradientColors=["red", "yellow", "green", "blue", "red"],
+            rotationSpeed="4s",  # <-- Set a rotation speed to enable rotation
+        )
+        return Container(
+            height="100vh",
+            padding=EdgeInsets.all(20),
+            gradient=rotating_gradient_theme,
+            child=Column(
+                mainAxisAlignment=MainAxisAlignment.SPACE_EVENLY,
+                crossAxisAlignment=CrossAxisAlignment.STRETCH,
+                children=[
+                    Text("Navitation Test"),
+                    SizedBox(height=12),
+                    Navigator(
+                        key=Key("app_navigator"),
+                        # The builder lambda now receives the navigator state
+                        initialRoute=PageRoute(
+                            builder=lambda navigator: MyForm(
+                                navigator=navigator, key=Key("my_app_root")
+                            )
+                        ),
+                        routes={
+                            "/settings": lambda navigator: SettingsPage(
+                                navigator=navigator
+                            ),
+                        },
+                    ),
+                ],
+            ),
+        )
 
 
 if __name__ == "__main__":
     app = Framework.instance()
-    app.set_root(MyForm(key=Key("my_app_root")))
+    app.set_root(mainApp(key=Key("main_app_root")))
     app.run(title="Animated Gradient Clip Path Border Test")

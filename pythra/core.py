@@ -25,7 +25,7 @@ from .window import webwidget
 
 # New/Refactored Imports
 from .base import Widget, Key
-from .state import State, StatefulWidget
+from .state import State, StatefulWidget, StatelessWidget
 from .reconciler import Reconciler, Patch, ReconciliationResult
 from .widgets import *  # Import all widgets for class lookups if needed
 
@@ -364,7 +364,8 @@ class Framework:
             "web/js/slider.js",
             "web/js/dropdown.js",
             "web/js/gesture_detector.js",
-            "web/js/gradient_border.js",  # <-- ADD THIS LINE
+            "web/js/gradient_border.js", 
+            "web/js/virtual_list.js",  # <-- ADD THIS LINE
         ]
         all_js_code = []
         for file_path in js_files:
@@ -516,6 +517,19 @@ class Framework:
         """
         if widget is None:
             return None
+
+        # --- THIS IS THE FIX ---
+        # Handle StatelessWidget and StatefulWidget with the same pattern.
+        if isinstance(widget, StatelessWidget):
+            # 1. Build the child widget from the StatelessWidget.
+            built_child = widget.build()
+            # 2. Recursively process the built child to build its own subtree.
+            processed_child = self._build_widget_tree(built_child)
+            # 3. CRITICAL: The StatelessWidget's children list becomes the processed child.
+            #    This keeps the StatelessWidget in the tree as the parent.
+            widget._children = [processed_child] if processed_child else []
+            return widget # Return the original StatelessWidget
+        # --- END OF FIX ---
 
         # If it's a StatefulWidget, we need to build its child and replace it in the tree.
         if isinstance(widget, StatefulWidget):
@@ -852,10 +866,25 @@ class Framework:
                         var el_{target_id} = document.getElementById('{target_id}');
                         if (el_{target_id} && !el_{target_id}.simplebar) {{
                             new SimpleBar(el_{target_id}, {options_json} );
+                            console.log(el_{target_id}.simplebar);
                         }}
                         }}, 0);
                     """
                     # print("new SimpleBar: ", options_json)
+
+                # --- ADD THIS BLOCK ---
+                if props.get("init_virtual_list"):
+                    options = props.get("virtual_list_options", {})
+                    options_json = json.dumps(options)
+                    # We need to wait for SimpleBar to initialize first, so we defer this.
+                    js_commands.append(f"""
+                    setTimeout(() => {{
+                        if (typeof PythraVirtualList !== 'undefined' && document.getElementById('{html_id}').simplebar) {{
+                            window._pythra_instances['{html_id}_vlist'] = new PythraVirtualList('{html_id}', {options_json});
+                        }}
+                    }}, 0);
+                    """)
+                # --- END OF BLOCK ---
 
                 if 'responsive_clip_path' in props:
                     # print("INITIALIZERS: ", js_initializers)
@@ -1626,6 +1655,129 @@ class Framework:
                                 }}
                             }}
                         }}
+                        /**
+                        * PythraVirtualList: A client-side engine for virtual scrolling within a SimpleBar instance.
+                        */
+                        class PythraVirtualList {{
+                            constructor(elementId, options) {{
+                                this.container = document.getElementById(elementId);
+                                if (!this.container || !this.container.simplebar) {{
+                                    console.error(`VirtualList Error: SimpleBar instance for ID #${{elementId}} not found.`);
+                                    return;
+                                }}
+
+                                console.log(`✅ PythraVirtualList engine is initializing for #${{elementId}}`);
+                                
+                                this.options = options;
+                                this.simplebar = this.container.simplebar;
+                                this.scrollEl = this.simplebar.getScrollElement();
+                                this.contentEl = this.simplebar.getContentElement();
+                                
+                                this.itemCache = {{}}; // Cache for already built HTML items
+                                this.visibleItemElements = []; // Pool of recycled DOM elements
+
+                                // --- Setup DOM ---
+                                // 1. Create the giant, invisible sizer div to produce the correct scrollbar height
+                                this.sizer = document.createElement('div');
+                                this.sizer.style.position = 'absolute';
+                                this.sizer.style.top = '0';
+                                this.sizer.style.left = '0';
+                                this.sizer.style.width = '1px';
+                                this.sizer.style.height = `${{this.options.itemCount * this.options.itemExtent}}px`;
+                                this.contentEl.appendChild(this.sizer);
+                                
+                                // Ensure the content element can host absolutely positioned items
+                                this.contentEl.style.position = 'relative';
+
+                                this.render = this.render.bind(this);
+                                this.scrollEl.addEventListener('scroll', this.render);
+                                
+                                // Initial render
+                                this.render();
+                            }}
+
+                            async render() {{
+                                const scrollTop = this.scrollEl.scrollTop;
+                                const viewportHeight = this.scrollEl.clientHeight;
+
+                                // Calculate the range of items that should be visible
+                                const startIndex = Math.max(0, Math.floor(scrollTop / this.options.itemExtent));
+                                const endIndex = Math.min(
+                                    this.options.itemCount - 1,
+                                    Math.ceil((scrollTop + viewportHeight) / this.options.itemExtent) - 1
+                                );
+                                
+                                const itemsToRender = [];
+                                for (let i = startIndex; i <= endIndex; i++) {{
+                                    itemsToRender.push({{
+                                        index: i,
+                                        top: i * this.options.itemExtent
+                                    }});
+                                }}
+                                
+                                // --- Recycle and Render ---
+                                for (let i = 0; i < itemsToRender.length; i++) {{
+                                    const item = itemsToRender[i];
+                                    let el = this.visibleItemElements[i];
+
+                                    if (!el) {{
+                                        // If our pool isn't big enough yet, create a new element
+                                        el = document.createElement('div');
+                                        el.style.position = 'absolute';
+                                        el.style.width = '100%';
+                                        el.style.height = `${{this.options.itemExtent}}px`;
+                                        this.contentEl.appendChild(el);
+                                        this.visibleItemElements.push(el);
+                                    }}
+
+                                    // Position the recycled element
+                                    el.style.transform = `translateY(${{item.top}}px)`;
+                                    
+                                    // Check if we need to fetch and render the content for this item
+                                    if (el.dataset.index !== String(item.index)) {{
+                                        el.dataset.index = item.index;
+                                        
+                                        if (this.itemCache[item.index]) {{
+                                            // If content is cached, use it
+                                            el.innerHTML = this.itemCache[item.index];
+                                        }} else {{
+                                            // Otherwise, request it from Python
+                                            el.innerHTML = '<div>Loading...</div>'; // Placeholder
+                                            if (window.pywebview && this.options.itemBuilderName) {{
+                                                // --- THIS IS THE CORRECT ASYNC PATTERN ---
+                                                // Calling a @Slot method from JS returns a Promise.
+                                                window.pywebview.build_list_item(this.options.itemBuilderName, item.index)
+                                                    .then(html => {{
+                                                        // This code runs when the Python function returns a value
+                                                        this.itemCache[item.index] = html;
+                                                        // Only update if the element is still supposed to show this index
+                                                        if (el.dataset.index === String(item.index)) {{
+                                                            el.innerHTML = html;
+                                                        }}
+                                                    }})
+                                                    .catch(e => {{
+                                                        // This code runs if the Python function throws an error
+                                                        console.error(`Error building virtual item ${{item.index}}:`, e);
+                                                        el.innerHTML = '<div>Error</div>';
+                                                    }});
+                                                // --- END OF CORRECT PATTERN ---
+                                            }}
+                                        }}
+                                    }}
+                                }}
+                                
+                                // Hide any unused elements in the pool
+                                for (let i = itemsToRender.length; i < this.visibleItemElements.length; i++) {{
+                                    this.visibleItemElements[i].style.transform = 'translateY(-9999px)';
+                                }}
+                            }}
+
+                            destroy() {{
+                                if (this.scrollEl) {{
+                                    this.scrollEl.removeEventListener('scroll', this.render);
+                                }}
+                            }}
+                        }}
                         """)
                 # js_commands.append(f"console.log('Applying patch {action} {target_id}:', {loggable_data_str});")
                 # --- END OF FIX ---
@@ -1799,6 +1951,69 @@ class Framework:
 
         js_commands = []
         imports = set()
+
+        for node_data in result.new_rendered_map.values():
+            props = node_data.get("props", {})
+            html_id = node_data.get("html_id")
+            # print(">>>init_slider<<<", html_id)
+
+            # --- ADD THIS BLOCK ---
+            if props.get("init_gradient_clip_border"):
+                imports.add("import { PythraGradientClipPath } from './js/gradient_border.js';")
+                imports.add("import { generateRoundedPath } from './js/pathGenerator.js';")
+                options = props.get("gradient_clip_options", {})
+                options_json = json.dumps(options)
+                js_commands.append(f"window._pythra_instances['{html_id}'] = new PythraGradientClipPath('{html_id}', {options_json});")
+            # --- END OF BLOCK ---
+
+            # --- ADD THIS BLOCK ---
+            # --- SIMPLIFIED VLIST LOGIC ---
+            if props.get("init_virtual_list"):
+                imports.add("import { PythraVirtualList } from './js/virtual_list.js';")
+                options = props.get("virtual_list_options", {})
+                options_json = json.dumps(options)
+                # No more checks or timeouts. We just instantiate our engine.
+                js_commands.append(f"window._pythra_instances['{html_id}_vlist'] = new PythraVirtualList('{html_id}', {options_json});")
+            # --- END OF CHANGE ---
+            # --- END OF BLOCK ---
+
+            # --- ADD THIS BLOCK ---
+            if props.get("init_gesture_detector"):
+                imports.add("import { PythraGestureDetector } from './js/gesture_detector.js';")
+                options = props.get("gesture_options", {})
+                options_json = json.dumps(options)
+                print("options: ", options_json)
+                js_commands.append(f"window._pythra_instances['{html_id}'] = new PythraGestureDetector('{html_id}', {options_json});")
+            # --- END OF BLOCK ---
+
+            # --- ADD THIS BLOCK ---
+            if props.get("init_dropdown"):
+                imports.add("import { PythraDropdown } from './js/dropdown.js';")
+                options = props.get("dropdown_options", {})
+                options_json = json.dumps(options)
+                js_commands.append(f"window._pythra_instances['{html_id}'] = new PythraDropdown('{html_id}', {options_json});")
+            # --- END OF BLOCK ---
+
+            # Check for our new Slider's flag
+            if props.get("init_slider"):
+                # print(">>>init_slider<<<", html_id)
+                imports.add("import { PythraSlider } from './js/slider.js';")
+                options = props.get("slider_options", {})
+                options_json = json.dumps(options)
+                
+                # Generate the JS command to instantiate the slider engine
+                js_commands.append(f"""
+                    if (typeof PythraSlider !== 'undefined') {{
+                        // Make sure we don't re-initialize if it somehow already exists
+                        if (!window._pythra_instances['{html_id}']) {{
+                            console.log('Initializing PythraSlider for #{html_id}');
+                            window._pythra_instances['{html_id}'] = new PythraSlider('{html_id}', {options_json});
+                        }}
+                    }} else {{
+                        console.error('PythraSlider class not found. Make sure slider.js is included.');
+                    }}
+                """)
+        # --- END OF NEW LOGIC ---
         # Your initializer logic for ClipPath etc. goes here if needed
         for init in result.js_initializers:
             # --- ADD THIS BLOCK FOR SIMPLEBAR ---
@@ -1812,6 +2027,7 @@ class Framework:
                     if (el_{target_id} && !el_{target_id}.simplebar) {{ // Check if not already initialized
                         new SimpleBar(el_{target_id}, {options_json} );
                         console.log('SimpleBar initialized for #{target_id}');
+                        //console.log(!el_{target_id}.simplebar);
                     }};
                     
                 """
@@ -1913,61 +2129,13 @@ class Framework:
         #    Iterate through the entire rendered map to find any widget that
         #    has declared it needs JS initialization via a flag in its render_props.
         # print("mapp: ",result.new_rendered_map.values())
-        for node_data in result.new_rendered_map.values():
-            props = node_data.get("props", {})
-            html_id = node_data.get("html_id")
-            # print(">>>init_slider<<<", html_id)
-
-            # --- ADD THIS BLOCK ---
-            if props.get("init_gradient_clip_border"):
-                imports.add("import { PythraGradientClipPath } from './js/gradient_border.js';")
-                imports.add("import { generateRoundedPath } from './js/pathGenerator.js';")
-                options = props.get("gradient_clip_options", {})
-                options_json = json.dumps(options)
-                js_commands.append(f"window._pythra_instances['{html_id}'] = new PythraGradientClipPath('{html_id}', {options_json});")
-            # --- END OF BLOCK ---
-
-            # --- ADD THIS BLOCK ---
-            if props.get("init_gesture_detector"):
-                imports.add("import { PythraGestureDetector } from './js/gesture_detector.js';")
-                options = props.get("gesture_options", {})
-                options_json = json.dumps(options)
-                js_commands.append(f"window._pythra_instances['{html_id}'] = new PythraGestureDetector('{html_id}', {options_json});")
-            # --- END OF BLOCK ---
-
-            # --- ADD THIS BLOCK ---
-            if props.get("init_dropdown"):
-                imports.add("import { PythraDropdown } from './js/dropdown.js';")
-                options = props.get("dropdown_options", {})
-                options_json = json.dumps(options)
-                js_commands.append(f"window._pythra_instances['{html_id}'] = new PythraDropdown('{html_id}', {options_json});")
-            # --- END OF BLOCK ---
-
-            # Check for our new Slider's flag
-            if props.get("init_slider"):
-                # print(">>>init_slider<<<", html_id)
-                imports.add("import { PythraSlider } from './js/slider.js';")
-                options = props.get("slider_options", {})
-                options_json = json.dumps(options)
-                
-                # Generate the JS command to instantiate the slider engine
-                js_commands.append(f"""
-                    if (typeof PythraSlider !== 'undefined') {{
-                        // Make sure we don't re-initialize if it somehow already exists
-                        if (!window._pythra_instances['{html_id}']) {{
-                            console.log('Initializing PythraSlider for #{html_id}');
-                            window._pythra_instances['{html_id}'] = new PythraSlider('{html_id}', {options_json});
-                        }}
-                    }} else {{
-                        console.error('PythraSlider class not found. Make sure slider.js is included.');
-                    }}
-                """)
-        # --- END OF NEW LOGIC ---
+        
 
         # 1. Get the combined source code of all utility JS files.
         js_utilities = self._get_js_utility_functions()
         # Wrap all commands in a DOMContentLoaded listener.
         # We now import BOTH of your utility modules.
+        # print("utilities: ", js_utilities)
         full_script = f"""
         <script type="module">
             // Import JS modules if needed (e.g., for ClipPath)
@@ -1976,6 +2144,7 @@ class Framework:
             // import {{ ResponsiveClipPath }} from './js/clipPathUtils.js';
             import {{ PythraSlider }} from './js/slider.js';
             import {{ PythraDropdown }} from './js/dropdown.js';
+            // import {{ PythraVirtuaList }} from './js/virtual_list.js';
             
 
             document.addEventListener('DOMContentLoaded', () => {{
@@ -2058,7 +2227,6 @@ class Framework:
     <div id="overlay-container"></div>
 
     <!-- ADD SIMPLEBAR JS -->
-    <script src="./js/virtualList.js"></script>
     <script src="./js/scroll-bar/simplebar.min.js"></script>
     <!-- ADD THE NEW SLIDER JS ENGINE -->
     {initial_js}

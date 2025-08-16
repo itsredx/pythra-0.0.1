@@ -1503,7 +1503,9 @@ class Scrollbar(Widget):
                  theme: Optional[ScrollbarTheme] = None,
                  width: Optional[Any] = '100%',
                  height: Optional[Any] = '100%',
-                 autoHide: bool = True):
+                 autoHide: bool = True,
+                 virtualization_options: Optional[Dict] = None 
+                 ):
         """
         Args:
             child (Widget): The content that will be scrollable.
@@ -1519,6 +1521,7 @@ class Scrollbar(Widget):
         self.width = width
         self.height = height
         self.autoHide = autoHide
+        self.virtualization_options = virtualization_options # <-- STORE IT
 
         # The style key is based *only* on the theme, not the dimensions.
         # This allows multiple scrollbars of different sizes to share the same visual style.
@@ -1534,23 +1537,26 @@ class Scrollbar(Widget):
         """
         Provides all the necessary information for the reconciler and patch generator.
         """
-        return {
+        props = {
             'css_class': self.css_class,
-            # This 'attributes' dict is used to add the 'data-simplebar' attribute
-            # which is essential for SimpleBar's automatic initialization on page load.
-            'attributes': {
-                'data-simplebar': 'true',
-            },
-            # These options are passed to the 'new SimpleBar()' constructor in JavaScript.
-            'simplebar_options': {
-                'autoHide': self.autoHide,
-            },
-            # A flag to signal the patch script that this element needs JS initialization
-            # when it is dynamically inserted.
-            'init_simplebar': True,
-            # Pass the instance itself so the patcher can access _style_override.
             'widget_instance': self,
         }
+        
+        # --- THIS IS THE CHANGE ---
+        # Only initialize SimpleBar OR VirtualList, not both.
+        # VirtualList will now handle the SimpleBar initialization internally.
+        if self.virtualization_options:
+            props['init_virtual_list'] = True
+            props['virtual_list_options'] = self.virtualization_options
+            # Pass simplebar options inside the vlist options
+            props['virtual_list_options']['simplebarOptions'] = {'autoHide': self.autoHide}
+        else:
+            # For a non-virtualized scrollbar, do the normal initialization
+            props['init_simplebar'] = True
+            props['simplebar_options'] = {'autoHide': self.autoHide}
+            props['attributes'] = {'data-simplebar': 'true'}
+            
+        return props
     
     @property
     def _style_override(self) -> Dict:
@@ -2216,98 +2222,117 @@ class Icon(Widget):
 # knows that an Icon should be a <span>.
 # A good way is to call the widget's own static method if it exists.
 
-# pythra/widgets.py
-class VirtualListView(Widget):
+# In pythra/widgets.py
+
+class VirtualListView(StatelessWidget):
     """
-    A *virtual* scrollable list – renders only the rows that are visible.
-    Compatible with reconciliation and JS viewport.
+    A high-performance scrollable list that renders only the visible items.
+    Powered by SimpleBar for consistent scrolling and styling.
     """
-    shared_styles: Dict[Tuple, str] = {}
+    def __init__(self,
+                 key: Key,
+                 itemCount: int,
+                 itemBuilder: Callable[[int], Widget],
+                 itemExtent: float, # The fixed height of each item in pixels. MANDATORY for virtualization.
+                 initialItemCount: int = 20, # <-- NEW: Number of items to pre-render
+                 theme: Optional[ScrollbarTheme] = None,
+                 width: Optional[Any] = '100%',
+                 height: Optional[Any] = '100%'):
 
-    def __init__(
-        self,
-        item_count: int,
-        item_builder: Callable[[int], Widget],
-        key: Optional[Key] = None,
-        estimated_height: int = 50,
-        padding: Optional[EdgeInsets] = None,
-        scroll_direction: str = Axis.VERTICAL,
-        reverse: bool = False,
-        physics: str = ScrollPhysics.ALWAYS_SCROLLABLE,
-    ):
-        super().__init__(key=key, children=[])  # children are virtual
-        self.item_count = item_count
-        self.item_builder = item_builder
-        self.estimated_height = estimated_height
-        self.padding = padding or EdgeInsets.all(0)
-        self.scroll_direction = scroll_direction
-        self.reverse = reverse
-        self.physics = physics
+        super().__init__(key=key)
+        self.itemCount = itemCount
+        self.itemBuilder = itemBuilder
+        self.itemExtent = itemExtent
+        self.initialItemCount = min(initialItemCount, itemCount) # Can't pre-render more than exist
+        self.theme = theme
+        self.width = width
+        self.height = height
+        self.css_class = "virtual-list-view"
 
-        print("Item Count: ", self.item_count)
+        # A unique name for this list's specific item builder callback
+        self.item_builder_name = f"vlist_item_builder_{self.key.value}"
+        
+        # Register the builder function so the JS can call it via the API
+        Api().register_callback(self.item_builder_name, self.build_item_for_js)
 
-        # CSS key
-        self.style_key = (
-            make_hashable(self.padding),
-            scroll_direction,
-            reverse,
-            physics,
-            estimated_height,
-        )
-        if self.style_key not in VirtualListView.shared_styles:
-            self.css_class = f"virtual-list-{len(VirtualListView.shared_styles)}"
-            VirtualListView.shared_styles[self.style_key] = self.css_class
-        else:
-            self.css_class = VirtualListView.shared_styles[self.style_key]
-
-    def render_props(self):
-        return {
-            "css_class": self.css_class,
-            "item_count": self.item_count,
-            "estimated_height": self.estimated_height,
-            "scroll_direction": self.scroll_direction,
-            "padding": self._get_render_safe_prop(self.padding),
-            "reverse": self.reverse,
-            "physics": self.physics,
-        }
-
-    def get_required_css_classes(self):
-        return {self.css_class}
-
-    @staticmethod
-    def generate_css_rule(style_key, css_class):
-        padding, direction, reverse, physics, _ = style_key
-        flex_dir = "column" if direction == Axis.VERTICAL else "row"
-        if reverse:
-            flex_dir += "-reverse"
-        overflow = "hidden" if physics == ScrollPhysics.NEVER_SCROLLABLE else "auto"
-        pad = EdgeInsets(*padding).to_css_value() if padding else "0"
-        return f"""
-        .{css_class} {{
-            display: flex;
-            flex-direction: {flex_dir};
-            overflow: {overflow};
-            padding: {pad};
-            box-sizing: border-box;
-            position: relative;
-        }}
-        .{css_class} > .viewport {{
-            flex: 1 1 auto;
-            overflow-y: auto;
-            overflow-x: hidden;
-            position: relative;
-        }}
-        .{css_class} .phantom {{
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 1px;
-            pointer-events: none;
-            visibility: hidden;
-        }}
+    def build_item_for_js(self, index: int) -> str:
         """
-
+        This method is called by the API when the JS engine requests an item.
+        It builds the widget and triggers a special, targeted reconciliation
+        that returns only the HTML string for that one item.
+        """
+        print('build_item_for_js invoked: ', index)
+        # Ensure the framework reference is available
+        if not self.framework:
+            return "<div>Error: Framework not available</div>"
             
+        # 1. Build the single widget for the requested index
+        widget_to_build = self.itemBuilder(index)
+        
+        # 2. "Build" the widget tree for just this item
+        built_tree = self.framework._build_widget_tree(widget_to_build)
+        
+        # 3. Perform a special reconciliation to get its HTML
+        # We reconcile it into a "limbo" parent, as we only want the HTML string.
+        result = self.framework.reconciler.reconcile(
+            previous_map={},
+            new_widget_root=built_tree,
+            parent_html_id='__limbo__' # Temporary, non-existent parent
+        )
+        
+        # --- THIS IS THE FIX ---
+        # 1. Generate HTML and CSS as before.
+        root_key = built_tree.get_unique_id() if built_tree else None
+        html_string = self.framework._generate_html_from_map(root_key, result.new_rendered_map)
+        css_string = self.framework._generate_css_from_details(result.active_css_details)
+        
+        # 2. Extract the callbacks that were registered during this mini-reconciliation.
+        callbacks = result.registered_callbacks
+        
+        # 3. Register them with the main API instance. This is the crucial step.
+        for name, func in callbacks.items():
+            self.framework.api.register_callback(name, func)
+
+        # 4. Return the HTML, CSS, and just the *names* of the callbacks.
+        return {
+            "html": html_string,
+            "css": css_string,
+            "callback_names": list(callbacks.keys()) # JS only needs to know the names
+        }
+        # --- END OF FIX ---
+
+
+
+    def build(self) -> Widget:
+        """
+        Builds a Scrollbar widget configured for virtualization.
+        """
+        # --- NEW: Pre-render the initial batch of items ---
+        initial_items_html = {}
+        for i in range(self.initialItemCount):
+            # We call the same on-demand builder that the JS would call,
+            # but we do it here, synchronously, during the initial build.
+            html_string = self.build_item_for_js(i)
+            initial_items_html[i] = html_string
+        # --- END NEW ---
+        # The VirtualListView itself doesn't render. It returns a specially
+        # configured Scrollbar widget that will host the virtualized content.
+        return Scrollbar(
+            key=self.key,
+            width=self.width,
+            height=self.height,
+            theme=self.theme,
+            # The child is an empty container that the JS engine will manage
+            child=Container(key=Key(f"{self.key.value}_content")),
+            # These new options tell the framework to initialize our JS engine
+            virtualization_options={
+                "itemCount": self.itemCount,
+                "itemExtent": self.itemExtent,
+                "itemBuilderName": self.item_builder_name,
+                "initialItems": initial_items_html # <-- Pass the pre-rendered HTML
+            }
+        )
+         
 class ListView(Widget):
     """
     A scrollable list of widgets arranged linearly.
@@ -2852,47 +2877,50 @@ class Positioned(Widget):
 
 
 # --- Expanded Refactored ---
+# In pythra/widgets.py
+
 class Expanded(Widget):
     """
-    Expands a child of a Row or Column to fill the available space along the main axis.
-    Applies flexbox grow/shrink styles. Not a shared style component.
+    A widget that expands a child of a Column or Row to fill the available
+    space along the main axis.
     """
     def __init__(self,
-                 child: Widget, # Requires exactly one child
+                 child: Widget,
                  key: Optional[Key] = None,
-                 flex: int = 1): # The flex-grow factor
+                 flex: int = 1):
 
         if not child:
              raise ValueError("Expanded widget requires a child.")
         super().__init__(key=key, children=[child])
-
-        self.child = child # Keep direct reference
-        self.flex = max(0, flex) # Ensure flex factor is non-negative
+        
+        self.flex = max(0, flex)
 
     def render_props(self) -> Dict[str, Any]:
         """
-        Return flex property. Used by reconciler to apply inline styles
-        or specific classes to the child's wrapper.
+        Passes flex properties to the reconciler. These will be applied
+        as inline styles to the wrapper div around the child.
         """
-        props = {
-            'position_type': 'flex', # Indicate the required styling type
-            'flex_grow': self.flex,
-            'flex_shrink': 1, # Default shrink factor
-            'flex_basis': '0%', # Allow grow/shrink from 0 basis
-            # Might also need width/height 100% depending on cross-axis stretch
-            'width': 'auto', # Let flexbox control main axis size
-            'height': 'auto', # Let flexbox control main axis size
-            # No css_class needed
+        # We will apply these styles to the direct child's container.
+        # This requires the reconciler to be aware of this special case.
+        # A cleaner way is to let the parent (Column/Row) handle it.
+        # Let's try a different approach. The widget that is returned
+        # should have these props.
+        
+        # The Expanded widget itself will become the flex item.
+        # Its child will be a regular child.
+        return {
+            'style': {
+                'flexGrow': self.flex,
+                'flexShrink': 1, # Allow shrinking by default
+                'flexBasis': '0%', # Start from a basis of 0 to allow full growth
+                # The following are crucial for flex children to have a "world" to expand into
+                'minWidth': 0,
+                'minHeight': 0,
+                # Ensure the expanded container can itself be a flex container for its child
+                'display': 'flex',
+                'flexDirection': 'column' # Assume child should stack vertically
+            }
         }
-        return props
-
-    def get_required_css_classes(self) -> Set[str]:
-        """Expanded doesn't use shared CSS classes."""
-        return set()
-
-    # No generate_css_rule needed
-
-    # Removed instance methods: to_html()
 
 # --- Spacer Refactored ---
 class Spacer(Widget):

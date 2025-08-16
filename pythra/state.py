@@ -27,7 +27,7 @@ class StatefulWidget(Widget):
     def __init__(self, key: Optional[Key] = None):
         super().__init__(key=key) # Pass key to base Widget
         # Framework reference for the *instance*
-        self.framework: Optional['Framework'] = self._framework_ref() if self._framework_ref else None
+        # self.framework: Optional['Framework'] = self._framework_ref() if self._framework_ref else None
         self._state = self.createState() # Create the associated State object
         self._state._set_widget(self) # Link State back to this widget instance
         self._state.initState() # <-- CALL THE NEW LIFECYCLE HOOK
