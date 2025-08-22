@@ -12,6 +12,7 @@ from pythra import (
     Widget,
     Container,
     ElevatedButton,
+    VirtualListController,
     Column,
     Row,
     Text,
@@ -70,6 +71,8 @@ class MyListItemState(State):
         self.on_checked = widget.on_checked
         self.is_checked = self.index in checked_items
 
+        
+
     def build(self) -> Widget:
         # A standard ListTile containing a Checkbox and Text.
         return Container(
@@ -120,6 +123,38 @@ class VirtualListTestState(State):
     def __init__(self):
         """Initialize the application state."""
         self.item_count = 5000
+        checked_items.add(0)
+        # This will be initialized in initState
+        self.itemBuilder = None
+        
+
+    def initState(self):
+        """Initialize the application state and create stable callbacks."""
+        checked_items.add(0)
+        # --- THIS IS THE FIX ---
+        # Define the itemBuilder here, once. It will now be a stable
+        # instance variable on the state object.
+        self.itemBuilder = self._build_one_item
+        self.data_version = 0 # <-- NEW: Initialize data version counter
+        # --- END OF FIX ---
+
+        # --- THIS IS THE FIX ---
+        # 1. Create and own the controller for the virtual list.
+        self.list_controller = VirtualListController()
+        # --- END OF FIX ---
+
+    def _build_one_item(self, index: int) -> Widget:
+        """
+        This is the actual builder function. It's now a stable method
+        on the state class.
+        """
+        # print("Building list item: ", index) # Keep for debugging if you like
+        return MyListItem(
+            key=Key(f"list_item_{index}"),
+            index=index,
+            on_checked=lambda new_value: self.handle_item_checked(index, new_value),
+        )
+
 
     def handle_item_checked(self, index: int, new_value: bool):
         """
@@ -132,22 +167,26 @@ class VirtualListTestState(State):
         elif index in checked_items:
             checked_items.remove(index)
 
+        
+        # 2. After changing the data, explicitly command the list to refresh.
+        self.list_controller.refresh()
+
         # We must call setState to trigger a rebuild, which will pass the
         # new `checked_items` data down to the VirtualListView.
         self.setState()
 
-    def itemBuilder(self, index: int) -> Widget:
-        print("Building list item: ", index)
-        """
-        This builder function is called on demand by the VirtualListView engine
-        to construct the widget for a specific index.
-        """
-        return MyListItem(
-            key=Key(f"list_item_{index}"),
-            index=index,
-            # Pass a lambda that captures the index for the callback.
-            on_checked=lambda new_value: self.handle_item_checked(index, new_value),
-        )
+    # def itemBuilder(self, index: int) -> Widget:
+    #     # print("Building list item: ", index)
+    #     """
+    #     This builder function is called on demand by the VirtualListView engine
+    #     to construct the widget for a specific index.
+    #     """
+    #     return MyListItem(
+    #         key=Key(f"list_item_{index}"),
+    #         index=index,
+    #         # Pass a lambda that captures the index for the callback.
+    #         on_checked=lambda new_value: self.handle_item_checked(index, new_value),
+    #     )
 
     def build(self) -> Widget:
         """Builds the main application UI."""
@@ -160,7 +199,7 @@ class VirtualListTestState(State):
                 crossAxisAlignment=CrossAxisAlignment.STRETCH,
                 children=[
                     Text(
-                        "Virtual List Test (10,000 Items)",
+                        "Virtual List Test (50 Items)",
                         style=TextStyle(fontSize=24, fontWeight="bold"),
                     ),
                     Text(
@@ -176,8 +215,9 @@ class VirtualListTestState(State):
                         ),
                         child=VirtualListView(
                             key=Key("my_virtual_list"),
+                            controller=self.list_controller, # <-- 4. Pass the controlle
                             itemCount=self.item_count,
-                            itemBuilder=self.itemBuilder,
+                            itemBuilder=self.itemBuilder,                            
                             itemExtent=50.0,  # Each ListTile will be 50px high
                             # Optionally, provide a custom theme for the scrollbar
                             theme=ScrollbarTheme(

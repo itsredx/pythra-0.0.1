@@ -114,3 +114,33 @@ class DropdownController:
     def __init__(self, selectedValue: Any = None):
         self.selectedValue = selectedValue
         self.isOpen = False # Internal state for toggling, managed by JS engine
+
+
+
+# In pythra/controllers.py
+
+class VirtualListController:
+    """
+    A controller for a VirtualListView.
+
+    This allows a parent widget to programmatically command the list to
+    refresh its content when the underlying data source changes.
+    """
+    def __init__(self):
+        self._state: Optional['_VirtualListViewState'] = None
+
+    def _attach(self, state: '_VirtualListViewState'):
+        """Internal method for the state to link itself to the controller."""
+        self._state = state
+
+    def _detach(self):
+        """Internal method to unlink."""
+        self._state = None
+
+    def refresh(self):
+        """Commands the virtual list to clear its cache and re-render visible items."""
+        
+        if self._state:
+            print("Refreshing")
+            self._state.refresh_js()
+            print("Refreshed")

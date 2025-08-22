@@ -19,7 +19,7 @@ from .base import Widget
 from .base import Key # Prefer placing Key in base.py as it's fundamental
 from .state import State, StatefulWidget, StatelessWidget
 from .icons import Icons, IconData
-from .controllers import TextEditingController, SliderController
+from .controllers import TextEditingController, SliderController, VirtualListController
 from .events import TapDetails, PanUpdateDetails
 from .drived_widgets.dropdown.dropdown import DerivedDropdown
 from .drived_widgets.dropdown.controller import DerivedDropdownController
