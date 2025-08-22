@@ -426,10 +426,14 @@ class Framework:
             old_widget_data = main_context_map.get(widget_key)
 
             if not old_widget_data:
-                print(f"Error: Could not find previous state for widget {widget_key}. A full rebuild may be required.")
-                continue # Skip this update to prevent errors
-
-            parent_html_id = old_widget_data["parent_html_id"]
+                # Special case for the root widget
+                if widget_to_rebuild is self.root_widget:
+                    parent_html_id = "root-container"
+                else:
+                    print(f"Error: Could not find previous state for widget {widget_key}. A full rebuild may be required.")
+                    continue
+            else:
+                parent_html_id = old_widget_data["parent_html_id"]
 
             print(f"Reconciling subtree for: {widget_to_rebuild.__class__.__name__} (Key: {widget_key})")
 
@@ -879,8 +883,8 @@ class Framework:
                     # We need to wait for SimpleBar to initialize first, so we defer this.
                     js_commands.append(f"""
                     setTimeout(() => {{
-                        if (typeof PythraVirtualList !== 'undefined' && document.getElementById('{html_id}').simplebar) {{
-                            window._pythra_instances['{html_id}_vlist'] = new PythraVirtualList('{html_id}', {options_json});
+                        if (typeof PythraVirtualList !== 'undefined' && document.getElementById('{target_id}').simplebar) {{
+                            window._pythra_instances['{target_id}_vlist'] = new PythraVirtualList('{target_id}', {options_json});
                         }}
                     }}, 0);
                     """)
@@ -1656,28 +1660,54 @@ class Framework:
                             }}
                         }}
                         /**
-                        * PythraVirtualList: A client-side engine for virtual scrolling within a SimpleBar instance.
+                        * PythraVirtualList: A client-side engine for virtual scrolling. (Final Version)
+                        *
+                        * This engine creates its own SimpleBar instance to avoid race conditions.
+                        * It handles pre-rendered initial items (HTML and CSS) for an instant first paint.
+                        * It asynchronously fetches additional items from Python as the user scrolls.
+                        * Most importantly, it dynamically attaches event listeners to both pre-rendered
+                        * and asynchronously loaded content to ensure full interactivity.
                         */
                         class PythraVirtualList {{
                             constructor(elementId, options) {{
                                 this.container = document.getElementById(elementId);
-                                if (!this.container || !this.container.simplebar) {{
-                                    console.error(`VirtualList Error: SimpleBar instance for ID #${{elementId}} not found.`);
+                                if (!this.container) {{
+                                    console.error(`VirtualList Error: Container element #${{elementId}} not found.`);
                                     return;
                                 }}
 
                                 console.log(`✅ PythraVirtualList engine is initializing for #${{elementId}}`);
                                 
                                 this.options = options;
-                                this.simplebar = this.container.simplebar;
+                                this.simplebar = new SimpleBar(this.container, this.options.simplebarOptions || {{}});
                                 this.scrollEl = this.simplebar.getScrollElement();
                                 this.contentEl = this.simplebar.getContentElement();
                                 
-                                this.itemCache = {{}}; // Cache for already built HTML items
-                                this.visibleItemElements = []; // Pool of recycled DOM elements
+                                this.itemCache = {{}}; // Cache will ONLY store HTML strings.
+                                this.visibleItemElements = [];
 
-                                // --- Setup DOM ---
-                                // 1. Create the giant, invisible sizer div to produce the correct scrollbar height
+                                // Process the initialItems object from Python.
+                                if (this.options.initialItems) {{
+                                    const initialCss = new Set();
+                                    for (const index in this.options.initialItems) {{
+                                        const itemData = this.options.initialItems[index];
+                                        // 1. Store ONLY the HTML string in the cache.
+                                        this.itemCache[index] = itemData.html;
+                                        // 2. Collect all unique CSS rules.
+                                        if (itemData.css) {{
+                                            initialCss.add(itemData.css);
+                                        }}
+                                    }}
+                                    // 3. Inject all collected CSS into the dynamic stylesheet in one go.
+                                    if (initialCss.size > 0) {{
+                                        const styleSheet = document.getElementById('dynamic-styles');
+                                        if (styleSheet) {{
+                                            styleSheet.textContent += `\n${{[...initialCss].join('\\n')}}`;
+                                        }}
+                                    }}
+                                }}
+
+                                // Setup DOM for virtualization
                                 this.sizer = document.createElement('div');
                                 this.sizer.style.position = 'absolute';
                                 this.sizer.style.top = '0';
@@ -1685,96 +1715,140 @@ class Framework:
                                 this.sizer.style.width = '1px';
                                 this.sizer.style.height = `${{this.options.itemCount * this.options.itemExtent}}px`;
                                 this.contentEl.appendChild(this.sizer);
-                                
-                                // Ensure the content element can host absolutely positioned items
                                 this.contentEl.style.position = 'relative';
 
                                 this.render = this.render.bind(this);
                                 this.scrollEl.addEventListener('scroll', this.render);
                                 
-                                // Initial render
                                 this.render();
                             }}
 
-                            async render() {{
+                            /**
+                            * Scans a newly rendered HTML fragment and attaches reliable event listeners
+                            * to elements that have an inline `onclick` attribute from the Python side.
+                            * @param {{HTMLElement}} element - The container element whose children to scan (e.g., the recycled list item div).
+                            */
+                            attachEventListeners(element) {{
+                                const clickableElements = element.querySelectorAll('[onclick]');
+                                clickableElements.forEach(clickable => {{
+                                    const onclickAttr = clickable.getAttribute('onclick');
+                                    
+                                    // Regex to parse out the callback name from "handleClick('callback_name')"
+                                    const match = onclickAttr.match(/handleClick\('([^']+)'\)/);
+
+                                    if (match && match[1]) {{
+                                        const callbackName = match[1];
+                                        // 1. Remove the inline attribute, as it's now redundant and less reliable.
+                                        clickable.removeAttribute('onclick');
+                                        // 2. Add a proper, trusted event listener.
+                                        clickable.addEventListener('click', () => {{
+                                            if (window.pywebview && typeof handleClick === 'function') {{
+                                                // 3. Call the global handleClick function that communicates with Python.
+                                                handleClick(callbackName);
+                                            }}
+                                        }});
+                                    }}
+                                }});
+                            }}
+
+                            render() {{
                                 const scrollTop = this.scrollEl.scrollTop;
                                 const viewportHeight = this.scrollEl.clientHeight;
 
-                                // Calculate the range of items that should be visible
                                 const startIndex = Math.max(0, Math.floor(scrollTop / this.options.itemExtent));
                                 const endIndex = Math.min(
                                     this.options.itemCount - 1,
-                                    Math.ceil((scrollTop + viewportHeight) / this.options.itemExtent) - 1
+                                    Math.ceil((scrollTop + viewportHeight) / this.options.itemExtent)
                                 );
                                 
                                 const itemsToRender = [];
                                 for (let i = startIndex; i <= endIndex; i++) {{
-                                    itemsToRender.push({{
-                                        index: i,
-                                        top: i * this.options.itemExtent
-                                    }});
+                                    itemsToRender.push({{ index: i, top: i * this.options.itemExtent }});
                                 }}
                                 
-                                // --- Recycle and Render ---
                                 for (let i = 0; i < itemsToRender.length; i++) {{
                                     const item = itemsToRender[i];
                                     let el = this.visibleItemElements[i];
 
                                     if (!el) {{
-                                        // If our pool isn't big enough yet, create a new element
                                         el = document.createElement('div');
                                         el.style.position = 'absolute';
                                         el.style.width = '100%';
                                         el.style.height = `${{this.options.itemExtent}}px`;
+                                        el.style.left = '0';
                                         this.contentEl.appendChild(el);
                                         this.visibleItemElements.push(el);
                                     }}
 
-                                    // Position the recycled element
                                     el.style.transform = `translateY(${{item.top}}px)`;
                                     
-                                    // Check if we need to fetch and render the content for this item
                                     if (el.dataset.index !== String(item.index)) {{
                                         el.dataset.index = item.index;
                                         
                                         if (this.itemCache[item.index]) {{
-                                            // If content is cached, use it
+                                            // Item was pre-rendered or fetched before.
                                             el.innerHTML = this.itemCache[item.index];
+                                            // IMPORTANT: We must re-attach listeners every time we set innerHTML.
+                                            this.attachEventListeners(el);
                                         }} else {{
-                                            // Otherwise, request it from Python
-                                            el.innerHTML = '<div>Loading...</div>'; // Placeholder
+                                            // Item needs to be fetched from Python.
+                                            el.innerHTML = '<div>Loading...</div>';
                                             if (window.pywebview && this.options.itemBuilderName) {{
-                                                // --- THIS IS THE CORRECT ASYNC PATTERN ---
-                                                // Calling a @Slot method from JS returns a Promise.
                                                 window.pywebview.build_list_item(this.options.itemBuilderName, item.index)
-                                                    .then(html => {{
-                                                        // This code runs when the Python function returns a value
+                                                    .then(response => {{
+                                                        const {{ html, css }} = response;
                                                         this.itemCache[item.index] = html;
-                                                        // Only update if the element is still supposed to show this index
+
+                                                        if (css) {{
+                                                            const styleSheet = document.getElementById('dynamic-styles');
+                                                            if (styleSheet && !styleSheet.textContent.includes(css)) {{
+                                                                styleSheet.textContent += `\n${{css}}`;
+                                                            }}
+                                                        }}
+                                                        
                                                         if (el.dataset.index === String(item.index)) {{
                                                             el.innerHTML = html;
+                                                            // Attach event listeners to the newly created DOM nodes.
+                                                            this.attachEventListeners(el);
                                                         }}
                                                     }})
                                                     .catch(e => {{
-                                                        // This code runs if the Python function throws an error
                                                         console.error(`Error building virtual item ${{item.index}}:`, e);
-                                                        el.innerHTML = '<div>Error</div>';
+                                                        if (el.dataset.index === String(item.index)) {{
+                                                            el.innerHTML = '<div>Error</div>';
+                                                        }}
                                                     }});
-                                                // --- END OF CORRECT PATTERN ---
                                             }}
                                         }}
                                     }}
                                 }}
                                 
-                                // Hide any unused elements in the pool
                                 for (let i = itemsToRender.length; i < this.visibleItemElements.length; i++) {{
                                     this.visibleItemElements[i].style.transform = 'translateY(-9999px)';
                                 }}
                             }}
 
+                            /**
+                            * Called from Python when the underlying data for the list has changed.
+                            * Clears the cache and forces a re-render of all visible items.
+                            */
+                            refresh() {{
+                                console.log(`Refreshing VirtualList for #${{this.container.id}}`);
+                                // 1. Clear the entire HTML cache.
+                                this.itemCache = {{}};
+                                
+                                // 2. Mark all currently visible DOM elements as "dirty" by resetting their data-index.
+                                this.visibleItemElements.forEach(el => {{
+                                    el.dataset.index = '-1'; // Set to an invalid index
+                                }});
+                                
+                                // 3. Trigger a render to fetch the new, updated content.
+                                this.render();
+                            }}
+
                             destroy() {{
-                                if (this.scrollEl) {{
-                                    this.scrollEl.removeEventListener('scroll', this.render);
+                                if (this.simplebar && typeof this.simplebar.unMount === 'function') {{
+                                    this.simplebar.unMount();
                                 }}
                             }}
                         }}
@@ -1956,6 +2030,16 @@ class Framework:
             props = node_data.get("props", {})
             html_id = node_data.get("html_id")
             # print(">>>init_slider<<<", html_id)
+            widget_instance = node_data.get("widget_instance")
+
+            # --- THE FIX ---
+            # Use the widget's key for a stable instance name.
+            if widget_instance and widget_instance.key:
+                widget_key_val = widget_instance.key.value
+            else:
+                # Fallback, though widgets with controllers should always have keys.
+                widget_key_val = html_id
+            # --- END OF FIX ---
 
             # --- ADD THIS BLOCK ---
             if props.get("init_gradient_clip_border"):
@@ -1972,8 +2056,10 @@ class Framework:
                 imports.add("import { PythraVirtualList } from './js/virtual_list.js';")
                 options = props.get("virtual_list_options", {})
                 options_json = json.dumps(options)
+                # Use the stable key for the instance name
+                instance_name = f"{widget_key_val}_vlist"
                 # No more checks or timeouts. We just instantiate our engine.
-                js_commands.append(f"window._pythra_instances['{html_id}_vlist'] = new PythraVirtualList('{html_id}', {options_json});")
+                js_commands.append(f"window._pythra_instances['{instance_name}'] = new PythraVirtualList('{html_id}', {options_json});")
             # --- END OF CHANGE ---
             # --- END OF BLOCK ---
 

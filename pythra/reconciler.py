@@ -886,6 +886,15 @@ class Reconciler:
 
         widget_type_name = type(new_widget).__name__
 
+        # --- THIS IS THE NEW LIFECYCLE HOOK ---
+        if widget_type_name == "StatefulWidget" and prop_changes:
+            old_widget_instance = old_data.get("widget_instance")
+            state = new_widget.get_state()
+            if state and old_widget_instance:
+                # Call the lifecycle method, passing the old and new widget configs.
+                state.didUpdateWidget(old_widget_instance, new_widget)
+        # --- END OF NEW LIFECYCLE HOOK ---
+
         # ONLY generate an UPDATE patch for renderable widgets.
         if widget_type_name not in ["StatefulWidget", "StatelessWidget"]:
             old_props_from_map = old_data.get("props", {})
@@ -1141,7 +1150,7 @@ class Reconciler:
                     callback_function = getattr(widget, function_prop_name)
                     if callable(callback_function):
                         result.registered_callbacks[callback_name_value] = callback_function
-                        print(f"Successfully registered callback for {callback_name_value} with function: {callback_function}")
+                        # print(f"Successfully registered callback for {callback_name_value} with function: {callback_function}")
 
     # ... (the rest of your file: _get_widget_render_tag, _generate_html_stub, _diff_props) ...
     # No changes are needed in the methods below this point.

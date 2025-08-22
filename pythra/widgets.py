@@ -2224,115 +2224,161 @@ class Icon(Widget):
 
 # In pythra/widgets.py
 
-class VirtualListView(StatelessWidget):
+class _VirtualListViewState(State):
     """
     A high-performance scrollable list that renders only the visible items.
     Powered by SimpleBar for consistent scrolling and styling.
     """
-    def __init__(self,
-                 key: Key,
-                 itemCount: int,
-                 itemBuilder: Callable[[int], Widget],
-                 itemExtent: float, # The fixed height of each item in pixels. MANDATORY for virtualization.
-                 initialItemCount: int = 20, # <-- NEW: Number of items to pre-render
-                 theme: Optional[ScrollbarTheme] = None,
-                 width: Optional[Any] = '100%',
-                 height: Optional[Any] = '100%'):
+    def __init__(self):
+        """
+        The constructor should ONLY call its parent and declare variables.
+        It should NOT access the widget.
+        """
+        super().__init__()
+        self.item_builder_name = None
+        self._virtualization_options = None
 
-        super().__init__(key=key)
-        self.itemCount = itemCount
-        self.itemBuilder = itemBuilder
-        self.itemExtent = itemExtent
-        self.initialItemCount = min(initialItemCount, itemCount) # Can't pre-render more than exist
-        self.theme = theme
-        self.width = width
-        self.height = height
-        self.css_class = "virtual-list-view"
+    def initState(self):
+        """
+        This method runs AFTER the state is linked to the widget.
+        This is the correct place to access self.get_widget() and perform setup.
+        """
+        widget = self.get_widget()
+        if not widget: return
 
-        # A unique name for this list's specific item builder callback
-        self.item_builder_name = f"vlist_item_builder_{self.key.value}"
-        
-        # Register the builder function so the JS can call it via the API
+        # Attach the state to the controller provided by the widget
+        if widget.controller:
+            widget.controller._attach(self)
+
+        # --- MOVE ALL SETUP LOGIC HERE ---
+        self.item_builder_name = f"vlist_item_builder_{widget.key.value}"
         Api().register_callback(self.item_builder_name, self.build_item_for_js)
 
-    def build_item_for_js(self, index: int) -> str:
-        """
-        This method is called by the API when the JS engine requests an item.
-        It builds the widget and triggers a special, targeted reconciliation
-        that returns only the HTML string for that one item.
-        """
-        print('build_item_for_js invoked: ', index)
-        # Ensure the framework reference is available
-        if not self.framework:
-            return "<div>Error: Framework not available</div>"
-            
-        # 1. Build the single widget for the requested index
-        widget_to_build = self.itemBuilder(index)
+        # Pre-render the initial items once during initialization.
+        initial_items_html = {}
+        initial_item_count = min(widget.initialItemCount, widget.itemCount)
+        for i in range(initial_item_count):
+            initial_items_html[i] = self.build_item_for_js(i)
         
-        # 2. "Build" the widget tree for just this item
+        self._virtualization_options = {
+            "itemCount": widget.itemCount,
+            "itemExtent": widget.itemExtent,
+            "itemBuilderName": self.item_builder_name,
+            "initialItems": initial_items_html
+        }
+
+        # --- END OF MOVED LOGIC ---
+
+    
+    def dispose(self):
+        # Clean up the controller link to prevent memory leaks
+        widget = self.get_widget()
+        if widget and widget.controller:
+            widget.controller._detach()
+        super().dispose()
+
+
+    def refresh_js(self):
+        """Called by the controller to command the JS engine to refresh."""
+        # print("Refreshing js")
+        widget = self.get_widget()
+        if not (self.framework and self.framework.window and widget):
+            return
+
+        # Use the widget's key for a stable instance name
+        instance_name = f"{widget.key.value}_vlist"
+        print(f"Python: Commanding JS instance '{instance_name}' to refresh.")
+        self.framework.window.evaluate_js(
+            self.framework.id,
+            f"if (window._pythra_instances['{instance_name}']) {{ window._pythra_instances['{instance_name}'].refresh(); }} else {{console.log(`Insance: {instance_name} not found`);}}"
+        )
+
+
+    def build_item_for_js(self, index: int) -> Dict[str, Any]:
+        """
+        This method is called by the API.
+        """
+        widget = self.get_widget()
+        # The check for widget and framework is still good practice here.
+        if not widget or not self.framework:
+            return {"html": "<div>Error</div>", "css": "", "callbacks": {}}
+            
+        widget_to_build = widget.itemBuilder(index)
         built_tree = self.framework._build_widget_tree(widget_to_build)
         
-        # 3. Perform a special reconciliation to get its HTML
-        # We reconcile it into a "limbo" parent, as we only want the HTML string.
+        main_context_map = self.framework.reconciler.get_map_for_context("main")
         result = self.framework.reconciler.reconcile(
-            previous_map={},
+            previous_map=main_context_map,
             new_widget_root=built_tree,
-            parent_html_id='__limbo__' # Temporary, non-existent parent
+            parent_html_id='__limbo__',
+            is_partial_reconciliation=True
         )
         
-        # --- THIS IS THE FIX ---
-        # 1. Generate HTML and CSS as before.
+        main_context_map.update(result.new_rendered_map)
+        
         root_key = built_tree.get_unique_id() if built_tree else None
         html_string = self.framework._generate_html_from_map(root_key, result.new_rendered_map)
         css_string = self.framework._generate_css_from_details(result.active_css_details)
-        
-        # 2. Extract the callbacks that were registered during this mini-reconciliation.
         callbacks = result.registered_callbacks
         
-        # 3. Register them with the main API instance. This is the crucial step.
         for name, func in callbacks.items():
             self.framework.api.register_callback(name, func)
 
-        # 4. Return the HTML, CSS, and just the *names* of the callbacks.
         return {
             "html": html_string,
             "css": css_string,
-            "callback_names": list(callbacks.keys()) # JS only needs to know the names
+            "callback_names": list(callbacks.keys())
         }
-        # --- END OF FIX ---
-
 
 
     def build(self) -> Widget:
         """
-        Builds a Scrollbar widget configured for virtualization.
+        Builds the Scrollbar using the options generated during initState.
         """
-        # --- NEW: Pre-render the initial batch of items ---
-        initial_items_html = {}
-        for i in range(self.initialItemCount):
-            # We call the same on-demand builder that the JS would call,
-            # but we do it here, synchronously, during the initial build.
-            html_string = self.build_item_for_js(i)
-            initial_items_html[i] = html_string
-        # --- END NEW ---
-        # The VirtualListView itself doesn't render. It returns a specially
-        # configured Scrollbar widget that will host the virtualized content.
+        widget = self.get_widget()
+        if not widget:
+            # Return a placeholder if the widget is somehow gone
+            return Container(width=0, height=0)
+
+        # The options are now guaranteed to exist because initState ran first.
         return Scrollbar(
-            key=self.key,
-            width=self.width,
-            height=self.height,
-            theme=self.theme,
-            # The child is an empty container that the JS engine will manage
-            child=Container(key=Key(f"{self.key.value}_content")),
-            # These new options tell the framework to initialize our JS engine
-            virtualization_options={
-                "itemCount": self.itemCount,
-                "itemExtent": self.itemExtent,
-                "itemBuilderName": self.item_builder_name,
-                "initialItems": initial_items_html # <-- Pass the pre-rendered HTML
-            }
+            key=widget.key, 
+            width=widget.width,
+            height=widget.height,
+            theme=widget.theme,
+            child=Container(key=Key(f"{widget.key.value}_content"), alignment=Alignment.center),
+            virtualization_options=self._virtualization_options
         )
-         
+
+
+# Modify the main widget class
+class VirtualListView(StatefulWidget):
+    def __init__(self,
+                 key: Key,
+                 controller: VirtualListController, # <-- Requires a controller
+                 itemCount: int,
+                 itemBuilder: Callable[[int], Widget],
+                 itemExtent: float,
+                 # --- REMOVE data_version ---
+                 initialItemCount: int = 20,
+                 theme: Optional[ScrollbarTheme] = None,
+                 width: Optional[Any] = '100%',
+                 height: Optional[Any] = '100%'):
+
+        self.controller = controller
+        self.itemCount = itemCount
+        self.itemBuilder = itemBuilder
+        self.itemExtent = itemExtent
+        self.initialItemCount = initialItemCount
+        self.theme = theme
+        self.width = width
+        self.height = height
+        super().__init__(key=key)
+
+    def createState(self) -> _VirtualListViewState:
+        return _VirtualListViewState()
+
+
 class ListView(Widget):
     """
     A scrollable list of widgets arranged linearly.

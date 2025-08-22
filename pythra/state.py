@@ -100,7 +100,7 @@ class State:
         """
         pass # Default implementation does nothing
 
-    def didUpdateWidget(self, oldWidget: 'StatefulWidget'):
+    def didUpdateWidget(self, oldWidget: 'StatefulWidget', new_widget: 'StatefulWidget'):
         """
         Called whenever the widget configuration changes.
 

@@ -167,6 +167,24 @@ export class PythraVirtualList {
         }
     }
 
+    /**
+     * Called from Python when the underlying data for the list has changed.
+     * Clears the cache and forces a re-render of all visible items.
+     */
+    refresh() {
+        console.log(`Refreshing VirtualList for #${this.container.id}`);
+        // 1. Clear the entire HTML cache.
+        this.itemCache = {};
+        
+        // 2. Mark all currently visible DOM elements as "dirty" by resetting their data-index.
+        this.visibleItemElements.forEach(el => {
+            el.dataset.index = '-1'; // Set to an invalid index
+        });
+        
+        // 3. Trigger a render to fetch the new, updated content.
+        this.render();
+    }
+
     destroy() {
         if (this.simplebar && typeof this.simplebar.unMount === 'function') {
             this.simplebar.unMount();
