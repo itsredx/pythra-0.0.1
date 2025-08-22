@@ -93,7 +93,7 @@ class Container(Widget):
             print("Container self.visible: ", self.visible)
             instance_styles['display'] = 'none'
             # instance_styles['visibility'] = 'hidden'
-        else: instance_styles['display'] = 'block'
+        # else: instance_styles['display'] = 'block'
         
         # We can remove 'display: block' as the CSS rule will handle it.
         # This makes the props cleaner.
@@ -189,10 +189,9 @@ class Container(Widget):
                 styles.append(BoxConstraints(*constraints_tuple).to_css())
 
             if alignment_tuple:
-                align_obj = Alignment(*alignment_tuple)
-                styles.append("display: flex;")
-                styles.append(f"justify-content: {align_obj.justify_content};")
-                styles.append(f"align-items: {align_obj.align_items};")
+                # print(alignment_tuple().to_css())
+                # align_obj = Alignment(*alignment_tuple)
+                styles.append(alignment_tuple().to_css())
 
             if transform: styles.append(f"transform: {transform};")
 
