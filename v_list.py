@@ -79,7 +79,8 @@ class MyListItemState(State):
             key=Key(f"item_{self.index}"),
             margin=EdgeInsets.symmetric(horizontal=16, vertical=10),
             padding=EdgeInsets.symmetric(horizontal=16),
-            height=60,
+            height=50, 
+            alignment=Alignment.center,
             color=(
                 Colors.rgba(103, 80, 164, 0.1)
                 if self.is_checked
@@ -175,19 +176,6 @@ class VirtualListTestState(State):
         # new `checked_items` data down to the VirtualListView.
         self.setState()
 
-    # def itemBuilder(self, index: int) -> Widget:
-    #     # print("Building list item: ", index)
-    #     """
-    #     This builder function is called on demand by the VirtualListView engine
-    #     to construct the widget for a specific index.
-    #     """
-    #     return MyListItem(
-    #         key=Key(f"list_item_{index}"),
-    #         index=index,
-    #         # Pass a lambda that captures the index for the callback.
-    #         on_checked=lambda new_value: self.handle_item_checked(index, new_value),
-    #     )
-
     def build(self) -> Widget:
         """Builds the main application UI."""
         return Container(
@@ -218,7 +206,7 @@ class VirtualListTestState(State):
                             controller=self.list_controller, # <-- 4. Pass the controlle
                             itemCount=self.item_count,
                             itemBuilder=self.itemBuilder,                            
-                            itemExtent=50.0,  # Each ListTile will be 50px high
+                            itemExtent=60.0,  # Each ListTile will be 50px high
                             # Optionally, provide a custom theme for the scrollbar
                             theme=ScrollbarTheme(
                                 width=14,
