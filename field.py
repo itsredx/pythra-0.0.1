@@ -53,7 +53,7 @@ class SettingsPage(StatelessWidget):
             height='80vh',
             padding=EdgeInsets.all(32),
             color=Colors.surfaceVariant,
-            alignment=Alignment.center(),
+            alignment=Alignment.center,
             child=Column(
                 children=[
                     Text("Settings Page", style=TextStyle(color=Colors.grey)),
@@ -599,7 +599,7 @@ class CheckBoxState(State):
         )
 
         return Container(
-            alignment=Alignment.center(),
+            alignment=Alignment.center,
             child=Column(
                 mainAxisAlignment=MainAxisAlignment.CENTER,
                 crossAxisAlignment=CrossAxisAlignment.START,
@@ -913,7 +913,7 @@ class MyFormState(State):
         )
         return Container(
             key=Key("Build_container"),
-            # alignment=Alignment.top_center(),
+            # alignment=Alignment.top_center,
             height='80vh',
             padding=EdgeInsets.all(32),
             color=Colors.surfaceVariant,

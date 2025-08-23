@@ -123,7 +123,7 @@ class MyListItem(StatefulWidget):
 class VirtualListTestState(State):
     def __init__(self):
         """Initialize the application state."""
-        self.item_count = 50
+        self.item_count = 400000
         checked_items.add(0)
         # This will be initialized in initState
         self.itemBuilder = None
@@ -191,7 +191,7 @@ class VirtualListTestState(State):
                 crossAxisAlignment=CrossAxisAlignment.STRETCH,
                 children=[
                     Text(
-                        "Virtual List Test (50 Items)",
+                        f"Virtual List Test ({self.item_count} Items)",
                         style=TextStyle(fontSize=24, fontWeight="bold"),
                     ),
                     Text(

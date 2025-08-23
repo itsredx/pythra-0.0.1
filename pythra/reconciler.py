@@ -1330,8 +1330,13 @@ class Reconciler:
 
     def _diff_props(self, old_props: Dict, new_props: Dict) -> Optional[Dict]:
         changes = {}
-        # Combine keys, but exclude 'widget_instance' from the check
-        all_keys = (set(old_props.keys()) | set(new_props.keys())) - {'widget_instance'}
+        # --- THIS IS THE FIX ---
+        # Define a set of properties to ignore during the diffing process.
+        # These are typically function references that are re-created on every build.
+        ignored_keys = {'widget_instance', 'itemBuilder', 'onChanged', 'onPressed', 'onTap', 'onDrag'}
+        # --- END OF FIX ---
+            # Combine keys, but exclude 'widget_instance' from the check
+        all_keys = (set(old_props.keys()) | set(new_props.keys())) - ignored_keys
 
         for key in all_keys:
             old_val, new_val = old_props.get(key), new_props.get(key)
