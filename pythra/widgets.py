@@ -3,6 +3,7 @@ import uuid
 import yaml
 import os
 import html
+import json
 from .api import Api
 from .base import *
 from .state import *
@@ -2277,20 +2278,26 @@ class _VirtualListViewState(State):
         super().dispose()
 
 
-    def refresh_js(self):
-        """Called by the controller to command the JS engine to refresh."""
-        # print("Refreshing js")
+    def refresh_js(self, indices: Optional[List[int]] = None):
+        """
+        Called by the controller to command the JS engine to refresh.
+        Can do a full refresh (indices=None) or a targeted item refresh.
+        """
         widget = self.get_widget()
         if not (self.framework and self.framework.window and widget):
             return
 
-        # Use the widget's key for a stable instance name
         instance_name = f"{widget.key.value}_vlist"
-        print(f"Python: Commanding JS instance '{instance_name}' to refresh.")
-        self.framework.window.evaluate_js(
-            self.framework.id,
-            f"if (window._pythra_instances['{instance_name}']) {{ window._pythra_instances['{instance_name}'].refresh(); }} else {{console.log(`Insance: {instance_name} not found`);}}"
-        )
+        
+        if indices is None:
+            print(f"Python: Commanding JS instance '{instance_name}' to perform a FULL refresh.")
+            js_command = f"window._pythra_instances['{instance_name}']?.refreshAll();"
+        else:
+            print(f"Python: Commanding JS instance '{instance_name}' to refresh items at indices: {indices}")
+            indices_json = json.dumps(indices)
+            js_command = f"window._pythra_instances['{instance_name}']?.refreshItems({indices_json});"
+
+        self.framework.window.evaluate_js(self.framework.id, js_command)
 
 
     def build_item_for_js(self, index: int) -> Dict[str, Any]:
