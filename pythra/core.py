@@ -130,6 +130,8 @@ class Framework:
         frameless: bool = config.get("frameless"),
         maximized: bool = config.get("maximixed"),
         fixed_size: bool = config.get("fixed_size"),
+        # --- THIS IS THE CRUCIAL ADDITION ---
+        block: bool = True
     ):
         """
         Builds the initial UI, writes necessary files, creates the window, and starts the app.
