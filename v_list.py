@@ -235,8 +235,16 @@ class VirtualListTestApp(StatefulWidget):
         return VirtualListTestState()
 
 
+# --- THIS IS THE NEW CONVENTION ---
+def main() -> Widget:
+    """
+    This function is the main entry point that the Pythra CLI will call.
+    It should return the root widget of the application.
+    """
+    return VirtualListTestApp(key=Key("app_root"))
+
 if __name__ == "__main__":
     # Standard application runner
     app = Framework.instance()
-    app.set_root(VirtualListTestApp(key=Key("app_root")))
+    app.set_root(main())
     app.run(title="Pythra Virtual List Test")
