@@ -172,7 +172,7 @@ export class PythraVirtualList {
      * Clears the cache and forces a re-render of all visible items.
      */
     refresh() {
-        console.log(`Refreshing VirtualList for #${this.container.id}`);
+        console.log(`Refreshing ALL visible items for #${this.container.id}`);
         // 1. Clear the entire HTML cache.
         this.itemCache = {};
         
@@ -184,6 +184,35 @@ export class PythraVirtualList {
         // 3. Trigger a render to fetch the new, updated content.
         this.render();
     }
+
+    /**
+     * Refreshes specific items by their indices. Highly efficient.
+     * @param {Array<number>} indices - An array of item indices to refresh.
+     */
+    refreshItems(indices) {
+        if (!Array.isArray(indices)) return;
+        console.log(`Refreshing specific items for #${this.container.id}:`, indices);
+
+        indices.forEach(index => {
+            // 1. Invalidate the cache for this specific item.
+            if (this.itemCache[index]) {
+                delete this.itemCache[index];
+            }
+            
+            // 2. Find if this item is currently visible in the DOM.
+            const visibleElement = this.visibleItemElements.find(el => el.dataset.index === String(index));
+            
+            if (visibleElement) {
+                // 3. If it's visible, mark it as dirty so the next render pass will update it.
+                visibleElement.dataset.index = '-1';
+            }
+        });
+
+        // 4. Trigger a render pass to update any newly dirtied elements.
+        this.render();
+    }
+    
+    // --- END OF NEW LOGIC ---
 
     destroy() {
         if (this.simplebar && typeof this.simplebar.unMount === 'function') {

@@ -142,5 +142,10 @@ class VirtualListController:
         
         if self._state:
             print("Refreshing")
-            self._state.refresh_js()
+            self._state.refresh_js(indices=None)
             print("Refreshed")
+
+    def refreshItem(self, index: int):
+        """Commands the virtual list to refresh a single item at a specific index."""
+        if self._state:
+            self._state.refresh_js(indices=[index]) # Pass a specific index

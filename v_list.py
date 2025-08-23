@@ -123,7 +123,7 @@ class MyListItem(StatefulWidget):
 class VirtualListTestState(State):
     def __init__(self):
         """Initialize the application state."""
-        self.item_count = 5000
+        self.item_count = 50
         checked_items.add(0)
         # This will be initialized in initState
         self.itemBuilder = None
@@ -168,9 +168,13 @@ class VirtualListTestState(State):
         elif index in checked_items:
             checked_items.remove(index)
 
-        
+
+        # --- THIS IS THE FIX ---
+        # 1. Command the list to refresh ONLY the specific item that changed.
+        self.list_controller.refreshItem(index=index)
+
         # 2. After changing the data, explicitly command the list to refresh.
-        self.list_controller.refresh()
+        # self.list_controller.refresh()
 
         # We must call setState to trigger a rebuild, which will pass the
         # new `checked_items` data down to the VirtualListView.
@@ -205,7 +209,8 @@ class VirtualListTestState(State):
                             key=Key("my_virtual_list"),
                             controller=self.list_controller, # <-- 4. Pass the controlle
                             itemCount=self.item_count,
-                            itemBuilder=self.itemBuilder,                            
+                            itemBuilder=self.itemBuilder, 
+                            initialItemCount=12,                           
                             itemExtent=60.0,  # Each ListTile will be 50px high
                             # Optionally, provide a custom theme for the scrollbar
                             theme=ScrollbarTheme(

@@ -1846,6 +1846,35 @@ class Framework:
                                 this.render();
                             }}
 
+                            /**
+                            * Refreshes specific items by their indices. Highly efficient.
+                            * @param {{Array<number>}} indices - An array of item indices to refresh.
+                            */
+                            refreshItems(indices) {{
+                                if (!Array.isArray(indices)) return;
+                                console.log(`Refreshing specific items for #${{this.container.id}}:`, indices);
+
+                                indices.forEach(index => {{
+                                    // 1. Invalidate the cache for this specific item.
+                                    if (this.itemCache[index]) {{
+                                        delete this.itemCache[index];
+                                    }}
+                                    
+                                    // 2. Find if this item is currently visible in the DOM.
+                                    const visibleElement = this.visibleItemElements.find(el => el.dataset.index === String(index));
+                                    
+                                    if (visibleElement) {{
+                                        // 3. If it's visible, mark it as dirty so the next render pass will update it.
+                                        visibleElement.dataset.index = '-1';
+                                    }}
+                                }});
+
+                                // 4. Trigger a render pass to update any newly dirtied elements.
+                                this.render();
+                            }}
+                            
+                            // --- END OF NEW LOGIC ---
+
                             destroy() {{
                                 if (this.simplebar && typeof this.simplebar.unMount === 'function') {{
                                     this.simplebar.unMount();
