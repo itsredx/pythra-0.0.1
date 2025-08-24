@@ -1,0 +1,64 @@
+('C:\\Users\\SMILETECH '
+ 'COMPUTERS\\Documents\\pythra_0.0.2_new_state\\build\\MyVirtualListApp\\MyVirtualListApp.pkg',
+ {'BINARY': True,
+  'DATA': True,
+  'EXECUTABLE': True,
+  'EXTENSION': True,
+  'PYMODULE': True,
+  'PYSOURCE': True,
+  'PYZ': False,
+  'SPLASH': True,
+  'SYMLINK': False},
+ [('pyi-contents-directory _internal', '', 'OPTION'),
+  ('PYZ-00.pyz',
+   'C:\\Users\\SMILETECH '
+   'COMPUTERS\\Documents\\pythra_0.0.2_new_state\\build\\MyVirtualListApp\\PYZ-00.pyz',
+   'PYZ'),
+  ('struct',
+   'C:\\Users\\SMILETECH '
+   'COMPUTERS\\Documents\\pythra_0.0.2_new_state\\build\\MyVirtualListApp\\localpycs\\struct.pyc',
+   'PYMODULE'),
+  ('pyimod01_archive',
+   'C:\\Users\\SMILETECH '
+   'COMPUTERS\\Documents\\pythra_0.0.2_new_state\\build\\MyVirtualListApp\\localpycs\\pyimod01_archive.pyc',
+   'PYMODULE'),
+  ('pyimod02_importers',
+   'C:\\Users\\SMILETECH '
+   'COMPUTERS\\Documents\\pythra_0.0.2_new_state\\build\\MyVirtualListApp\\localpycs\\pyimod02_importers.pyc',
+   'PYMODULE'),
+  ('pyimod03_ctypes',
+   'C:\\Users\\SMILETECH '
+   'COMPUTERS\\Documents\\pythra_0.0.2_new_state\\build\\MyVirtualListApp\\localpycs\\pyimod03_ctypes.pyc',
+   'PYMODULE'),
+  ('pyimod04_pywin32',
+   'C:\\Users\\SMILETECH '
+   'COMPUTERS\\Documents\\pythra_0.0.2_new_state\\build\\MyVirtualListApp\\localpycs\\pyimod04_pywin32.pyc',
+   'PYMODULE'),
+  ('pyiboot01_bootstrap',
+   'C:\\Users\\SMILETECH '
+   'COMPUTERS\\AppData\\Roaming\\Python\\Python313\\site-packages\\PyInstaller\\loader\\pyiboot01_bootstrap.py',
+   'PYSOURCE'),
+  ('pyi_rth_inspect',
+   'C:\\Users\\SMILETECH '
+   'COMPUTERS\\AppData\\Roaming\\Python\\Python313\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_inspect.py',
+   'PYSOURCE'),
+  ('pyi_rth_pyside6',
+   'C:\\Users\\SMILETECH '
+   'COMPUTERS\\AppData\\Roaming\\Python\\Python313\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_pyside6.py',
+   'PYSOURCE'),
+  ('pyi_rth_pkgutil',
+   'C:\\Users\\SMILETECH '
+   'COMPUTERS\\AppData\\Roaming\\Python\\Python313\\site-packages\\PyInstaller\\hooks\\rthooks\\pyi_rth_pkgutil.py',
+   'PYSOURCE'),
+  ('v_list',
+   'C:\\Users\\SMILETECH '
+   'COMPUTERS\\Documents\\pythra_0.0.2_new_state\\v_list.py',
+   'PYSOURCE')],
+ 'python313.dll',
+ True,
+ False,
+ False,
+ [],
+ None,
+ None,
+ None)
