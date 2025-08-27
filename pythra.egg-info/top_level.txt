@@ -1,1 +1,2 @@
 pythra
+pythra_cli

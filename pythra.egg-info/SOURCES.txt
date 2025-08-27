@@ -37,3 +37,5 @@ pythra/pyx/__init__.py
 pythra/pyx/performance_test.py
 pythra/pyx/setup.py
 pythra/utils/__init__.py
+pythra_cli/__init__.py
+pythra_cli/main.py
