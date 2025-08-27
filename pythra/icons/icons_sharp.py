@@ -1,4 +1,4 @@
-
+from .base import IconData
 
 class IconsSharp:
     """A helper class containing static references to sharp Material Symbols."""

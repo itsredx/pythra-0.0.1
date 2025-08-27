@@ -268,7 +268,7 @@ class MusicListBodyState(State):
                                                             ),
                                                         ],
                                                     ),
-                                                    alignment=Alignment.center(),
+                                                    alignment=Alignment.center,
                                                     color=Colors.transparent,
                                                     decoration=BoxDecoration(
                                                         borderRadius=BorderRadius.all(4)
@@ -314,7 +314,7 @@ class MusicListBodyState(State):
                                                             ),
                                                         ],
                                                     ),
-                                                    alignment=Alignment.center_left(),
+                                                    alignment=Alignment.center_left,
                                                     decoration=BoxDecoration(
                                                         borderRadius=BorderRadius.all(4)
                                                     ),
@@ -356,7 +356,7 @@ class MusicListBodyState(State):
                                                             ),
                                                         ],
                                                     ),
-                                                    alignment=Alignment.center(),
+                                                    alignment=Alignment.center,
                                                 ),
                                                 SizedBox(
                                                     key=Key(
@@ -381,7 +381,7 @@ class MusicListBodyState(State):
                                                             fontFamily="verdana",
                                                         ),
                                                     ),
-                                                    alignment=Alignment.center_right(),
+                                                    alignment=Alignment.center_right,
                                                 ),
                                             ],
                                         ),

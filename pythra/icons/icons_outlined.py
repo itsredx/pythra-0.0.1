@@ -1,4 +1,4 @@
-
+from .base import IconData
 
 class IconsOutlined:
     """A helper class containing static references to outlined Material Symbols."""

@@ -1,4 +1,4 @@
-
+from .base import IconData
 
 class IconsRounded:
     """A helper class containing static references to rounded Material Symbols."""

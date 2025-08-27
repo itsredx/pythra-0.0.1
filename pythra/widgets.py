@@ -9,6 +9,7 @@ from .base import *
 from .state import *
 from .styles import *
 from .icons import *
+from .icons.base import IconData # Import the new data class
 from .controllers import *
 from .config import Config
 from .events import TapDetails, PanUpdateDetails
@@ -2112,7 +2113,7 @@ class Image(Widget):
     # Removed instance methods: to_html(), to_css()
 
 
-from .icons import IconData # Import the new data class
+
 
 class Icon(Widget):
     """
