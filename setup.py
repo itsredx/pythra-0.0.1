@@ -7,7 +7,7 @@ setup(
     author='Ahmad Muhammad Bashir (RED X)',
     author_email='ambashir02@gmail.com',
     description='A declarative Python UI framework for desktop apps with a webview renderer.',
-    long_description=open('README.md').read(),
+    long_description=open('README.md', encoding="utf-8").read(),
     long_description_content_type='text/markdown',
     url='https://github.com/itsredx/pythra-0.0.1', # Change this
     
