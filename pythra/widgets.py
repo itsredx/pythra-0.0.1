@@ -77,7 +77,7 @@ class Container(Widget):
         # The style key now includes the gradient theme.
         self.style_key = tuple(make_hashable(prop) for prop in (
             self.padding, self.color, self.decoration, self.width, self.height,
-            self.constraints, self.margin, self.transform, self.alignment,
+            self.constraints, self.margin, self.transform, self.alignment.to_css(),
             self.clipBehavior, self.gradient, self.zAxisIndex # <-- ADD GRADIENT TO KEY
         ))
 
@@ -193,7 +193,7 @@ class Container(Widget):
             if alignment_tuple:
                 # print(alignment_tuple().to_css())
                 # align_obj = Alignment(*alignment_tuple)
-                styles.append(alignment_tuple().to_css())
+                styles.append(alignment_tuple)
 
             if transform: styles.append(f"transform: {transform};")
 

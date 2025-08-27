@@ -7,6 +7,9 @@ import io
 # --- END OF IMPORTS ---
 
 import os
+from pathlib import Path
+import sys
+import shutil
 import time
 import json
 import math
@@ -42,7 +45,7 @@ class Framework:
     """
 
     _instance = None
-    config = Config()
+    # config = Config()
 
     @classmethod
     def instance(cls):
@@ -55,6 +58,43 @@ class Framework:
         if Framework._instance is not None:
             raise Exception("This class is a singleton!")
         Framework._instance = self
+
+        # --- THIS IS THE DEFINITIVE FIX ---
+        # 1. Determine the project root. We define this as the directory
+        #    where the user's main application script is running.
+        #    `sys.argv[0]` reliably gives us the path to the executed script (e.g., 'lib/main.py').
+        main_script_path = os.path.abspath(sys.argv[0])
+        # We assume the project root is the parent of the 'lib' directory, or the
+        # directory of the script itself if not in 'lib'.
+        if "lib" in Path(main_script_path).parts:
+            self.project_root = Path(main_script_path).parent.parent
+        else:
+            self.project_root = Path(main_script_path).parent
+
+        print(f"✅ Framework initialized. Project Root detected at: {self.project_root}")
+
+        self.config = Config(config_path=self.project_root / 'config.yaml')
+
+        # All paths are now relative to the project root
+        self.web_dir = self.project_root / self.config.get('web_dir', 'web')
+        self.assets_dir = self.project_root / self.config.get('assets_dir', 'assets')
+
+        # Ensure these directories exist within the user's project
+        self.web_dir.mkdir(exist_ok=True)
+        self.assets_dir.mkdir(exist_ok=True)
+        
+        # Copy default assets if they don't exist
+        self._ensure_default_assets()
+
+        self.html_file_path = self.web_dir / "index.html"
+        self.css_file_path = self.web_dir / "styles.css"
+        
+        # The asset server now serves from the project's asset directory
+        self.asset_server = AssetServer(
+            directory=str(self.assets_dir),
+            port=self.config.get("assets_server_port"),
+        )
+        # --- END OF KEY CHANGE ---
 
         self.api = webwidget.Api()
         self.reconciler = Reconciler()
@@ -70,19 +110,49 @@ class Framework:
 
         self._result = None
 
-        # Asset Management
-        self.html_file_path = os.path.abspath("web/index.html")
-        self.css_file_path = os.path.abspath("web/styles.css")
-        self.asset_server = AssetServer(
-            directory=self.config.get("assets_dir"),
-            port=self.config.get("assets_server_port"),
-        )
+        # # Asset Management
+        # self.html_file_path = os.path.abspath("web/index.html")
+        # self.css_file_path = os.path.abspath("web/styles.css")
+        # self.asset_server = AssetServer(
+        #     directory=self.config.get("assets_dir"),
+        #     port=self.config.get("assets_server_port"),
+        # )
         self.asset_server.start()
-        os.makedirs("web", exist_ok=True)
+        # os.makedirs("web", exist_ok=True)
 
         Widget.set_framework(self)
         StatefulWidget.set_framework(self)
         print("Framework Initialized with new Reconciler architecture.")
+
+    def _ensure_default_assets(self):
+        """
+        Copies essential default assets (like JS files and fonts) from the
+        framework's package to the user's project directory if they are missing.
+        """
+        # Find the source path inside the installed pythra package
+        package_root = Path(__file__).parent
+        source_web_dir = package_root / 'web_template'
+        source_assets_dir = package_root / 'assets_template'
+        
+        # Copy web files (js, etc.)
+        if source_web_dir.exists():
+            for item in source_web_dir.iterdir():
+                dest_item = self.web_dir / item.name
+                if not dest_item.exists():
+                    if item.is_dir():
+                        shutil.copytree(item, dest_item)
+                    else:
+                        shutil.copy(item, dest_item)
+        
+        # Copy asset files (fonts, etc.)
+        if source_assets_dir.exists():
+            for item in source_assets_dir.iterdir():
+                dest_item = self.assets_dir / item.name
+                if not dest_item.exists():
+                    if item.is_dir():
+                        shutil.copytree(item, dest_item)
+                    else:
+                        shutil.copy(item, dest_item)
 
     def set_root(self, widget: Widget):
         """Sets the root widget for the application."""
@@ -1887,9 +1957,7 @@ class Framework:
                 # js_commands.append(f"console.log('Applying patch {action} {target_id}:', {loggable_data_str});")
                 # --- END OF FIX ---
             # print(js_commands)
-
         return "\n".join(js_commands)
-
 
     def _generate_prop_update_js(
         self, target_id: str, props: Dict, is_insert: bool = False
