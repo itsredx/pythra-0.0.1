@@ -42,18 +42,65 @@ from pythra import (
 from pythra.navigation import Navigator, PageRoute, NavigatorState
 
 
+class HomePageState(State):
+    def __init__(self):
+        self.count = 0
+
+    def incrementCounter(self):
+        self.count += 1
+        print("self.count: ", self.count)
+        self.setState()
+
+    def decrementCounter(self):
+        self.count -= 1
+        print("self.count: ", self.count)
+        self.setState()
+
+    def build(self) -> Widget:
+        return Container(
+            key=Key("home_page_Pythra_home_page_container"),
+            height="30vh",
+            width="30vh",
+            color=Colors.background,
+            # alignment=Alignment.center(),
+            child=Column(
+                key=Key("home_page_Pythra_home_page_column"),
+                children=[
+                    Text(f"Count: {self.count}", key=Key("home_page_Pythra_counter_txt")),
+                    SizedBox(height = 24, key=Key("sixe_box"),),
+                    TextButton(
+                        key=Key("home_page_Pythra_increment_btn"),
+                        child=Text("Increment", key=Key("home_page_Pythra_btn_txt")),
+                        onPressed=self.incrementCounter,
+                    ),
+                    SizedBox(height = 24, key=Key("sixe_box_dec"),),
+                    TextButton(
+                        key=Key("home_page_Pythra_decrement_btn"),
+                        child=Text("Increment", key=Key("home_page_Pythra_dec_btn_txt")),
+                        onPressed=self.decrementCounter,
+                    ),
+                ]
+            ),
+        )
+
+
+class HomePage(StatefulWidget):
+    def createState(self) -> HomePageState:
+        return HomePageState()
+
 # Let's imagine you have another page for settings
 class SettingsPage(StatelessWidget):
     def __init__(self, navigator: NavigatorState, key: Optional[Key] = None):
         super().__init__(key=key)
         self.navigator = navigator
+        self.home_page = HomePage(key=Key("home_page_state."))
 
     def build(self) -> Widget:
         return Container(
             height='80vh',
             padding=EdgeInsets.all(32),
             color=Colors.surfaceVariant,
-            alignment=Alignment.center,
+            alignment=Alignment.center(),
             child=Column(
                 children=[
                     Text("Settings Page", style=TextStyle(color=Colors.grey)),
@@ -64,6 +111,7 @@ class SettingsPage(StatelessWidget):
                         onPressed=lambda: self.navigator.pop(),
                         onPressedName="nav.pop",
                     ),
+                    self.home_page,
                 ]
             ),
         )
@@ -599,7 +647,7 @@ class CheckBoxState(State):
         )
 
         return Container(
-            alignment=Alignment.center,
+            alignment=Alignment.center(),
             child=Column(
                 mainAxisAlignment=MainAxisAlignment.CENTER,
                 crossAxisAlignment=CrossAxisAlignment.START,
@@ -913,7 +961,7 @@ class MyFormState(State):
         )
         return Container(
             key=Key("Build_container"),
-            # alignment=Alignment.top_center,
+            # alignment=Alignment.top_center(),
             height='80vh',
             padding=EdgeInsets.all(32),
             color=Colors.surfaceVariant,

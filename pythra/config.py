@@ -17,7 +17,7 @@ DEFAULT_CONFIG = {
     'frameless': False,
     'maximixed': False, # Note: Typo from original code, kept for consistency
     'fixed_size': False,
-    'Debug': False,
+    'Debug': True,
     'web_dir': 'web',
     'assets_dir': 'assets',
     'assets_server_port': 8008,

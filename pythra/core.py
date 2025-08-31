@@ -730,6 +730,7 @@ class Framework:
                 traceback.print_exc()
 
         print(f"Generated CSS for {len(all_rules)} active shared classes.")
+        # print(f"Rules: {all_rules}")
         return "\n".join(all_rules)
 
     # --- Script Generation and File Writing ---

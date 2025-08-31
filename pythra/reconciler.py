@@ -1223,6 +1223,7 @@ class Reconciler:
             if "width" in props:
                 inline_styles["width"] = props["width"]
             if "height" in props:
+                print(f"height: {props["height"]}")
                 inline_styles["height"] = props["height"]
             if "clip_path_string" in props:
                 inline_styles["clip-path"] = props["clip_path_string"]
@@ -1261,6 +1262,15 @@ class Reconciler:
         if 'position_type' in props:
             print("position_type:", props["position_type"])
             inline_styles["position"] = props["position_type"]
+
+        if widget_type_name == "Positioned":
+            inline_styles["height"] = props["height"] if props["height"] else ""
+            inline_styles["width"] = props["width"] if props["width"] else ""
+            inline_styles["bottom"] = props["bottom"] if props["bottom"] else ""
+            inline_styles["top"] = props["top"] if props["top"] else ""
+            inline_styles["right"] = props["right"] if props["right"] else ""
+            inline_styles["left"] = props["left"] if props["left"] else ""
+            # print(props, " with attrs: ", attrs," with inline_styles: ", inline_styles)
 
         if inline_styles:
             style_str = "; ".join(
@@ -1311,6 +1321,9 @@ class Reconciler:
             attrs += f' src="{html.escape(props.get("src", ""), quote=True)}" alt=""'
         elif widget_type_name == "Icon" and props.get("render_type") == "img":
             attrs += f' src="{html.escape(props.get("custom_icon_src", ""), quote=True)}" alt=""'
+
+
+        
 
         # if hasattr(type(widget), '_generate_html_stub'):
         #     return type(widget)._generate_html_stub(widget, html_id, props)
