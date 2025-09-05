@@ -7,3 +7,5 @@ build/
 # Ignore build directories
 /build/
 /dist/
+/__pycache__/
+/.vscode/
