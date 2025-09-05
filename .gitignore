@@ -1,6 +1,13 @@
 # Ignore build artifacts and executables
 *.exe
 *.pkg
+*str
+*pt
+*bool
+*int
+*dict
+*List[Patch]
+*Dict[Union]Key
 
 build/
 
