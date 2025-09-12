@@ -1,0 +1,3 @@
+# Additional requirements for the enhanced package system
+semver>=2.13.0  # For semantic versioning support
+requests>=2.25.0  # For future package registry features

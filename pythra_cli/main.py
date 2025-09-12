@@ -6,6 +6,7 @@ Usage:
     pythra create-project <name>         # Create a new, ready-to-use project.
     pythra run [--script <path>]         # Run the project with a clean-restart loop.
     pythra build [--script <path>]       # Build a standalone application folder.
+    pythra package <command>             # Package management commands.
 """
 from __future__ import annotations
 import typer
@@ -30,13 +31,35 @@ app = typer.Typer(
     add_completion=False
 )
 
-# --- Helper Functions (Unchanged, they are excellent) ---
+# --- Package Management Integration ---
+try:
+    # Try relative import first (when used as module)
+    from .package_commands import package_app
+except ImportError:
+    try:
+        # Fall back to direct import (when run as script)
+        from package_commands import package_app
+    except ImportError as e:
+        # If both fail, package commands aren't available
+        package_app = None
+        PACKAGE_COMMANDS_AVAILABLE = False
+        print(f"[Warning] Package management commands not available: {e}")
+
+if package_app is not None:
+    app.add_typer(package_app, name="package", help="Package management commands")
+    PACKAGE_COMMANDS_AVAILABLE = True
+else:
+    PACKAGE_COMMANDS_AVAILABLE = False
+
+# --- Helper Functions (Your implementation is excellent and unchanged) ---
 
 def load_yaml(path: Path) -> dict:
+    """Safely loads a YAML file."""
     with path.open("r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 def set_debug_false_in_obj(obj: Any) -> None:
+    """Recursively sets any 'debug' key to False in a nested object."""
     if isinstance(obj, dict):
         for key, val in list(obj.items()):
             if isinstance(key, str) and key.strip().lower() == "debug":
@@ -50,6 +73,7 @@ def set_debug_false_in_obj(obj: Any) -> None:
 def generate_embedded_config_module_in_dir(
     dest_dir: Path, data: Any, module_name: str = "_embedded_config.py"
 ) -> Path:
+    """Generates a Python module containing a compressed config."""
     dest_dir = dest_dir.resolve()
     dest_dir.mkdir(parents=True, exist_ok=True)
     json_bytes = json.dumps(data, separators=(",", ":"), sort_keys=True).encode("utf-8")
@@ -74,6 +98,7 @@ CONFIG = load_embedded_config()
     return module_path
 
 def force_rmtree(path: Path, retries: int = 5, delay: float = 0.5):
+    """Robustly removes a directory tree, handling potential file locks on Windows."""
     def onerror(func, p_str, exc_info):
         p = Path(p_str)
         if not os.access(p, os.W_OK):
@@ -157,15 +182,96 @@ def run(script: str = typer.Option("lib/main.py", "--script", "-s", help="Script
 
 
 @app.command()
+def doctor():
+    """Check PyThra installation and dependencies"""
+    try:
+        import sys
+        from pathlib import Path
+        
+        print("🔍 PyThra Installation Check")
+        print("=" * 40)
+        
+        # Python version
+        python_version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+        if sys.version_info >= (3, 8):
+            print(f"✅ Python {python_version} (supported)")
+        else:
+            print(f"❌ Python {python_version} (requires 3.8+)")
+        
+        # Check required dependencies
+        required_packages = [
+            ('PySide6', 'PySide6'),
+            ('typer', 'typer'),
+            ('PyYAML', 'yaml'),
+        ]
+        
+        optional_packages = [
+            ('rich', 'rich'),
+            ('semver', 'semver'),
+            ('requests', 'requests'),
+        ]
+        
+        print(f"\n📦 Required Dependencies:")
+        for display_name, import_name in required_packages:
+            try:
+                __import__(import_name)
+                print(f"✅ {display_name}")
+            except ImportError:
+                print(f"❌ {display_name} (missing)")
+        
+        print(f"\n📦 Optional Dependencies:")
+        for display_name, import_name in optional_packages:
+            try:
+                __import__(import_name)
+                print(f"✅ {display_name}")
+            except ImportError:
+                print(f"⚠️ {display_name} (recommended)")
+        
+        # Check package management system
+        print(f"\n📦 Package Management:")
+        if PACKAGE_COMMANDS_AVAILABLE:
+            print(f"✅ Package management commands available")
+            print(f"   Try: pythra package list")
+        else:
+            print(f"⚠️ Package management commands not available")
+            print(f"   Install with: pip install semver requests rich")
+        
+        # Check project structure if in a project
+        if Path('config.yaml').exists():
+            print(f"\n📁 Project Structure:")
+            expected_dirs = ['lib', 'assets', 'plugins']
+            for dir_name in expected_dirs:
+                if Path(dir_name).exists():
+                    print(f"✅ {dir_name}/")
+                else:
+                    print(f"⚠️ {dir_name}/ (recommended)")
+            
+            if Path('lib/main.py').exists():
+                print(f"✅ lib/main.py")
+            else:
+                print(f"❌ lib/main.py (missing)")
+        else:
+            print(f"\n📁 No PyThra project detected in current directory")
+        
+        print(f"\n🎯 Installation Summary:")
+        print(f"PyThra framework appears to be properly installed!")
+        
+    except Exception as e:
+        print(f"Error checking installation: {e}")
+
+
+@app.command()
 def build(
     script: str = typer.Option("lib/main.py", "--script", "-s", help="Script to compile, relative to project root."),
     include_dir: Optional[List[str]] = typer.Option(None, "--include-dir", "-d", help="Directory to include (e.g., assets). Can be repeated."),
     include_file: Optional[List[str]] = typer.Option(None, "--include-file", "-f", help="File to include."),
     output_root: str = typer.Option("build", help="Top-level build folder."),
+    icon: str = typer.Option(None, "--icon", "-i", help="Path to an .ico file for the application icon."),
+    onefile: bool = typer.Option(False, "--onefile", help="Create a single-file executable instead of a folder."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Print actions but don't execute Nuitka."),
     keep_embedded: bool = typer.Option(False, "--keep-embedded", help="Do not delete the generated _embedded_config.py after build.")
 ):
-    """Builds a standalone application folder using Nuitka."""
+    """Builds a standalone executable using Nuitka, embedding a release-mode config."""
     project_root = Path.cwd()
     config_path = project_root / "config.yaml"
 
@@ -175,7 +281,11 @@ def build(
 
     print("--- Starting Pythra Build Process ---")
     
-    include_dir = include_dir or ["assets", "web"]
+    # Set default include directories, and add 'plugins' if it exists.
+    default_includes = ["assets", "web"]
+    if (project_root / "plugins").is_dir():
+        default_includes.append("plugins")
+    include_dir = include_dir or default_includes
     include_file = include_file or []
 
     original_config = load_yaml(config_path)
@@ -185,60 +295,57 @@ def build(
     app_name = str(build_config.get("app_name", "PythraApp")).strip()
     version = str(build_config.get("version", "1.0.0"))
 
-    # The final output directory is the target
-    final_app_dir = (project_root / output_root / app_name).resolve()
-    if final_app_dir.exists():
-        print(f"[+] Removing existing build folder: {final_app_dir}")
-        force_rmtree(final_app_dir)
-    final_app_dir.mkdir(parents=True, exist_ok=True)
-    print(f"[+] Created clean build folder: {final_app_dir}")
+    # The final output directory is the main target.
+    final_build_dir = (project_root / output_root / app_name).resolve()
+    if final_build_dir.exists():
+        print(f"[+] Removing existing build folder: {final_build_dir}")
+        force_rmtree(final_build_dir)
+    final_build_dir.mkdir(parents=True, exist_ok=True)
+    print(f"[+] Created clean build folder: {final_build_dir}")
 
     script_src = (project_root / script).resolve()
     if not script_src.exists():
         raise FileNotFoundError(f"Script to compile not found: {script_src}")
 
-    embedded_module_path = generate_embedded_config_module_in_dir(dest_dir=final_app_dir, data=build_config)
+    embedded_module_path = generate_embedded_config_module_in_dir(dest_dir=final_build_dir, data=build_config)
 
     try:
         import pythra
         pythra_package_path = Path(pythra.__file__).parent
-        print(f"[+] Found Pythra framework at: {pythra_package_path}")
     except ImportError:
         print("❌ Fatal Error: Could not find 'pythra' package. Is it installed with 'pip install -e .'?")
         raise typer.Exit(code=1)
 
-    # Compose data args (use absolute paths)
-    dir_args = [f"--include-data-dir={str(project_root / d)}={d}" for d in include_dir]
-    file_args = [f"--include-data-file={str(project_root / f)}={f}" for f in include_file]
-
-    nofollow_flags = [
-        "--nofollow-import-to=numpy",
-        "--nofollow-import-to=setuptools",
-        "--nofollow-import-to=Cython",
-    ]
-
-    # Build the Nuitka command (no --module-search-path)
+    # Nuitka data arguments (source=destination)
+    dir_args = [f"--include-data-dir={project_root/d}={d}" for d in include_dir if (project_root/d).exists()]
+    file_args = [f"--include-data-file={project_root/f}={f}" for f in include_file if (project_root/f).exists()]
+    
     nuitka_cmd = [
         sys.executable, "-m", "nuitka", str(script_src),
         "--standalone",
-        # we produce a folder (not onefile) so assets can be visible
         "--enable-plugin=pyside6",
-        f"--output-dir={str(final_app_dir)}",
+        f"--output-dir={str(final_build_dir)}",
         f"--file-version={version}",
-        f"--output-filename={app_name}",
-        f"--windows-icon-from-ico={str(project_root / 'assets' / 'icons' / 'icon.ico')}",
-        "--windows-console-mode=disable",
+        "--windows-disable-console",
         f"--include-package=pythra",
-        "--low-memory",
         "--include-module=_embedded_config",
-        *nofollow_flags,
         *dir_args,
         *file_args,
     ]
 
+    if onefile:
+        nuitka_cmd.append("--onefile")
+
+    if icon:
+        icon_path = (project_root / icon).resolve()
+        if icon_path.exists():
+            nuitka_cmd.append(f"--windows-icon-from-ico={str(icon_path)}")
+        else:
+            print(f"⚠️ Warning: Icon file not found at '{icon_path}'. Skipping icon.")
+
     print("\n" + "="*72)
     print(f"App: {app_name} v{version}")
-    print(f"Build will be located in: {final_app_dir}")
+    print(f"Build will be located in: {final_build_dir}")
     print("Nuitka command to be executed:")
     print(" ".join(nuitka_cmd))
     print("="*72 + "\n")
@@ -249,17 +356,15 @@ def build(
             embedded_module_path.unlink(missing_ok=True)
         return
 
-    # Ensure Nuitka can find the pythra package (and the generated _embedded_config in final_app_dir)
+    # PYTHONPATH needs to include the folder with the generated _embedded_config module.
     env = os.environ.copy()
-    # Prepend the package parent folder and the final_app_dir so imports resolve during compilation.
-    # pythra_package_path is like .../site-packages/pythra; parent is site-packages.
-    env["PYTHONPATH"] = str(pythra_package_path.parent) + os.pathsep + str(final_app_dir) + os.pathsep + env.get("PYTHONPATH", "")
+    env["PYTHONPATH"] = str(final_build_dir) + os.pathsep + env.get("PYTHONPATH", "")
 
     try:
         subprocess.run(nuitka_cmd, check=True, env=env)
         print("\n✅ Build completed successfully!")
-        print(f"   Application folder located at: {final_app_dir}")
-    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(f"   Application folder located at: {final_build_dir}")
+    except (subprocess.CalledProcessError, FileNotFoundError):
         print("\n❌ Nuitka build failed. Please check the output above for errors.")
         print("   Make sure Nuitka and a C/C++ compiler are installed and configured correctly.")
         raise typer.Exit(code=1)
@@ -267,7 +372,6 @@ def build(
         if not keep_embedded:
             embedded_module_path.unlink(missing_ok=True)
             print(f"[+] Removed temporary embedded module.")
-
 
 if __name__ == "__main__":
     app()

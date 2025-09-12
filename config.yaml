@@ -10,7 +10,7 @@ assets_dir:
   "assets"
 
 assets_server_port: 
-  8006
+  8007
 
 font_dir: 
   "fonts"

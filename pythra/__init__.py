@@ -184,4 +184,4 @@ __all__ = [
 # --- Package Version (Optional) ---
 __version__ = "0.1.0" # Example version
 
-print("PyThra Framework Package Initialized") # Optional: Confirmation message
+print("PyThra Toolkit Initialized") # Optional: Confirmation message

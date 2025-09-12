@@ -149,3 +149,43 @@ class VirtualListController:
         """Commands the virtual list to refresh a single item at a specific index."""
         if self._state:
             self._state.refresh_js(indices=[index]) # Pass a specific index
+
+
+
+
+class MarkdownEditingController:
+    def __init__(self, initialText: str = ""):
+        self.markdown = initialText
+        self._listeners = []
+        self._js_instance_name: Optional[str] = None
+        self._framework_ref: Optional[weakref.ref['Framework']] = None
+
+    def _attach_js(self, instance_name: str, framework: 'Framework'):
+        self._js_instance_name = instance_name
+        self._framework_ref = weakref.ref(framework)
+
+    def add_listener(self, listener: Callable):
+        self._listeners.append(listener)
+
+    def remove_listener(self, listener: Callable):
+        self._listeners.remove(listener)
+
+    def _notify_listeners(self):
+        for listener in self._listeners:
+            listener()
+
+    def execCommand(self, command: str, payload: Optional[Any] = None):
+        """Commands the JS editor to execute a command like 'bold' or 'addLink'."""
+        framework = self._framework_ref() if self._framework_ref else None
+        if self._js_instance_name and framework:
+            # Escape for JS string
+            command_str = json.dumps(command)
+            payload_str = json.dumps(payload) if payload is not None else 'null'
+            
+            script = f"window._pythra_instances['{self._js_instance_name}']?.execCommand({command_str}, {payload_str});"
+            framework.window.evaluate_js(framework.id, script)
+
+    def setMarkdown(self, markdown: str):
+        """Sets the entire content of the editor."""
+        self.markdown = markdown
+        # ... similar logic to send command to JS ...

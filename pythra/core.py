@@ -4,11 +4,14 @@
 import cProfile
 import pstats
 import io
+import logging
 # --- END OF IMPORTS ---
 
 import os
 from pathlib import Path
+import importlib
 import sys
+import re
 import shutil
 import time
 import json
@@ -31,6 +34,8 @@ from .base import Widget, Key
 from .state import State, StatefulWidget, StatelessWidget
 from .reconciler import Reconciler, Patch, ReconciliationResult
 from .widgets import *  # Import all widgets for class lookups if needed
+from .package_manager import PackageManager
+from .package_system import PackageType
 
 
 # Type Hinting for circular dependencies
@@ -88,11 +93,37 @@ class Framework:
 
         self.html_file_path = self.web_dir / "index.html"
         self.css_file_path = self.web_dir / "styles.css"
+
+        # --- NEW: Enhanced Package Management System ---
+        self.package_manager = PackageManager(self.project_root)
+        self.package_manager.set_framework(self)
+        
+        # Legacy compatibility - will be populated by PackageManager
+        self.plugins = {}  # For backward compatibility
+        self.plugin_js_modules = {}  # Managed by PackageManager
+        
+        # Discover and load packages
+        print("🔎 Discovering packages...")
+        discovered_packages = self.package_manager.discover_all_packages()
+        
+        # Auto-load local packages (plugins in plugins/ directory)
+        local_packages = [name for name, packages in discovered_packages.items() 
+                         if any(pkg.path.parent.name == "plugins" for pkg in packages)]
+        
+        if local_packages:
+            loaded_packages, warnings = self.package_manager.resolve_and_load_packages(local_packages)
+            for warning in warnings:
+                print(f"⚠️ Package warning: {warning}")
+            
+            print(f"✅ Loaded {len(loaded_packages)} packages: {list(loaded_packages.keys())}")
         
         # The asset server now serves from the project's asset directory
+        package_asset_dirs = self.package_manager.get_asset_server_dirs()
         self.asset_server = AssetServer(
             directory=str(self.assets_dir),
             port=self.config.get("assets_server_port"),
+            # Pass the package asset directories to the server
+            extra_serve_dirs=package_asset_dirs
         )
         # --- END OF KEY CHANGE ---
 
@@ -123,6 +154,17 @@ class Framework:
         Widget.set_framework(self)
         StatefulWidget.set_framework(self)
         print("Framework Initialized with new Reconciler architecture.")
+
+    # Package management methods are now handled by PackageManager
+    # Legacy methods kept for backward compatibility if needed
+    
+    def get_loaded_packages(self) -> Dict[str, Any]:
+        """Get information about loaded packages"""
+        return self.package_manager.get_loaded_packages()
+    
+    def list_packages(self, package_type: Optional[PackageType] = None) -> List[Any]:
+        """List all discovered packages, optionally filtered by type"""
+        return self.package_manager.list_packages(package_type)
 
     def _ensure_default_assets(self):
         """
@@ -183,14 +225,21 @@ class Framework:
         for cb_id, cb_func in result.registered_callbacks.items():
             self.api.register_callback(cb_id, cb_func)
 
-        # 4. Generate initial HTML, CSS, and JS
+        # 4. Analyze required JS engines for optimization
+        required_engines = self._analyze_required_js_engines(built_tree_root, result)
+        print(f"🔍 Analysis complete: {len(required_engines)} JS engines required: {required_engines}")
+        
+        # 5. Generate initial HTML, CSS, and JS with optimized loading
         root_key = initial_tree_to_reconcile.get_unique_id() if initial_tree_to_reconcile else None
         html_content = self._generate_html_from_map(root_key, result.new_rendered_map)
         css_rules = self._generate_css_from_details(result.active_css_details)
-        js_script = self._generate_initial_js_script(result)
+        js_script = self._generate_initial_js_script(result, required_engines)
 
-        # 5. Write files
+        # 6. Write files
         self._write_initial_files(title, html_content, css_rules, js_script)
+        
+        # 7. Set flag to prevent re-injection during reconciliation
+        self.called = True  # JS utilities are already included in initial render
 
     def run(
         self,
@@ -211,52 +260,6 @@ class Framework:
 
         # print("\n>>> Framework: Performing Initial Render <<<")
 
-        # # 1. Build the full widget tree, which will include the StatefulWidget at the root.
-        # built_tree_root = self._build_widget_tree(self.root_widget)
-
-        # # 2. <<< THE FIX >>>
-        # # If the root is a StatefulWidget, we reconcile what it *builds*, not the widget itself.
-        # initial_tree_to_reconcile = built_tree_root
-        # if isinstance(built_tree_root, StatefulWidget):
-        #     children = built_tree_root.get_children()
-        #     initial_tree_to_reconcile = children[0] if children else None
-
-        # # 3. Perform initial reconciliation on the *renderable* tree.
-        # result = self.reconciler.reconcile(
-        #     previous_map={},
-        #     new_widget_root=initial_tree_to_reconcile,
-        #     parent_html_id="root-container",
-        # )
-
-        # self._result = result
-        
-
-        # # 4. Update framework state from the initial result.
-        # self.reconciler.context_maps["main"] = result.new_rendered_map
-        # for cb_id, cb_func in result.registered_callbacks.items():
-        #     self.api.register_callback(cb_id, cb_func)
-
-        # # 5. Generate initial HTML from the map created by the reconciler.
-        # root_key = (
-        #     initial_tree_to_reconcile.get_unique_id()
-        #     if initial_tree_to_reconcile
-        #     else None
-        # )
-        # initial_html_content = self._generate_html_from_map(
-        #     root_key, result.new_rendered_map
-        # )
-
-        # # 6. Generate initial CSS from the details collected by the reconciler.
-        # initial_css_rules = self._generate_css_from_details(result.active_css_details)
-
-        # # 7. Generate the initial JS script for things like responsive clip paths.
-        # initial_js_script = self._generate_initial_js_script(result.js_initializers)
-
-        # # 8. Write files and create the application window.
-        # self._write_initial_files(
-        #     title, initial_html_content, initial_css_rules, initial_js_script
-        # )
-
         # Now `run` just calls the new helper method
         self._perform_initial_render(self.root_widget, title)
 
@@ -270,7 +273,6 @@ class Framework:
             frameless=frameless,
             maximized = maximized,
             fixed_size = fixed_size,
-            hot_restart_handler = self.hot_restart
         )
 
         # 9. Start the application event loop.
@@ -303,153 +305,168 @@ class Framework:
 
     # --- State Update and Reconciliation Cycle ---
 
-    # --- NEW HOT RESTART METHOD ---
-    def hot_restart(self):
-        """
-        Performs a full teardown and rebuild of the application state and UI
-        on the existing window. This is achieved by regenerating the entire HTML
-        body and applying it in one atomic operation, avoiding patch race conditions.
-        """
-        # --- PROFILER SETUP ---
-        # profiler = cProfile.Profile()
-        # profiler.enable()
-        # --- END PROFILER SETUP ---
-
-        if not self.window or not self.root_widget:
-            print("Hot Restart Error: Application not running.")
-            return
-
-        print("\n🔥 --- Framework: Initiating Hot Restart --- 🔥")
-        start_time = time.time()
-
-        # 1. --- FULL TEARDOWN ---
-        print("Tearing down old state...")
-        self._dispose_widget_tree(self.root_widget) # Dispose old states and listeners
-        self.reconciler.clear_all_contexts()         # Clear reconciler's memory
-        self.api.clear_callbacks()                   # Clear old API callbacks
-
-        # 2. --- CLEAN REBUILD ---
-        # Create a fresh instance of the root widget to get the new code.
-        root_widget_class = self.root_widget.__class__
-        new_root_widget = root_widget_class(key=self.root_widget.key) # Recreate with the same root key
-        self.set_root(new_root_widget)
-
-        print("Rebuilding new widget tree...")
-        built_tree_root = self._build_widget_tree(self.root_widget)
-        tree_to_reconcile = built_tree_root
-        if isinstance(built_tree_root, StatefulWidget):
-            children = built_tree_root.get_children()
-            tree_to_reconcile = children[0] if children else None
-
-        # 3. --- GENERATE NEW UI CONTENT (NO PATCHES) ---
-        # Reconcile against an EMPTY map to populate the new rendered_map and collect details.
-        result = self.reconciler.reconcile(
-            previous_map={},
-            new_widget_root=tree_to_reconcile,
-            parent_html_id="root-container"
-        )
-
-        # Update the framework's internal state with the new data
-        self.reconciler.context_maps["main"] = result.new_rendered_map
-        for cb_id, cb_func in result.registered_callbacks.items():
-            self.api.register_callback(cb_id, cb_func)
-        
-        # 4. --- PREPARE SCRIPTS FOR THE BROWSER ---
-        # Generate the new CSS stylesheet
-        css_rules = self._generate_css_from_details(result.active_css_details)
-        css_update_script = self._generate_css_update_script(css_rules)
-
-        # Generate the new HTML content for the entire root container
-        root_key = tree_to_reconcile.get_unique_id() if tree_to_reconcile else None
-        html_content = self._generate_html_from_map(root_key, result.new_rendered_map)
-        escaped_html = json.dumps(html_content)[1:-1].replace("`", "\\`").replace("${", "\\${")
-
-        # Generate the script for any necessary JS initializers (e.g., ClipPath, SimpleBar)
-        initializer_script_tag = self._generate_initial_js_script(result)
-        initializers_js = initializer_script_tag.replace("<script type=\"module\">", "").replace("import { PythraSlider } from './js/slider.js';", "").replace("</script>","").replace("document.addEventListener('DOMContentLoaded', () => {", "").replace("});//end event listener", "")
-        # print("initializer_script_tag: ", initializer_script_tag)
-        
-        # We need to extract just the JS commands from inside the <script> tag
-        # to run them after the innerHTML has been set.
-        # import re
-        # match = re.search(r"document\.addEventListener\('DOMContentLoaded', \(\) => \{(.+?)\}\);", initializer_script_tag, re.DOTALL)
-        # initializers_js = match.group(1).strip() if match else ""
-        # print("initializers_js: ", initializers_js)
-
-        # --- THIS IS THE FIX ---
-        # Get the source code for our core JS utility functions.
-        js_utilities = self._get_js_utility_functions()
-        # --- END OF FIX ---
-
-        # 5. --- ASSEMBLE AND EXECUTE THE FINAL RESTART SCRIPT ---
-        # This script performs the update in a safe, atomic order.
-        restart_script = f"""
-            // Step 1: Update the styles to the new stylesheet.
-            {css_update_script}
-
-            // Step 2: Atomically replace the entire DOM content of the root container.
-            // This is faster and more reliable than thousands of individual patches.
-            var rootContainer = document.getElementById('root-container');
-            if (rootContainer) {{
-                rootContainer.innerHTML = `{escaped_html}`;
-            }}
-
-            // Step 3: Defer the JavaScript initializers to run AFTER the new DOM
-            // has been fully parsed and is ready.
-            setTimeout(() => {{
-                try {{
-                    // DEFINE THE MISSING FUNCTIONS
-                    {js_utilities}
-                    // NOW, RUN THE INITIALIZERS
-                    console.log(`Tring hot restart`);
-                    {initializers_js}
-                }} catch (e) {{
-                    console.error("Error running Hot Restart initializers:", e);
-                }}
-            }}, 0);
-        """
-        
-        print(f"Applying full UI rebuild for Hot Restart...")
-        self.window.evaluate_js(self.id, restart_script)
-
-        print(f"--- Hot Restart Complete (Total: {time.time() - start_time:.4f}s) ---")
-        # --- PROFILER REPORTING ---
-        # profiler.disable()
-        # s = io.StringIO()
-        # # Sort stats by 'cumulative time' to see the biggest bottlenecks at the top
-        # ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
-        # ps.print_stats(20) # Print the top 20 most time-consuming functions
-
-        print("\n--- cProfile Report ---")
-        print(s.getvalue())
-        print("--- End of Report ---\n")
-        # --- END PROFILER REPORTING ---
-
-
 
     # Place this new helper method somewhere in the Framework class
-    def _get_js_utility_functions(self) -> str:
-        """Reads core JS utility files and returns them as a single string."""
-        js_files = [
-            "web/js/pathGenerator.js",
-            "web/js/clipPathUtils.js",
-            "web/js/slider.js",
-            "web/js/dropdown.js",
-            "web/js/gesture_detector.js",
-            "web/js/gradient_border.js", 
-            "web/js/virtual_list.js",  # <-- ADD THIS LINE
-        ]
+    def _get_js_utility_functions(self, required_engines: set = None) -> str:
+        """
+        Reads only the required JS engine and utility files based on actual usage.
+        
+        :param required_engines: Set of engine names that are actually needed
+        :return: Combined JavaScript code string
+        """
+        # --- MAPPING OF ENGINES TO FILES ---
+        engine_to_file_map = {
+            'generateRoundedPath': "web/js/pathGenerator.js",
+            'ResponsiveClipPath': "web/js/clipPathUtils.js", 
+            'scalePathAbsoluteMLA': "web/js/clipPathUtils.js",
+            'PythraSlider': "web/js/slider.js",
+            'PythraDropdown': "web/js/dropdown.js",
+            'PythraGestureDetector': "web/js/gesture_detector.js",
+            'PythraGradientClipPath': "web/js/gradient_border.js",
+            'PythraVirtualList': "web/js/virtual_list.js",
+        }
+        
+        # If no specific engines requested, load all (fallback for compatibility)
+        if required_engines is None:
+            print("🔧 Loading all JS engines (no optimization applied)")
+            files_to_load = set(engine_to_file_map.values())
+        else:
+            print(f"🎯 Optimized loading: Only loading engines for {required_engines}")
+            files_to_load = set()
+            for engine in required_engines:
+                if engine in engine_to_file_map:
+                    files_to_load.add(engine_to_file_map[engine])
+                else:
+                    print(f"⚠️ Unknown engine requested: {engine}")
+        
         all_js_code = []
-        for file_path in js_files:
+        loaded_files = set()  # Track loaded files to avoid duplicates
+        
+        for file_path in files_to_load:
+            if file_path in loaded_files:
+                continue  # Skip if already loaded
+            loaded_files.add(file_path)
+            
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    # We need to remove the 'export' keyword so they become
-                    # simple global functions within our script's scope.
-                    content = f.read().replace('export function', 'function').replace('export class', 'class').replace("import { generateRoundedPath } from './pathGenerator.js';", "")
-                    all_js_code.append(content)
+                # Use Path for robust path handling
+                full_path = self.project_root / file_path
+                with full_path.open('r', encoding='utf-8') as f:
+                    content = f.read()
+                    # --- CLEANUP LOGIC ---
+                    content = content.replace('export class', 'class').replace('export function', 'function')
+                    content = re.sub(r'import\s+.*\s+from\s+.*?;?\n?', '', content)
+                    
+                    # Wrap in try-catch but assign classes to global scope
+                    wrapped_content = f"""try {{
+{content}
+
+// Ensure classes are available globally
+if (typeof ResponsiveClipPath !== 'undefined') window.ResponsiveClipPath = ResponsiveClipPath;
+if (typeof PythraSlider !== 'undefined') window.PythraSlider = PythraSlider;
+if (typeof PythraDropdown !== 'undefined') window.PythraDropdown = PythraDropdown;
+if (typeof PythraGestureDetector !== 'undefined') window.PythraGestureDetector = PythraGestureDetector;
+if (typeof PythraGradientClipPath !== 'undefined') window.PythraGradientClipPath = PythraGradientClipPath;
+if (typeof PythraVirtualList !== 'undefined') window.PythraVirtualList = PythraVirtualList;
+if (typeof generateRoundedPath !== 'undefined') window.generateRoundedPath = generateRoundedPath;
+if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = scalePathAbsoluteMLA;
+}} catch (e) {{
+    console.error('Error loading {os.path.basename(file_path)}:', e);
+}}"""
+                    
+                    all_js_code.append(f"// --- Injected from {os.path.basename(file_path)} ---\n{wrapped_content}")
+                    print(f"✅ Loaded JS engine: {os.path.basename(file_path)}")
             except FileNotFoundError:
-                print(f"Warning: JS utility file not found: {file_path}")
-        return "\n".join(all_js_code)
+                print(f"⚠️ Warning: JS utility file not found: {full_path}")
+
+        # --- THIS IS THE NEW LOGIC ---
+        # 2. Load all DISCOVERED PLUGIN JS files
+        for engine_name, module_info in self.plugin_js_modules.items():
+            try:
+                full_path = Path(module_info['path'])
+                with full_path.open('r', encoding='utf-8') as f:
+                    content = f.read()
+                    content = re.sub(r'import\s+.*\s+from\s+.*?;?\n?', '', content)
+                    content = content.replace('export class', 'class').replace('export function', 'function')
+                    wrapped_content = f"""try {{
+{content}
+}} catch (e) {{
+    console.error('Error loading plugin {module_info['plugin']} - {os.path.basename(full_path)}:', e);
+}}"""
+                    all_js_code.append(f"// --- Injected Plugin '{module_info['plugin']}': {os.path.basename(full_path)} ---\n{wrapped_content}")
+                    print(f"✅ Loaded plugin JS: {module_info['plugin']} - {os.path.basename(full_path)}")
+            except FileNotFoundError:
+                print(f"⚠️ Warning: Plugin JS file not found: {full_path}")
+        # --- END OF NEW LOGIC ---
+
+        return "\n\n".join(all_js_code)
+
+    def _analyze_required_js_engines(self, widget_tree: Widget, result: 'ReconciliationResult') -> set:
+        """
+        Analyzes the widget tree and reconciliation result to determine which JS engines are needed.
+        
+        :param widget_tree: The built widget tree
+        :param result: Reconciliation result with rendered map and initializers
+        :return: Set of required JS engine names
+        """
+        required_engines = set()
+        
+        # Check reconciliation result for JS initializers
+        for init in result.js_initializers:
+            init_type = init.get("type")
+            if init_type == "ResponsiveClipPath":
+                required_engines.update(['ResponsiveClipPath', 'generateRoundedPath', 'scalePathAbsoluteMLA'])
+            elif init_type == "SimpleBar":
+                # SimpleBar is external, no engine needed
+                pass
+            elif init_type == "_RenderableSlider":
+                required_engines.add('PythraSlider')
+            elif init_type == "VirtualList":
+                required_engines.add('PythraVirtualList')
+        
+        # Check rendered widgets for engine requirements
+        for node_data in result.new_rendered_map.values():
+            props = node_data.get("props", {})
+            
+            # Check for various initialization flags
+            if props.get("init_slider"):
+                required_engines.add('PythraSlider')
+            if props.get("init_dropdown"):
+                required_engines.add('PythraDropdown')
+            if props.get("init_gesture_detector"):
+                required_engines.add('PythraGestureDetector')
+            if props.get("init_gradient_clip_border"):
+                required_engines.add('PythraGradientClipPath')
+            if props.get("init_virtual_list"):
+                required_engines.add('PythraVirtualList')
+            if props.get("responsive_clip_path"):
+                required_engines.update(['ResponsiveClipPath', 'generateRoundedPath', 'scalePathAbsoluteMLA'])
+            if props.get("_js_init"):
+                engine_name = props["_js_init"].get("engine")
+                if engine_name:
+                    required_engines.add(engine_name)
+        
+        # Check for ClipPath widgets (which need ResponsiveClipPath)
+        self._check_widget_for_clip_path(widget_tree, required_engines)
+        
+        return required_engines
+    
+    def _check_widget_for_clip_path(self, widget: Widget, required_engines: set):
+        """
+        Recursively checks widget tree for ClipPath widgets that need JS engines.
+        """
+        if widget is None:
+            return
+            
+        # Check if this is a ClipPath widget
+        widget_class_name = widget.__class__.__name__
+        if widget_class_name == 'ClipPath':
+            # ClipPath widgets need the path generation engines
+            required_engines.update(['ResponsiveClipPath', 'generateRoundedPath', 'scalePathAbsoluteMLA'])
+        
+        # Recursively check children
+        if hasattr(widget, 'get_children'):
+            for child in widget.get_children():
+                self._check_widget_for_clip_path(child, required_engines)
 
     def request_reconciliation(self, state_instance: State):
         """Called by State.setState to schedule a UI update."""
@@ -563,7 +580,7 @@ class Framework:
         combined_script = (css_update_script + "\n" + dom_patch_script).strip()
         if combined_script:
             print(f"Framework: Executing {len(all_patches)} DOM patches.")
-            # print("Patches:", all_patches)
+            print("Patches:", all_patches)
             self.window.evaluate_js(self.id, combined_script)
         else:
             print("Framework: No DOM changes detected.")
@@ -752,55 +769,7 @@ class Framework:
         This is the Python-side logic that mirrors your JS path generators.
         """
         return ""
-        # path_parts = []
-        # for cmd_data in commands_data:
-        #     print("CMD DATA CORE: ", cmd_data)
-        #     cmd_type = cmd_data.get("type")
-        #     if cmd_type == "RoundedPolygon":
-        #         # This is a simplified version of your JS logic for Python
-        #         # It uses Quadratic Curves for rounding.
-        #         vertices = cmd_data.get("verts", [])
-        #         radius = cmd_data.get("radius", 0)
-        #         if not vertices or radius <= 0:
-        #             continue
 
-        #         num_vertices = len(vertices)
-        #         for i in range(num_vertices):
-        #             p1 = vertices[i]
-        #             p0 = vertices[i - 1]
-        #             p2 = vertices[(i + 1) % num_vertices]
-        #             v1 = (p0[0] - p1[0], p0[1] - p1[1])
-        #             v2 = (p2[0] - p1[0], p2[1] - p1[1])
-        #             len_v1 = math.sqrt(v1[0] ** 2 + v1[1] ** 2)
-        #             len_v2 = math.sqrt(v2[0] ** 2 + v2[1] ** 2)
-        #             if len_v1 == 0 or len_v2 == 0:
-        #                 continue
-
-        #             clamped_radius = min(radius, len_v1 / 2, len_v2 / 2)
-        #             arc_start_x = p1[0] + (v1[0] / len_v1) * clamped_radius
-        #             arc_start_y = p1[1] + (v1[1] / len_v1) * clamped_radius
-        #             arc_end_x = p1[0] + (v2[0] / len_v2) * clamped_radius
-        #             arc_end_y = p1[1] + (v2[1] / len_v2) * clamped_radius
-
-        #             if i == 0:
-        #                 path_parts.append(f"M {arc_start_x} {arc_start_y}")
-        #             else:
-        #                 path_parts.append(f"L {arc_start_x} {arc_start_y}")
-        #             path_parts.append(f"Q {p1[0]} {p1[1]} {arc_end_x} {arc_end_y}")
-        #         path_parts.append("Z")
-
-        #     elif cmd_type == "MoveTo":
-        #         path_parts.append(f"M {cmd_data['x']} {cmd_data['y']}")
-        #     elif cmd_type == "LineTo":
-        #         path_parts.append(f"L {cmd_data['x']} {cmd_data['y']}")
-        #     elif cmd_type == "ClosePath":
-        #         path_parts.append("Z")
-        #     # ... add other command types as needed ...
-
-        # return " ".join(path_parts)
-
-    # In pythra/core.py
-    # In pythra/core.py, inside the Framework class
 
     def _sanitize_for_json(self, data: Any) -> Any:
         """
@@ -864,19 +833,32 @@ class Framework:
                 command_js = f"""
                     var parentEl = document.getElementById('{parent_id}');
                     if (parentEl) {{
-                        // Create a temporary, disconnected container
-                        var tempContainer = document.createElement('div');
-                        // Use trim() to remove leading/trailing whitespace from the HTML string
-                        tempContainer.innerHTML = `{final_escaped_html}`.trim(); 
-                        
-                        // Use `firstElementChild` which ignores whitespace text nodes
-                        var insertedEl = tempContainer.firstElementChild; 
+                        try {{
+                            // Create a temporary, disconnected container
+                            var tempContainer = document.createElement('div');
+                            // Use trim() to remove leading/trailing whitespace from the HTML string
+                            tempContainer.innerHTML = `{final_escaped_html}`.trim(); 
+                            
+                            // Use `firstElementChild` which ignores whitespace text nodes
+                            var insertedEl = tempContainer.firstElementChild; 
 
-                        if (insertedEl) {{
-                            parentEl.insertBefore(insertedEl, {before_id_js});
-                            // Now we can safely apply props because 'insertedEl' is guaranteed to be an element
-                            {self._generate_prop_update_js(target_id, props, is_insert=True)}
+                            if (insertedEl) {{
+                                // Check if before element exists and is still in DOM
+                                var beforeEl = {before_id_js};
+                                if (beforeEl && !parentEl.contains(beforeEl)) {{
+                                    beforeEl = null; // Element no longer exists, append at end
+                                }}
+                                parentEl.insertBefore(insertedEl, beforeEl);
+                                // Now we can safely apply props because 'insertedEl' is guaranteed to be an element
+                                {self._generate_prop_update_js(target_id, props, is_insert=True)}
+                            }} else {{
+                                console.warn('INSERT: No valid element created from HTML for {target_id}');
+                            }}
+                        }} catch (e) {{
+                            console.error('INSERT: DOM operation failed for {target_id}:', e);
                         }}
+                    }} else {{
+                        console.error('INSERT: Parent element {parent_id} not found for {target_id}');
                     }}
                 """
                 props = data.get("props", {})
@@ -913,10 +895,10 @@ class Framework:
                     command_js += f"""
                         setTimeout(() => {{
                             console.log("Initializig dropdown");
-                            if (typeof PythraDropdown !== 'undefined') {{
+                            if (typeof window.PythraDropdown !== 'undefined') {{
                                 console.log("Initializig the dropdown");
-                                if (!window._pythra_instances['{target_id}']) {{
-                                    window._pythra_instances['{target_id}'] = new PythraDropdown('{target_id}', {options_json});
+                                if (!window._pythra_instances['{target_id}']){{
+                                    window._pythra_instances['{target_id}'] = new window.PythraDropdown('{target_id}', {options_json});
                                 }}
                             }}
                         }}, 0);
@@ -927,10 +909,10 @@ class Framework:
                     options_json = json.dumps(props.get("slider_options", {}))
                     command_js += f"""
                         setTimeout(() => {{
-                            if (typeof PythraSlider !== 'undefined') {{
+                            if (typeof window.PythraSlider !== 'undefined') {{
                                 if (!window._pythra_instances['{target_id}']) {{
                                     console.log('Initializing dynamically inserted PythraSlider for #{target_id}');
-                                    window._pythra_instances['{target_id}'] = new PythraSlider('{target_id}', {options_json});
+                                    window._pythra_instances['{target_id}'] = new window.PythraSlider('{target_id}', {options_json});
                                 }}
                             }}
                         }}, 0);
@@ -956,8 +938,8 @@ class Framework:
                     # We need to wait for SimpleBar to initialize first, so we defer this.
                     js_commands.append(f"""
                     setTimeout(() => {{
-                        if (typeof PythraVirtualList !== 'undefined' && document.getElementById('{target_id}').simplebar) {{
-                            window._pythra_instances['{target_id}_vlist'] = new PythraVirtualList('{target_id}', {options_json});
+                        if (typeof window.PythraVirtualList !== 'undefined' && document.getElementById('{target_id}').simplebar) {{
+                            window._pythra_instances['{target_id}_vlist'] = new window.PythraVirtualList('{target_id}', {options_json});
                         }}
                     }}, 0);
                     """)
@@ -995,10 +977,10 @@ class Framework:
                         const pointsForGenerator_{target_id} = {points_json}.map(p => ({{x: p[0], y: p[1]}}));
                         
                         // Step 1: Call generateRoundedPath with the points and radius
-                        const initialPathString_{target_id} = generateRoundedPath(pointsForGenerator_{target_id}, {radius_json});
+                        const initialPathString_{target_id} = window.generateRoundedPath(pointsForGenerator_{target_id}, {radius_json});
                         
                         // Step 2: Feed the generated path into ResponsiveClipPath
-                        window._pythra_instances['{initializer_data["before_id"] if initializer_data["before_id"] else target_id}'] = new ResponsiveClipPath(
+                        window._pythra_instances['{initializer_data["before_id"] if initializer_data["before_id"] else target_id}'] = new window.ResponsiveClipPath(
                             '{initializer_data["before_id"] if initializer_data["before_id"] else target_id}', 
                             initialPathString_{target_id}, 
                             {ref_w_json}, 
@@ -1007,10 +989,31 @@ class Framework:
                         );
                         }}, 0);
                     """)
-                    
-                    
-                
 
+                # --- GENERIC JS INITIALIZER FOR BOTH INSERT AND REPLACE ---
+                js_init_data = props.get("_js_init")
+                if js_init_data and isinstance(js_init_data, dict):
+                    engine_name = js_init_data.get("engine")
+                    instance_name = js_init_data.get("instance_name")
+                    options = js_init_data.get("options", {})
+                    options_json = json.dumps(options)
+                    
+                    # We use setTimeout to ensure the element is fully in the DOM.
+                    command_js += f"""
+                        setTimeout(() => {{
+                            if (typeof {engine_name} !== 'undefined') {{
+                                if (!window._pythra_instances['{instance_name}']) {{
+                                    console.log('Dynamically initializing {engine_name} for {instance_name}');
+                                    window._pythra_instances['{instance_name}'] = new {engine_name}('{target_id}', {options_json});
+                                }}
+                            }} else {{
+                                console.error('{engine_name} class not found. Ensure its JS file is loaded.');
+                            }}
+                        }}, 0);
+                    """
+                # --- END OF GENERIC LOGIC ---
+                    
+                    
             elif action == "REMOVE":
                 command_js = f"""
                     var el_to_remove = document.getElementById('{target_id}');
@@ -1028,26 +1031,20 @@ class Framework:
                 # Pass the element's ID to the prop updater, not the element itself
                 prop_update_js = self._generate_prop_update_js(target_id, data["props"])
                 if prop_update_js:
-                    command_js = f'var elToUpdate = document.getElementById("{target_id}"); if (elToUpdate) {{ {prop_update_js} }}'
+                    command_js = f"""
+                        var elToUpdate = document.getElementById("{target_id}");
+                        if (elToUpdate) {{
+                            try {{
+                                {prop_update_js}
+                            }} catch (e) {{
+                                console.error('UPDATE: Property update failed for {target_id}:', e);
+                            }}
+                        }} else {{
+                            console.error('UPDATE: Element {target_id} not found in DOM');
+                        }}
+                    """
 
-                # new_scrollbar_props = data.get('props', {}).get('custom_scrollbar_props')
-                # old_scrollbar_props = data.get('old_props', {}).get('custom_scrollbar_props')
 
-                # if new_scrollbar_props != old_scrollbar_props:
-                #      command_js += f"""
-                #         import('./js/customScrollBar.js').then((module) => {{
-                #            window._pythra_instances = window._pythra_instances || {{}};
-                #            if (window._pythra_instances['{target_id}_sb']) {{
-                #                window._pythra_instances['{target_id}_sb'].destroy();
-                #            }}
-                #            if ({json.dumps(new_scrollbar_props)} !== null) {{ // Re-create only if new props exist
-                #                window._pythra_instances['{target_id}_sb'] = new module.CustomScrollBar(
-                #                    '{target_id}',
-                #                    {json.dumps(new_scrollbar_props)}
-                #                );
-                #            }}
-                #         }});
-                #      """
             elif action == "MOVE":
                 parent_id, before_id = data["parent_html_id"], data["before_id"]
                 before_id_js = (
@@ -1056,7 +1053,21 @@ class Framework:
                 command_js = f"""
                     var el = document.getElementById('{target_id}');
                     var p = document.getElementById('{parent_id}');
-                    if (el && p) p.insertBefore(el, {before_id_js});
+                    if (el && p) {{
+                        try {{
+                            var beforeEl = {before_id_js};
+                            // Check if before element still exists and is in the target parent
+                            if (beforeEl && !p.contains(beforeEl)) {{
+                                beforeEl = null; // Element moved or removed, append at end
+                            }}
+                            p.insertBefore(el, beforeEl);
+                        }} catch (e) {{
+                            console.error('MOVE: Failed to move element {target_id}:', e);
+                        }}
+                    }} else {{
+                        if (!el) console.error('MOVE: Element {target_id} not found');
+                        if (!p) console.error('MOVE: Parent element {parent_id} not found');
+                    }}
                 """
 
             # --- ADD THIS NEW BLOCK ---
@@ -1136,8 +1147,8 @@ class Framework:
                     # Return all other (presumably serializable) types as is.
                     return obj
 
-                # # Create the log-safe string representation of the data.
-                # loggable_data_str = json.dumps(make_loggable(data))
+                # Create the log-safe string representation of the data.
+                loggable_data_str = json.dumps(make_loggable(data))
 
                 is_textfield_patch = False
                 if "props" in data and isinstance(data["props"], dict):
@@ -1149,815 +1160,23 @@ class Framework:
                 # print(f"Loggable Data str: [{loggable_data_str}]")
                 js_commands.append(
                     
-                    f"try {{ {command_js} }} catch (e) {{ console.error('Error applying patch {action} {target_id}:', e, {loggable_data_str}); }};"
+                    f"try {{ {command_js} }} catch (e) {{ console.error('Error applying patch {action} {target_id}:', e.name + ': ' + e.message, 'Stack:', e.stack, 'Data:', {loggable_data_str}); }};"
                 )
 
+         # --- THIS IS THE FIX ---
+        # The `self.called` flag is used to ensure we only inject the JS utilities ONCE
+        # per application session, on the very first set of patches that gets sent.
         if not self.called:
-
             self.called = True
-            js_commands.insert(0, f"""
-                        var vec = (p1, p2) => ({{ x: p2.x - p1.x, y: p2.y - p1.y }});
-                        var magnitude = (v) => Math.sqrt(v.x ** 2 + v.y ** 2);
-                        var dot = (v1, v2) => v1.x * v2.x + v1.y * v2.y;
-                        var cross = (v1, v2) => v1.x * v2.y - v1.y * v2.x;
-                        var round = (val) => Math.round(val * 100) / 100; // Round to 2 decimal places
+            print("🔧 Framework: Injecting JS utilities for the first time during reconciliation")
+            # Prepend the combined JS utilities to the list of commands.
+            js_utilities = self._get_js_utility_functions()
+            js_commands.insert(0, js_utilities)
+        else:
+            print("🔧 Framework: Skipping JS utilities injection (already loaded)")
+        # --- END OF FIX ---
 
-                        function generateRoundedPath(points, radius) {{
-                            const numPoints = points.length;
-                            const cornerData = [];
 
-                            console.log(`>>>>>> Generator Initiated <<<<<<`)
-
-                            for (let i = 0; i < numPoints; i++) {{
-                                const p_prev = points[(i + numPoints - 1) % numPoints];
-                                const p_curr = points[i];
-                                const p_next = points[(i + 1) % numPoints];
-
-                                const v1 = vec(p_curr, p_prev);
-                                const v2 = vec(p_curr, p_next);
-                                const v1_mag = magnitude(v1);
-                                const v2_mag = magnitude(v2);
-
-                                if (v1_mag === 0 || v2_mag === 0) {{
-                                    cornerData.push({{ t1: p_curr, t2: p_curr, radius: 0 }});
-                                    continue;
-                                }}
-
-                                const angle = Math.acos(Math.max(-1, Math.min(1, dot(v1, v2) / (v1_mag * v2_mag))));
-                                let tangentDist = radius / Math.tan(angle / 2);
-                                tangentDist = Math.min(tangentDist, v1_mag / 2, v2_mag / 2);
-                                const clampedRadius = Math.abs(tangentDist * Math.tan(angle / 2));
-
-                                const t1 = {{ x: p_curr.x + (v1.x / v1_mag) * tangentDist, y: p_curr.y + (v1.y / v1_mag) * tangentDist }};
-                                const t2 = {{ x: p_curr.x + (v2.x / v2_mag) * tangentDist, y: p_curr.y + (v2.y / v2_mag) * tangentDist }};
-
-                                const sweepFlag = cross(v1, v2) < 0 ? 1 : 0;
-
-                                cornerData.push({{ t1, t2, radius: clampedRadius, sweepFlag }});
-                            }}
-
-                            const pathCommands = [];
-                            pathCommands.push(`M ${{round(cornerData[numPoints - 1].t2.x)}} ${{round(cornerData[numPoints - 1].t2.y)}}`);
-                            for (let i = 0; i < numPoints; i++) {{
-                                const corner = cornerData[i];
-                                pathCommands.push(`L ${{round(corner.t1.x)}} ${{round(corner.t1.y)}}`);
-                                pathCommands.push(`A ${{round(corner.radius)}} ${{round(corner.radius)}} 0 0 ${{corner.sweepFlag}} ${{round(corner.t2.x)}} ${{round(corner.t2.y)}}`);
-                            }}
-                            pathCommands.push('Z');
-                            console.log(pathCommands.join(' '));
-                            return pathCommands.join(' ');
-                        }}
-
-
-                        function scalePathAbsoluteMLA(pathStr, refW, refH, targetW, targetH, options = {{}}) {{
-                        const rw = targetW / refW;
-                        const rh = targetH / refH;
-                        const uniformArc = !!options.uniformArc;
-                        const decimalPlaces = typeof options.decimalPlaces === 'number' ? options.decimalPlaces : null;
-                        const rScale = uniformArc ? Math.min(rw, rh) : null;
-
-                        const fmt = (num) => {{
-                            return decimalPlaces !== null
-                            ? Number(num.toFixed(decimalPlaces)).toString()
-                            : Number(num).toString();
-                        }};
-
-                        // Normalize the string
-                        const s = pathStr
-                            .replace(/,/g, ' ')
-                            .replace(/([0-9])-/g, '$1 -')
-                            .replace(/\s+/g, ' ')
-                            .trim();
-
-                        const tokenRegex = /([MLAZHV])|(-?\d*\.?\d+(?:e[-+]?\d+)?)/gi;
-                        const tokens = [];
-                        let match;
-                        while ((match = tokenRegex.exec(s)) !== null) {{
-                            tokens.push(match[1] || match[2]);
-                        }}
-
-                        const out = [];
-                        let i = 0;
-                        while (i < tokens.length) {{
-                            const cmd = tokens[i++];
-                            out.push(cmd);
-
-                            switch (cmd) {{
-                            case 'M':
-                            case 'L':
-                                while (i + 1 < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {{
-                                const x = parseFloat(tokens[i++]) * rw;
-                                const y = parseFloat(tokens[i++]) * rh;
-                                out.push(fmt(x), fmt(y));
-                                }}
-                                break;
-
-                            case 'A':
-                                while (i + 6 < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {{
-                                const rx = parseFloat(tokens[i++]);
-                                const ry = parseFloat(tokens[i++]);
-                                const rot = tokens[i++];
-                                const laf = tokens[i++];
-                                const sf = tokens[i++];
-                                const x = parseFloat(tokens[i++]);
-                                const y = parseFloat(tokens[i++]);
-
-                                out.push(
-                                    fmt(uniformArc ? rx * rScale : rx * rw),
-                                    fmt(uniformArc ? ry * rScale : ry * rh),
-                                    rot,
-                                    laf,
-                                    sf,
-                                    fmt(x * rw),
-                                    fmt(y * rh)
-                                );
-                                }}
-                                break;
-
-                            case 'H':
-                                while (i < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {{
-                                const x = parseFloat(tokens[i++]) * rw;
-                                out.push(fmt(x));
-                                }}
-                                break;
-
-                            case 'V':
-                                while (i < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {{
-                                const y = parseFloat(tokens[i++]) * rh;
-                                out.push(fmt(y));
-                                }}
-                                break;
-
-                            case 'Z':
-                                // No coordinates to scale
-                                break;
-
-                            default:
-                                console.warn('Unsupported or unexpected token:', cmd);
-                            }}
-                        }}
-
-                        return out.join(' ');
-                        }}
-
-                        class ResponsiveClipPath {{
-                        constructor(target, originalPath, refW, refH, options = {{}}) {{
-                            this.elements = [];
-                            this.orig = originalPath.trim();
-                            this.refW = refW;
-                            this.refH = refH;
-                            this.options = options;
-                            this.currentPath = "";  // ⬅️ Store last computed path string
-                            this.update = this.update.bind(this);
-                            this.roList = [];
-
-                            if (typeof target === 'string') {{
-                            let selector = target;
-                            if (!selector.startsWith('#') && !selector.startsWith('.')) {{
-                                const byId = document.getElementById(selector);
-                                selector = byId ? `#${{selector}}` : `.${{selector}}`;
-                            }}
-                            const nodeList = document.querySelectorAll(selector);
-                            if (nodeList.length === 0) {{
-                                console.warn(`ResponsiveClipPath: no elements found for selector "${{selector}}"`);
-                            }}
-                            nodeList.forEach(el => this.elements.push(el));
-                            }} else if (target instanceof HTMLElement) {{
-                            this.elements.push(target);
-                            }} else {{
-                            console.warn('ResponsiveClipPath: invalid target', target);
-                            }}
-
-                            this.elements.forEach(el => this.initElement(el));
-                        }}
-
-                        initElement(el) {{
-                            this.applyClip(el);
-                            if (window.ResizeObserver) {{
-                            const ro = new ResizeObserver(() => this.applyClip(el));
-                            ro.observe(el);
-                            this.roList.push({{ el, ro }});
-                            }} else {{
-                            window.addEventListener('resize', this.update);
-                            }}
-                        }}
-
-                        applyClip(el) {{
-                            const rect = el.getBoundingClientRect();
-                            const newPath = scalePathAbsoluteMLA(
-                            this.orig,
-                            this.refW,
-                            this.refH,
-                            rect.width,
-                            rect.height,
-                            this.options
-                            );
-                            this.currentPath = `path("${{newPath}}")`;  // ⬅️ Save it
-                            el.style.clipPath = this.currentPath;
-                            el.style.webkitClipPath = this.currentPath;
-                        }}
-
-                        update() {{
-                            this.elements.forEach(el => this.applyClip(el));
-                        }}
-
-                        disconnect() {{
-                            this.roList.forEach(({{ el, ro }}) => ro.unobserve(el));
-                            this.roList = [];
-                            window.removeEventListener('resize', this.update);
-                        }}
-
-                        // ✅ Your new method
-                        getResponsivePath() {{
-                            return this.currentPath;
-                        }}
-                        }}
-
-                        class PythraDropdown {{
-                            constructor(elementId, options) {{
-                                this.container = document.getElementById(elementId);
-                                if (!this.container) {{
-                                    console.error(`Dropdown container with ID #${{elementId}} not found.`);
-                                    return;
-                                }}
-
-                                console.log(`✅ PythraDropdown engine is initializing for #${{elementId}}`);
-
-                                this.options = options;
-                                this.valueContainer = this.container.querySelector('.dropdown-value-container');
-                                this.menu = this.container.querySelector('.dropdown-menu');
-                                this.items = this.menu.querySelectorAll('.dropdown-item');
-
-                                // Bind 'this' to maintain context in event handlers
-                                this.toggleMenu = this.toggleMenu.bind(this);
-                                this.handleItemClick = this.handleItemClick.bind(this);
-                                this.handleClickOutside = this.handleClickOutside.bind(this);
-
-                                // Attach event listeners
-                                this.valueContainer.addEventListener('click', this.toggleMenu);
-                                this.items.forEach(item => {{
-                                    item.addEventListener('click', this.handleItemClick);
-                                }});
-                            }}
-
-                            toggleMenu(event) {{
-                                event.stopPropagation(); // Prevent click from bubbling to the document
-                                const isCurrentlyOpen = this.container.classList.toggle('open');
-                                console.log("Value container Clicked");
-                                
-                                if (isCurrentlyOpen) {{
-                                    // If we just opened the menu, listen for clicks outside to close it
-                                    document.addEventListener('click', this.handleClickOutside);
-                                }} else {{
-                                    // If we just closed it, stop listening
-                                    document.removeEventListener('click', this.handleClickOutside);
-                                }}
-                            }}
-
-                            handleItemClick(event) {{
-                                const selectedValue = event.currentTarget.dataset.value;
-                                const selectedLabel = event.currentTarget.textContent;
-
-                                console.log("Dropdown option Clicked");
-                                
-                                // 1. Update the display value immediately for instant feedback
-                                this.valueContainer.querySelector('span').textContent = selectedLabel;
-                                
-                                // 2. Send the selected *value* back to the Python backend
-                                if (window.pywebview && this.options.onChangedName) {{
-                                    window.pywebview.on_input_changed(this.options.onChangedName, selectedValue);
-                                }}
-                                
-                                // 3. Close the menu
-                                this.closeMenu();
-                            }}
-                            
-                            closeMenu() {{
-                                if (this.container.classList.contains('open')) {{
-                                    this.container.classList.remove('open');
-                                    document.removeEventListener('click', this.handleClickOutside);
-                                }}
-                            }}
-
-                            handleClickOutside(event) {{
-                                // If the click is outside the main container, close the menu
-                                if (!this.container.contains(event.target)) {{
-                                    this.closeMenu();
-                                }}
-                            }}
-
-                            destroy() {{
-                                // Cleanup to prevent memory leaks
-                                if (!this.container) return;
-                                this.valueContainer.removeEventListener('click', this.toggleMenu);
-                                this.items.forEach(item => {{
-                                    item.removeEventListener('click', this.handleItemClick);
-                                }});
-                                document.removeEventListener('click', this.handleClickOutside);
-                            }}
-                        }}
-                        /**
-                        * PythraGestureDetector: A client-side engine for a feature-rich gesture detector.
-                        *
-                        * It uses Pointer Events to handle mouse and touch统一. It disambiguates between
-                        * taps, double taps, long presses, and panning gestures.
-                        */
-                        class PythraGestureDetector {{
-                            constructor(elementId, options) {{
-                                this.element = document.getElementById(elementId);
-                                if (!this.element) {{
-                                    console.error(`GestureDetector element with ID #${{elementId}} not found.`);
-                                    return;
-                                }}
-
-                                this.options = options;
-
-                                // --- Gesture State ---
-                                this.lastTapTime = 0;
-                                this.tapTimeout = null;
-                                this.longPressTimeout = null;
-                                this.isPanning = false;
-                                this.panStartPoint = {{ x: 0, y: 0 }};
-                                this.panThreshold = 5; // Pixels to move before a pan is detected
-
-                                // --- Bind Handlers ---
-                                this.handlePointerDown = this.handlePointerDown.bind(this);
-                                this.handlePointerMove = this.handlePointerMove.bind(this);
-                                this.handlePointerUp = this.handlePointerUp.bind(this);
-                                this.fireTap = this.fireTap.bind(this);
-                                this.fireLongPress = this.fireLongPress.bind(this);
-
-                                // Attach the entry-point event listener
-                                this.element.addEventListener('pointerdown', this.handlePointerDown);
-                            }}
-
-                            handlePointerDown(event) {{
-                                // Only respond to the primary button (e.g., left mouse click)
-                                if (event.button !== 0) return;
-
-                                const currentTime = Date.now();
-
-                                // --- Double Tap Detection ---
-                                if (currentTime - this.lastTapTime < 300) {{ // 300ms window for double tap
-                                    clearTimeout(this.tapTimeout);
-                                    this.tapTimeout = null;
-                                    this.lastTapTime = 0;
-                                    if (this.options.onDoubleTapName) {{
-                                        window.pywebview.on_gesture_event(this.options.onDoubleTapName, {{}});
-                                    }}
-                                    return;
-                                }}
-                                
-                                this.lastTapTime = currentTime;
-                                this.panStartPoint = {{ x: event.clientX, y: event.clientY }};
-
-                                // --- Long Press Detection ---
-                                if (this.options.onLongPressName) {{
-                                    this.longPressTimeout = setTimeout(() => this.fireLongPress(), 500); // 500ms for long press
-                                }}
-
-                                // --- Single Tap Detection (will be fired later if not cancelled) ---
-                                if (this.options.onTapName) {{
-                                    this.tapTimeout = setTimeout(() => this.fireTap(), 300);
-                                }}
-
-                                // Listen for move/up on the entire document for robust dragging
-                                document.addEventListener('pointermove', this.handlePointerMove);
-                                document.addEventListener('pointerup', this.handlePointerUp);
-                                document.addEventListener('pointercancel', this.handlePointerUp); // Treat cancel like up
-                            }}
-
-                            handlePointerMove(event) {{
-                                if (this.isPanning) {{
-                                    // --- Continue Panning ---
-                                    const dx = event.clientX - this.panStartPoint.x;
-                                    const dy = event.clientY - this.panStartPoint.y;
-                                    if (this.options.onPanUpdateName) {{
-                                        window.pywebview.on_gesture_event(this.options.onPanUpdateName, {{ dx, dy }});
-                                    }}
-                                }} else {{
-                                    // --- Check if a Pan has Started ---
-                                    const dx = event.clientX - this.panStartPoint.x;
-                                    const dy = event.clientY - this.panStartPoint.y;
-                                    if (Math.sqrt(dx * dx + dy * dy) > this.panThreshold) {{
-                                        this.isPanning = true;
-                                        // A pan gesture cancels tap and long press
-                                        clearTimeout(this.tapTimeout);
-                                        this.tapTimeout = null;
-                                        clearTimeout(this.longPressTimeout);
-                                        this.longPressTimeout = null;
-                                        
-                                        if (this.options.onPanStartName) {{
-                                            window.pywebview.on_gesture_event(this.options.onPanStartName, {{}});
-                                        }}
-                                    }}
-                                }}
-                            }}
-
-                            handlePointerUp(event) {{
-                                // Clean up document-level listeners immediately
-                                document.removeEventListener('pointermove', this.handlePointerMove);
-                                document.removeEventListener('pointerup', this.handlePointerUp);
-                                document.removeEventListener('pointercancel', this.handlePointerUp);
-
-                                // Always clear a pending long press if pointer is lifted
-                                clearTimeout(this.longPressTimeout);
-                                this.longPressTimeout = null;
-                                
-                                if (this.isPanning) {{
-                                    // --- End Panning ---
-                                    this.isPanning = false;
-                                    if (this.options.onPanEndName) {{
-                                        window.pywebview.on_gesture_event(this.options.onPanEndName, {{}});
-                                    }}
-                                }}
-                            }}
-
-                            fireTap() {{
-                                if (this.tapTimeout){{ // Ensure it wasn't cancelled
-                                    this.tapTimeout = null;
-                                    if (this.options.onTapName) {{
-                                        window.pywebview.on_gesture_event(this.options.onTapName, {{}});
-                                    }}
-                                }}
-                            }}
-                            
-                            fireLongPress() {{
-                                // A long press cancels a single tap
-                                clearTimeout(this.tapTimeout);
-                                this.tapTimeout = null;
-                                this.lastTapTime = 0; // Prevent next tap from being a double tap
-                                
-                                if (this.longPressTimeout) {{
-                                    this.longPressTimeout = null;
-                                    if (this.options.onLongPressName) {{
-                                        window.pywebview.on_gesture_event(this.options.onLongPressName, {{}});
-                                    }}
-                                }}
-                            }}
-
-                            destroy() {{
-                                if (!this.element) return;
-                                this.element.removeEventListener('pointerdown', this.handlePointerDown);
-                                this.handlePointerUp(); // Ensure document listeners are cleaned up
-                                clearTimeout(this.tapTimeout);
-                                clearTimeout(this.longPressTimeout);
-                            }}
-                        }}
-                        /**
-                        * PythraGradientClipPath: Client-side engine for creating an animated
-                        * gradient border around a complex clip-path shape.
-                        */
-                        //import {{ generateRoundedPath }} from './pathGenerator.js';
-
-                        // Helper function for basic vector math
-                        const vec_gradient_border = (p1, p2) => ({{ x: p2.x - p1.x, y: p2.y - p1.y }});
-                        const magnitude_gradient_border = (v) => Math.sqrt(v.x * v.x + v.y * v.y);
-                        const normalize_gradient_border = (v) => {{
-                            const mag = magnitude_gradient_border(v);
-                            return mag > 0 ? {{ x: v.x / mag, y: v.y / mag }} : {{ x: 0, y: 0 }};
-                        }};
-                        const dot_gradient_border = (v1, v2) => v1.x * v2.x + v1.y * v2.y;
-
-                        /**
-                        * Calculates a new set of points offset outwards from the original polygon.
-                        * @param {{Array<Object>}} points - The original points, e.g., [{{x: 0, y: 0}}, ...].
-                        * @param {{number}} offset - The distance to offset the points outwards.
-                        * @returns {{Array<Object>}} The new, offset points.
-                        */
-                        function offsetPoints(points, offset) {{
-                            const numPoints = points.length;
-                            if (numPoints < 3) return points;
-
-                            const offsetPoints = [];
-
-                            for (let i = 0; i < numPoints; i++) {{
-                                const p_prev = points[(i + numPoints - 1) % numPoints];
-                                const p_curr = points[i];
-                                const p_next = points[(i + 1) % numPoints];
-
-                                const v1 = normalize_gradient_border(vec_gradient_border(p_curr, p_prev));
-                                const v2 = normalize_gradient_border(vec_gradient_border(p_curr, p_next));
-
-                                // Calculate the angle bisector vector (points outwards for convex shapes)
-                                const bisector = normalize_gradient_border({{ x: v1.x + v2.x, y: v1.y + v2.y }});
-
-                                // Calculate the angle between the two edge vectors
-                                const angle = Math.acos(dot_gradient_border(v1, v2));
-
-                                // Use trigonometry to find the length to move along the bisector
-                                // to achieve the desired perpendicular offset distance.
-                                const distance = offset / Math.sin(angle / 2);
-
-                                if (isNaN(distance) || !isFinite(distance)) {{
-                                    // Handle collinear points (angle is ~PI), just move along the normal
-                                    const normal = {{ x: -v1.y, y: v1.x }};
-                                    offsetPoints.push({{ x: p_curr.x + normal.x * offset, y: p_curr.y + normal.y * offset }});
-                                }} else {{
-                                    offsetPoints.push({{ x: p_curr.x + bisector.x * distance, y: p_curr.y + bisector.y * distance }});
-                                }}
-                            }}
-                            return offsetPoints;
-                        }}
-
-
-                        class PythraGradientClipPath {{
-                            constructor(elementId, options) {{
-                                this.container = document.getElementById(elementId);
-                                if (!this.container) {{
-                                    console.error(`GradientClipPath container with ID #${{elementId}} not found.`);
-                                    return;
-                                }}
-
-                                console.log(`✅ PythraGradientClipPath engine is initializing for #${{elementId}}`);
-                                
-                                // --- Setup DOM Structure ---
-                                // The reconciler placed the child widget inside our container.
-                                // We need to wrap it and add a background element.
-                                this.backgroundEl = document.createElement('div');
-                                this.backgroundEl.className = 'gradient-clip-background';
-                                
-                                this.contentHost = document.createElement('div');
-                                this.contentHost.className = 'gradient-clip-content-host';
-
-                                // Move the original child from the container into the new host
-                                while (this.container.firstChild) {{
-                                    this.contentHost.appendChild(this.container.firstChild);
-                                }}
-                                
-                                this.container.appendChild(this.backgroundEl);
-                                this.container.appendChild(this.contentHost);
-                                
-                                // --- Generate and Apply Paths ---
-                                this.options = options;
-                                this.update = this.update.bind(this);
-                                
-                                // Use a ResizeObserver to make it fully responsive
-                                this.ro = new ResizeObserver(this.update);
-                                this.ro.observe(this.container);
-                                
-                                // Initial update
-                                this.update();
-                            }}
-
-                            update() {{
-                                const rect = this.container.getBoundingClientRect();
-                                if (rect.width === 0 || rect.height === 0) return;
-
-                                const {{ points, radius, viewBox, borderWidth }} = this.options;
-                                const jsPoints = points.map(p => ({{ x: p[0], y: p[1] }}));
-
-                                // 1. Generate the inner path for the content
-                                const innerPathStr = generateRoundedPath(jsPoints, radius);
-                                const innerClipPath = `path("${{innerPathStr}}")`;
-
-                                // 2. Calculate offset points and a larger radius for the outer path
-                                const offset_points = offsetPoints(jsPoints, borderWidth);
-                                const outerRadius = radius + borderWidth;
-                                const outerPathStr = generateRoundedPath(offset_points, outerRadius);
-                                const outerClipPath = `path("${{outerPathStr}}")`;
-
-                                // 3. Apply the responsive clip-paths to the elements
-                                // We don't need ResponsiveClipPath class here because we update on every resize.
-                                this.contentHost.style.clipPath = innerClipPath;
-                                this.contentHost.style.webkitClipPath = innerClipPath;
-                                
-                                this.backgroundEl.style.clipPath = outerClipPath;
-                                this.backgroundEl.style.webkitClipPath = outerClipPath;
-                            }}
-
-                            destroy() {{
-                                if (this.ro && this.container) {{
-                                    this.ro.unobserve(this.container);
-                                }}
-                            }}
-                        }}
-                        /**
-                        * PythraVirtualList: A client-side engine for virtual scrolling. (Final Version)
-                        *
-                        * This engine creates its own SimpleBar instance to avoid race conditions.
-                        * It handles pre-rendered initial items (HTML and CSS) for an instant first paint.
-                        * It asynchronously fetches additional items from Python as the user scrolls.
-                        * Most importantly, it dynamically attaches event listeners to both pre-rendered
-                        * and asynchronously loaded content to ensure full interactivity.
-                        */
-                        class PythraVirtualList {{
-                            constructor(elementId, options) {{
-                                this.container = document.getElementById(elementId);
-                                if (!this.container) {{
-                                    console.error(`VirtualList Error: Container element #${{elementId}} not found.`);
-                                    return;
-                                }}
-
-                                console.log(`✅ PythraVirtualList engine is initializing for #${{elementId}}`);
-                                
-                                this.options = options;
-                                this.simplebar = new SimpleBar(this.container, this.options.simplebarOptions || {{}});
-                                this.scrollEl = this.simplebar.getScrollElement();
-                                this.contentEl = this.simplebar.getContentElement();
-                                
-                                this.itemCache = {{}}; // Cache will ONLY store HTML strings.
-                                this.visibleItemElements = [];
-
-                                // Process the initialItems object from Python.
-                                if (this.options.initialItems) {{
-                                    const initialCss = new Set();
-                                    for (const index in this.options.initialItems) {{
-                                        const itemData = this.options.initialItems[index];
-                                        // 1. Store ONLY the HTML string in the cache.
-                                        this.itemCache[index] = itemData.html;
-                                        // 2. Collect all unique CSS rules.
-                                        if (itemData.css) {{
-                                            initialCss.add(itemData.css);
-                                        }}
-                                    }}
-                                    // 3. Inject all collected CSS into the dynamic stylesheet in one go.
-                                    if (initialCss.size > 0) {{
-                                        const styleSheet = document.getElementById('dynamic-styles');
-                                        if (styleSheet) {{
-                                            styleSheet.textContent += `\n${{[...initialCss].join('\\n')}}`;
-                                        }}
-                                    }}
-                                }}
-
-                                // Setup DOM for virtualization
-                                this.sizer = document.createElement('div');
-                                this.sizer.style.position = 'absolute';
-                                this.sizer.style.top = '0';
-                                this.sizer.style.left = '0';
-                                this.sizer.style.width = '1px';
-                                this.sizer.style.height = `${{this.options.itemCount * this.options.itemExtent}}px`;
-                                this.contentEl.appendChild(this.sizer);
-                                this.contentEl.style.position = 'relative';
-
-                                this.render = this.render.bind(this);
-                                this.scrollEl.addEventListener('scroll', this.render);
-                                
-                                this.render();
-                            }}
-
-                            /**
-                            * Scans a newly rendered HTML fragment and attaches reliable event listeners
-                            * to elements that have an inline `onclick` attribute from the Python side.
-                            * @param {{HTMLElement}} element - The container element whose children to scan (e.g., the recycled list item div).
-                            */
-                            attachEventListeners(element) {{
-                                const clickableElements = element.querySelectorAll('[onclick]');
-                                clickableElements.forEach(clickable => {{
-                                    const onclickAttr = clickable.getAttribute('onclick');
-                                    
-                                    // Regex to parse out the callback name from "handleClick('callback_name')"
-                                    const match = onclickAttr.match(/handleClick\('([^']+)'\)/);
-
-                                    if (match && match[1]) {{
-                                        const callbackName = match[1];
-                                        // 1. Remove the inline attribute, as it's now redundant and less reliable.
-                                        clickable.removeAttribute('onclick');
-                                        // 2. Add a proper, trusted event listener.
-                                        clickable.addEventListener('click', () => {{
-                                            if (window.pywebview && typeof handleClick === 'function') {{
-                                                // 3. Call the global handleClick function that communicates with Python.
-                                                handleClick(callbackName);
-                                            }}
-                                        }});
-                                    }}
-                                }});
-                            }}
-
-                            render() {{
-                                const scrollTop = this.scrollEl.scrollTop;
-                                const viewportHeight = this.scrollEl.clientHeight;
-
-                                const startIndex = Math.max(0, Math.floor(scrollTop / this.options.itemExtent));
-                                const endIndex = Math.min(
-                                    this.options.itemCount - 1,
-                                    Math.ceil((scrollTop + viewportHeight) / this.options.itemExtent)
-                                );
-                                
-                                const itemsToRender = [];
-                                for (let i = startIndex; i <= endIndex; i++) {{
-                                    itemsToRender.push({{ index: i, top: i * this.options.itemExtent }});
-                                }}
-                                
-                                for (let i = 0; i < itemsToRender.length; i++) {{
-                                    const item = itemsToRender[i];
-                                    let el = this.visibleItemElements[i];
-
-                                    if (!el) {{
-                                        el = document.createElement('div');
-                                        el.style.position = 'absolute';
-                                        el.style.width = '100%';
-                                        el.style.height = `${{this.options.itemExtent}}px`;
-                                        el.style.left = '0';
-                                        this.contentEl.appendChild(el);
-                                        this.visibleItemElements.push(el);
-                                    }}
-
-                                    el.style.transform = `translateY(${{item.top}}px)`;
-                                    
-                                    if (el.dataset.index !== String(item.index)) {{
-                                        el.dataset.index = item.index;
-                                        
-                                        if (this.itemCache[item.index]) {{
-                                            // Item was pre-rendered or fetched before.
-                                            el.innerHTML = this.itemCache[item.index];
-                                            // IMPORTANT: We must re-attach listeners every time we set innerHTML.
-                                            this.attachEventListeners(el);
-                                        }} else {{
-                                            // Item needs to be fetched from Python.
-                                            el.innerHTML = '<div>Loading...</div>';
-                                            if (window.pywebview && this.options.itemBuilderName) {{
-                                                window.pywebview.build_list_item(this.options.itemBuilderName, item.index)
-                                                    .then(response => {{
-                                                        const {{ html, css }} = response;
-                                                        this.itemCache[item.index] = html;
-
-                                                        if (css) {{
-                                                            const styleSheet = document.getElementById('dynamic-styles');
-                                                            if (styleSheet && !styleSheet.textContent.includes(css)) {{
-                                                                styleSheet.textContent += `\n${{css}}`;
-                                                            }}
-                                                        }}
-                                                        
-                                                        if (el.dataset.index === String(item.index)) {{
-                                                            el.innerHTML = html;
-                                                            // Attach event listeners to the newly created DOM nodes.
-                                                            this.attachEventListeners(el);
-                                                        }}
-                                                    }})
-                                                    .catch(e => {{
-                                                        console.error(`Error building virtual item ${{item.index}}:`, e);
-                                                        if (el.dataset.index === String(item.index)) {{
-                                                            el.innerHTML = '<div>Error</div>';
-                                                        }}
-                                                    }});
-                                            }}
-                                        }}
-                                    }}
-                                }}
-                                
-                                for (let i = itemsToRender.length; i < this.visibleItemElements.length; i++) {{
-                                    this.visibleItemElements[i].style.transform = 'translateY(-9999px)';
-                                }}
-                            }}
-
-                            /**
-                            * Called from Python when the underlying data for the list has changed.
-                            * Clears the cache and forces a re-render of all visible items.
-                            */
-                            refresh() {{
-                                console.log(`Refreshing VirtualList for #${{this.container.id}}`);
-                                // 1. Clear the entire HTML cache.
-                                this.itemCache = {{}};
-                                
-                                // 2. Mark all currently visible DOM elements as "dirty" by resetting their data-index.
-                                this.visibleItemElements.forEach(el => {{
-                                    el.dataset.index = '-1'; // Set to an invalid index
-                                }});
-                                
-                                // 3. Trigger a render to fetch the new, updated content.
-                                this.render();
-                            }}
-
-                            /**
-                            * Refreshes specific items by their indices. Highly efficient.
-                            * @param {{Array<number>}} indices - An array of item indices to refresh.
-                            */
-                            refreshItems(indices) {{
-                                if (!Array.isArray(indices)) return;
-                                console.log(`Refreshing specific items for #${{this.container.id}}:`, indices);
-
-                                indices.forEach(index => {{
-                                    // 1. Invalidate the cache for this specific item.
-                                    if (this.itemCache[index]) {{
-                                        delete this.itemCache[index];
-                                    }}
-                                    
-                                    // 2. Find if this item is currently visible in the DOM.
-                                    const visibleElement = this.visibleItemElements.find(el => el.dataset.index === String(index));
-                                    
-                                    if (visibleElement) {{
-                                        // 3. If it's visible, mark it as dirty so the next render pass will update it.
-                                        visibleElement.dataset.index = '-1';
-                                    }}
-                                }});
-
-                                // 4. Trigger a render pass to update any newly dirtied elements.
-                                this.render();
-                            }}
-                            
-                            // --- END OF NEW LOGIC ---
-
-                            destroy() {{
-                                if (this.simplebar && typeof this.simplebar.unMount === 'function') {{
-                                    this.simplebar.unMount();
-                                }}
-                            }}
-                        }}
-                        """)
-                # js_commands.append(f"console.log('Applying patch {action} {target_id}:', {loggable_data_str});")
-                # --- END OF FIX ---
-            # print(js_commands)
         return "\n".join(js_commands)
 
     def _generate_prop_update_js(
@@ -2080,16 +1299,16 @@ class Framework:
                     ["-" + c.lower() if c.isupper() else c for c in style_key]
                 ).lstrip("")
                 # print("css_prop_kebab: ", css_prop_kebab, f"{json.dumps(style_value)}")
-                if css_prop_kebab == "--slider-percentage" and props["isDragEnded"]:
+                if css_prop_kebab == "--slider-percentage" and props.get("isDragEnded"):
                     print("drag css", props["isDragEnded"])
                     js_prop_updates.append(
-                        f"{element_var}.style.setProperty('{css_prop_kebab}', {json.dumps(style_value)});"
+                        f"try {{ {element_var}.style.setProperty('{css_prop_kebab}', {json.dumps(style_value)}); }} catch (e) {{ console.warn('Failed to set CSS property {css_prop_kebab}:', e); }}"
                     )
-                elif css_prop_kebab == "--slider-percentage" and not props["isDragEnded"]:
-                    print("drag css", props["isDragEnded"])
+                elif css_prop_kebab == "--slider-percentage" and not props.get("isDragEnded"):
+                    print("drag css", props.get("isDragEnded"))
                 elif css_prop_kebab != "--slider-percentage" and "isDragEnded" not in props:
                     js_prop_updates.append(
-                        f"{element_var}.style.setProperty('{css_prop_kebab}', {json.dumps(style_value)});"
+                        f"try {{ {element_var}.style.setProperty('{css_prop_kebab}', {json.dumps(style_value)}); }} catch (e) {{ console.warn('Failed to set CSS property {css_prop_kebab}:', e); }}"
                     )
         # --- END OF ADDITION ---
 
@@ -2113,15 +1332,17 @@ class Framework:
                     ["-" + c.lower() if c.isupper() else c for c in prop]
                 ).lstrip("-")
                 js_prop_updates.append(
-                    f"{element_var}.style.setProperty('{css_prop_kebab}', {json.dumps(val)});"
+                    f"try {{ {element_var}.style.setProperty('{css_prop_kebab}', {json.dumps(val)}); }} catch (e) {{ console.warn('Failed to set style property {css_prop_kebab}:', e); }}"
                 )
 
         return "\n".join(js_prop_updates)
 
-    def _generate_initial_js_script(self, result: 'ReconciliationResult') -> str:
-        """Generates a script tag to run initializations after the DOM loads."""
+    def _generate_initial_js_script(self, result: 'ReconciliationResult', required_engines: set = None) -> str:
+        """Generates a script tag to run initializations after the DOM loads with optimized JS loading."""
         if not result.js_initializers:
-            return ""
+            # Even if no initializers, we might need engines for widgets
+            if not required_engines:
+                return ""
 
         js_commands = []
         imports = set()
@@ -2131,6 +1352,24 @@ class Framework:
             html_id = node_data.get("html_id")
             # print(">>>init_slider<<<", html_id)
             widget_instance = node_data.get("widget_instance")
+
+
+            # --- NEW: Generic JS Initializer ---
+            js_init_data = props.get("_js_init")
+            if js_init_data:
+                engine_name = js_init_data.get("engine")
+                instance_name = js_init_data.get("instance_name")
+                options = js_init_data.get("options", {})
+                
+                # Find the module path from the plugin manifest
+                js_module_info = self._find_js_module(engine_name)
+                if js_module_info:
+                    imports.add(f"import {{ {engine_name} }} from '{js_module_info['path']}';")
+                    options_json = json.dumps(options)
+                    js_commands.append(f"window._pythra_instances['{instance_name}'] = new {engine_name}('{html_id}', {options_json});")
+                else:
+                    print(f"⚠️ Warning: JS engine '{engine_name}' not found in any plugin manifest.")
+            # --- END OF NEW LOGIC ---
 
             # --- THE FIX ---
             # Use the widget's key for a stable instance name.
@@ -2285,10 +1524,10 @@ class Framework:
                     const pointsForGenerator_{target_id} = {points_json}.map(p => ({{x: p[0], y: p[1]}}));
                     
                     // Step 1: Call generateRoundedPath with the points and radius
-                    const initialPathString_{target_id} = generateRoundedPath(pointsForGenerator_{target_id}, {radius_json});
+                    const initialPathString_{target_id} = window.generateRoundedPath(pointsForGenerator_{target_id}, {radius_json});
                     
                     // Step 2: Feed the generated path into ResponsiveClipPath
-                    window._pythra_instances['{target_id}'] = new ResponsiveClipPath(
+                    window._pythra_instances['{target_id}'] = new window.ResponsiveClipPath(
                         '{target_id}', 
                         initialPathString_{target_id}, 
                         {ref_w_json}, 
@@ -2298,82 +1537,76 @@ class Framework:
                 """
                 )
 
-            # elif init['type'] == 'ScrollBar':
-            #     imports.add("import { CustomScrollBar } from './js/scrollBar.js';")
-            #     target_id = init['target_id']
-            #     scroll_bar_id = init['data']['scroll_bar_id']
-            #     scroll_thumb_id = init['data']['scroll_thumb_id']
-
-            #     js_commands.append(f"""
-            #         window._pythra_instances['{scroll_bar_id}'] = new CustomScrollBar(
-            #             '{target_id}',
-            #             '{scroll_bar_id}',
-            #             '{scroll_thumb_id}'
-            #         );
-            #     """)
-        # 2. --- THIS IS THE NEW, SMARTER LOGIC ---
-        #    Iterate through the entire rendered map to find any widget that
-        #    has declared it needs JS initialization via a flag in its render_props.
-        # print("mapp: ",result.new_rendered_map.values())
-        
-
-        # 1. Get the combined source code of all utility JS files.
+        # --- INCLUDE JS UTILITIES IN INITIAL RENDER ---
+        # Get JS utilities for initial render so all functions are available
         js_utilities = self._get_js_utility_functions()
-        # Wrap all commands in a DOMContentLoaded listener.
-        # We now import BOTH of your utility modules.
-        # print("utilities: ", js_utilities)
+        
         full_script = f"""
-        <script type="module">
-            // Import JS modules if needed (e.g., for ClipPath)
-            // import {{ ... }} from './js/....js';
-            // import {{ generateRoundedPath }} from './js/pathGenerator.js';
-            // import {{ ResponsiveClipPath }} from './js/clipPathUtils.js';
-            import {{ PythraSlider }} from './js/slider.js';
-            import {{ PythraDropdown }} from './js/dropdown.js';
-            // import {{ PythraVirtuaList }} from './js/virtual_list.js';
-            
-
+        <script>
             document.addEventListener('DOMContentLoaded', () => {{
                 window._pythra_instances = window._pythra_instances || {{}};
                 try {{
-                     // First, DEFINE all our JS classes and functions
+                    // First, DEFINE all our JS classes and functions
                     {js_utilities}
-
-                    // Then, RUN the initialization commands
+                    
+                    // Then, RUN the initialization commands that were generated
                     {''.join(js_commands)}
+
                 }} catch (e) {{
                     console.error("Error running Pythra initializers:", e);
                 }}
-            }});//end event listener
+            }});
         </script>
         """
         return full_script
+
+    # Helper method to find JS modules from discovered plugins
+    def _find_js_module(self, engine_name: str) -> Optional[Dict]:
+        for plugin_name, plugin_info in self.plugins.items():
+            modules = plugin_info.get("js_modules", {})
+            if engine_name in modules:
+                return {
+                    "plugin": plugin_name,
+                    "path": f"/plugins/{plugin_name}/{modules[engine_name]}"
+                }
+        return None
 
     def _write_initial_files(
         self, title: str, html_content: str, initial_css_rules: str, initial_js: str
     ):
         # --- THIS IS THE NEW FONT DEFINITION CSS ---
+        plugin_css_links = []
+        for name, info in self.plugins.items():
+            if 'css_files' in info:
+                for css_file in info['css_files']:
+                    # URL will be like /plugins/pythra_markdown_editor/vendor/tui-editor.min.css
+                    # The asset server will handle this.
+                    url_path = f"plugins/{name}/{css_file}"
+                    plugin_css_links.append(f'<link rel="stylesheet" href="{url_path}">')
+        
+        plugin_css_str = "\n    ".join(plugin_css_links)
+
         font_face_rules = f"""
          /* Define the Material Symbols fonts hosted by our server */
          @font-face {{
            font-family: 'Material Symbols Outlined';
            font-style: normal;
            font-weight: 100 700; /* The range of weights the variable font supports */
-           src: url(http://localhost:{self.config.get('assets_server_port')}/{self.config.get('assets_dir')}/fonts/MaterialSymbolsOutlined.ttf) format('truetype');
+           src: url(http://localhost:{self.config.get('assets_server_port')}/fonts/MaterialSymbolsOutlined.ttf) format('truetype');
          }}
 
          @font-face {{
            font-family: 'Material Symbols Rounded';
            font-style: normal;
            font-weight: 100 700;
-           src: url(http://localhost:{self.config.get('assets_server_port')}/{self.config.get('assets_dir')}/fonts/MaterialSymbolsRounded.ttf) format('truetype');
+           src: url(http://localhost:{self.config.get('assets_server_port')}/fonts/MaterialSymbolsRounded.ttf) format('truetype');
          }}
 
          @font-face {{
            font-family: 'Material Symbols Sharp';
            font-style: normal;
            font-weight: 100 700;
-           src: url(http://localhost:{self.config.get('assets_server_port')}/{self.config.get('assets_dir')}/fonts/MaterialSymbolsSharp.ttf) format('truetype');
+           src: url(http://localhost:{self.config.get('assets_server_port')}/fonts/MaterialSymbolsSharp.ttf) format('truetype');
          }}
          """
         # --- END OF NEW FONT CSS ---
@@ -2407,6 +1640,7 @@ class Framework:
     <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v={int(time.time())}">
     <style id="dynamic-styles">{initial_css_rules}</style>
     {self._get_js_includes()}
+    {plugin_css_str}
 </head>
 <body>
     <div id="root-container">{html_content}</div>
@@ -2452,85 +1686,6 @@ class Framework:
                     window.pywebview.on_input_changed(name, value, ()=>{{}});
                 }}
             }}
-        </script>
-        <script>
-        function PythraSlider(elementId, options) {{
-    // The 'this' keyword refers to the new object being created.
-    this.container = document.getElementById(elementId);
-    if (!this.container) {{
-        console.error(`Slider container with ID #${{elementId}} not found.`);
-        return;
-    }}
-
-    console.log(`✅ PythraSlider engine is initializing for #${{elementId}}`);
-
-    this.options = options;
-
-    // Find child elements
-    this.track = this.container.querySelector('.slider-track');
-    this.thumb = this.container.querySelector('.slider-thumb');
-    
-    // Bind 'this' context for event handlers
-    this.handleDragStart = this.handleDragStart.bind(this);
-    this.handleDragMove = this.handleDragMove.bind(this);
-    this.handleDragEnd = this.handleDragEnd.bind(this);
-
-    // Attach initial event listeners
-    this.container.addEventListener('mousedown', this.handleDragStart);
-    this.container.addEventListener('touchstart', this.handleDragStart, {{ passive: false }}); // passive: false to allow preventDefault
-}}
-
-PythraSlider.prototype.handleDragStart = function(event) {{
-    event.preventDefault();
-    this.container.classList.add('active');
-    
-    document.addEventListener('mousemove', this.handleDragMove);
-    document.addEventListener('mouseup', this.handleDragEnd);
-    document.addEventListener('touchmove', this.handleDragMove);
-    document.addEventListener('touchend', this.handleDragEnd);
-
-    this.updatePosition(event);
-}};
-
-PythraSlider.prototype.handleDragMove = function(event) {{
-    this.updatePosition(event);
-}};
-
-PythraSlider.prototype.handleDragEnd = function() {{
-    this.container.classList.remove('active');
-    
-    document.removeEventListener('mousemove', this.handleDragMove);
-    document.removeEventListener('mouseup', this.handleDragEnd);
-    document.removeEventListener('touchmove', this.handleDragMove);
-    document.removeEventListener('touchend', this.handleDragEnd);
-}};
-
-PythraSlider.prototype.updatePosition = function(event) {{
-    if (!this.track) return;
-    const rect = this.track.getBoundingClientRect();
-    const clientX = event.touches ? event.touches[0].clientX : event.clientX;
-    
-    let positionX = clientX - rect.left;
-    let percentage = (positionX / rect.width) * 100;
-    
-    percentage = Math.max(0, Math.min(100, percentage));
-    
-    this.container.style.setProperty('--slider-percentage', `${{percentage}}%`);
-    
-    const range = this.options.max - this.options.min;
-    const newValue = this.options.min + (percentage / 100) * range;
-    
-    if (window.pywebview && this.options.onChangedName) {{
-        window.pywebview.on_drag_update(this.options.onChangedName, newValue);
-    }}
-}};
-
-PythraSlider.prototype.destroy = function() {{
-    if (!this.container) return;
-    this.container.removeEventListener('mousedown', this.handleDragStart);
-    this.container.removeEventListener('touchstart', this.handleDragStart);
-    this.handleDragEnd(); 
-}};
         </script>
         """
 

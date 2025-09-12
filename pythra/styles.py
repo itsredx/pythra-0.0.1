@@ -153,7 +153,7 @@ class EdgeInsets:
          return (self.left, self.top, self.right, self.bottom)
 
 
-print("Edge Insets", EdgeInsets.only(top=40, left=20).edit(operation='-',top=10))
+# print("Edge Insets", EdgeInsets.only(top=40, left=20).edit(operation='-',top=10))
 
 class Alignment:
     """

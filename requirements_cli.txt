@@ -1,0 +1,5 @@
+# CLI-specific requirements for PyThra package management
+click>=8.0.0  # Command-line interface framework
+tabulate>=0.8.0  # Table formatting for CLI output
+PyYAML>=5.4.0  # YAML configuration parsing
+pyinstaller>=4.0  # For building executables (optional)

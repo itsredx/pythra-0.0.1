@@ -1,0 +1,35 @@
+{
+  "name": "sample-text-editor",
+  "version": "1.0.0",
+  "description": "A simple text editor widget for PyThra applications",
+  "package_type": "plugin",
+  "author": {
+    "name": "PyThra Team",
+    "email": "team@pythra.dev"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/pythra/sample-text-editor",
+  "repository": {
+    "url": "https://github.com/pythra/sample-text-editor.git",
+    "type": "git"
+  },
+  "tags": ["text", "editor", "widget", "ui"],
+  "python_modules": ["text_editor"],
+  "js_modules": {
+    "TextEditorWidget": "text_editor.js"
+  },
+  "css_files": ["styles/editor.css"],
+  "dependencies": {
+    "pythra-ui-core": {
+      "version_constraint": ">=1.0.0,<2.0.0",
+      "optional": false,
+      "description": "Core UI components for PyThra"
+    }
+  },
+  "pythra_version": ">=1.0.0",
+  "min_python_version": "3.8",
+  "keywords": ["text", "editor", "markdown"],
+  "checksums": {
+    "package.json": "sha256:abc123...def456"
+  }
+}

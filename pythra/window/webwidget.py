@@ -206,7 +206,6 @@ class WebWindow(QWidget):
         on_top=False,
         maximized=False,
         fixed_size=False,
-        hot_restart_handler=None,
     ):
         super().__init__()
         self.setWindowTitle(title)
@@ -279,13 +278,7 @@ class WebWindow(QWidget):
         # Add a toggle to show/hide the debug window
         self.debug_window.hide()
 
-        # --- THIS IS THE NEW LOGIC FOR HOT RESTART ---
-        # If a handler is provided, create a keyboard shortcut and connect it.
-        if hot_restart_handler:
-            print("⚡ Hot Restart enabled with Ctrl+R shortcut.")
-            shortcut = QShortcut(QKeySequence("Ctrl+R"), self)
-            shortcut.activated.connect(hot_restart_handler)
-        # --- END OF NEW LOGIC ---
+       
 
     def toggle_debug_window(self):
         if self.debug_window.isVisible():
@@ -349,7 +342,6 @@ def create_window(
     frameless: bool = True,
     maximized: bool =False,
         fixed_size: bool =False,
-        hot_restart_handler=None,
 ):
     window = WebWindow(
         title,
@@ -362,7 +354,6 @@ def create_window(
         frameless=frameless,
         maximized=maximized,
         fixed_size=fixed_size,
-        hot_restart_handler=hot_restart_handler,
         
     )
     if maximized:
@@ -398,16 +389,3 @@ if __name__ == '__main__':
 
 """
 
-# --- You will need to modify your create_window function to accept this ---
-# Example of the required change in pythra/window/webwidget.py:
-
-# def create_window(title, window_id, url, api, ..., hot_restart_handler=None):
-#     # ... existing window creation code ...
-# 
-#     # Add a keyboard shortcut to the window
-#     if hot_restart_handler:
-#         from PySide6.QtGui import QShortcut, QKeySequence
-#         shortcut = QShortcut(QKeySequence("Ctrl+R"), window)
-#         shortcut.activated.connect(hot_restart_handler)
-#
-#     return window
