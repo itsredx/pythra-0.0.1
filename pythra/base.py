@@ -67,6 +67,9 @@ class Key:
     def __repr__(self):
         return f"Key({self.value!r})"
 
+    def __str_key__(self) -> str:
+        return self.value
+
 # =============================================================================
 # HASHABLE HELPER - The "Style Comparator" for PyThra
 # =============================================================================

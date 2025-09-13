@@ -616,7 +616,7 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
             else:
                 parent_html_id = old_widget_data["parent_html_id"]
 
-            print(f"🔧 PyThra Framework | Updating: {widget_to_rebuild.__class__.__name__} (ID: {widget_key[:8]}...)")
+            print(f"🔧 PyThra Framework | Updating: {widget_to_rebuild.__class__.__name__} (ID: {widget_key.__str_key__()[:8]}...)")
 
             # 1. Build ONLY the subtree for the dirty widget.
             # This is fast because it doesn't traverse the whole application.
@@ -671,7 +671,7 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
 
         combined_script = (css_update_script + "\n" + dom_patch_script).strip()
         if combined_script:
-            print(f"🛠️ PyThra Framework | Applying {len(all_patches)} UI changes to browser...")
+            print(f"🛠️  PyThra Framework | Applying {len(all_patches)} UI changes to app...")
             print(f"📝 PyThra Framework | Patch Details: {[f'{p.action}({p.html_id[:8]}...)' for p in all_patches]}")
             self.window.evaluate_js(self.id, combined_script)
         else:
@@ -862,10 +862,10 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
             except Exception as e:
                 import traceback
 
-                print(f"ERROR generating CSS for class '{css_class}': {e}")
+                print(f"💥 ERROR generating CSS for class '{css_class}': {e}")
                 traceback.print_exc()
 
-        print(f"Generated CSS for {len(all_rules)} active shared classes.")
+        print(f"🪄  PyThra Framework | Generated CSS for {len(all_rules)} active shared classes.")
         # print(f"Rules: {all_rules}")
         return "\n".join(all_rules)
 
@@ -1287,12 +1287,12 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
         # per application session, on the very first set of patches that gets sent.
         if not self.called:
             self.called = True
-            print("🔧 Framework: Injecting JS utilities for the first time during reconciliation")
+            print("🔧 PyThra Framework | Injecting JS utilities for the first time during reconciliation")
             # Prepend the combined JS utilities to the list of commands.
             js_utilities = self._get_js_utility_functions()
             js_commands.insert(0, js_utilities)
         else:
-            print("🔧 Framework: Skipping JS utilities injection (already loaded)")
+            print("🔧 PyThra Framework | Skipping JS utilities injection (already loaded)")
         # --- END OF FIX ---
 
 

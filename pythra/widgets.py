@@ -1725,7 +1725,7 @@ class SingleChildScrollView(Widget):
 #=============================================================================
 
 class GlobalScrollbarStyle(Widget):
-     """
+    """
     A special, non-rendering widget that applies a custom scrollbar style
     to the entire application window (the `<body>` element's scrollbar).
 

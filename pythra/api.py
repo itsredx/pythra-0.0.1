@@ -87,7 +87,7 @@ class Api(WebWidgetApi):
         **Example of a real custom method:**
         ```python
         def show_success_message(self, message: str):
-            """Shows a success message to the user in the browser"""
+            \"\"\"Shows a success message to the user in the browser\"\"\"
             self.evaluate_js(f"alert('Success: {message}')")
         ```
         """

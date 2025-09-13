@@ -484,8 +484,10 @@ class PackageManager:
             # Load Python modules
             if manifest.python_modules:
                 for module_name in manifest.python_modules:
+                    print(f"Module name: {module_name}")
                     try:
                         self._load_python_module(package_info, module_name)
+                        print(f"✅ Module name: {module_name} Loaded")
                     except Exception as e:
                         logger.warning(f"Failed to load Python module {module_name}: {e}")
             
