@@ -1,4 +1,42 @@
-# pythra/widgets_more.py
+# =============================================================================
+# PYTHRA EXTENDED WIDGET LIBRARY - Advanced "LEGO Blocks" for Specialized UI
+# =============================================================================
+
+"""
+PyThra Extended Widget Library (Part 2)
+
+This is the "advanced toolkit" that extends the basic widget collection with more
+specialized and complex widgets. While widgets.py contains the fundamental building
+blocks, this file contains the "premium tools" for advanced UI construction.
+
+**What's in this extended library?**
+- **Layout Widgets**: Advanced containers and layout systems
+- **Navigation Widgets**: Drawers, app bars, navigation components
+- **Interactive Widgets**: Advanced form controls and input widgets
+- **Display Widgets**: Specialized content display widgets
+- **Material Design Widgets**: Components following Material Design guidelines
+- **Custom Widgets**: PyThra-specific advanced components
+
+**Think of it like:**
+If widgets.py is your "basic toolbox" (hammer, screwdriver, wrench),
+then widgets_more.py is your "power tools workshop" (table saw, router, advanced tools).
+
+**Categories of widgets you'll find here:**
+- Divider: Visual separators
+- Drawer: Side panel navigation
+- AppBar: Top navigation bars
+- Scaffold: Main app structure framework
+- Card: Material design cards
+- ListTile: List item components
+- And many more advanced components...
+
+**When to use widgets from this file:**
+- When you need more sophisticated UI components
+- When building complex navigation systems
+- When following Material Design patterns
+- When the basic widgets aren't specialized enough for your needs
+"""
+
 import uuid
 import yaml
 import os
@@ -32,10 +70,77 @@ port = config.get('assets_server_port')
 
 
 
+# =============================================================================
+# DIVIDER WIDGET - The "Visual Separator" for Organizing Content Sections
+# =============================================================================
+
 class Divider(Widget):
     """
-    A thin horizontal line, typically used to separate content.
-    Compatible with the reconciliation rendering system. Styles applied directly.
+    A simple visual separator line - like drawing a line between sections of content!
+    
+    **What is Divider?**
+    Think of Divider as a "visual comma" or "line break" in your UI that helps separate
+    different sections of content. It's like the lines you might draw on paper to
+    separate different topics or sections.
+    
+    **Real-world analogy:**
+    Divider is like the lines in a notebook:
+    - Helps separate different sections of content
+    - Makes content easier to read and organize
+    - Provides visual breathing room
+    - Usually subtle and not attention-grabbing
+    
+    **When to use Divider:**
+    - Separating items in lists or menus
+    - Dividing sections in forms or settings pages
+    - Creating visual breaks in long content
+    - Separating different types of content
+    - Adding structure to dense layouts
+    
+    **When NOT to use Divider:**
+    - Between every single element (creates visual clutter)
+    - When spacing/padding would work better
+    - In already well-structured layouts that don't need extra separation
+    
+    **Examples:**
+    ```python
+    # Simple divider between sections
+    Column(children=[
+        Text("Profile Settings"),
+        Switch("Enable notifications"),
+        Switch("Dark mode"),
+        Divider(),  # Separates settings from account section
+        Text("Account"),
+        ListTile(title="Change password"),
+        ListTile(title="Sign out")
+    ])
+    
+    # Custom styled divider
+    Divider(
+        thickness=2.0,  # Thicker line
+        color="#E0E0E0",  # Light gray
+        indent=16,  # Space from left edge
+        endIndent=16  # Space from right edge
+    )
+    
+    # Divider with margin for more spacing
+    Divider(
+        margin=EdgeInsets.symmetric(vertical=16),  # Space above and below
+        color=Colors.outline
+    )
+    ```
+    
+    **Key parameters:**
+    - **thickness**: How thick the line is (default: 1 pixel)
+    - **color**: Color of the divider line (default: subtle gray)
+    - **indent**: Space from the left edge before the line starts
+    - **endIndent**: Space from the right edge where the line ends
+    - **margin**: Space around the entire divider (above and below)
+    - **height**: Total height including any spacing (often controlled by margin instead)
+    
+    **Design tip:**
+    Keep dividers subtle! They should organize content without being distracting.
+    Use your app's theme colors for consistency.
     """
     # Could use shared_styles, but often simple enough for direct props/styling
     # shared_styles: Dict[Tuple, str] = {}
@@ -96,11 +201,105 @@ class Divider(Widget):
 
 
 
+# =============================================================================
+# DRAWER WIDGET - The "Slide-Out Navigation Panel" for App Navigation
+# =============================================================================
+
 class Drawer(Widget):
     """
-    Represents the content panel displayed typically from the side edge (e.g., left) of a Scaffold.
-    Its visibility is controlled externally (e.g., by Scaffold JS).
-    Compatible with the reconciliation rendering system.
+    The "slide-out navigation panel" that appears from the side of your app - like a hidden menu!
+    
+    **What is Drawer?**
+    Think of Drawer as a "secret compartment" that slides out from the side of your app
+    when users need to navigate. It's like having a filing cabinet drawer that pulls
+    out to reveal organized navigation options, then slides back when not needed.
+    
+    **Real-world analogy:**
+    Drawer is like a car's glove compartment or a desk drawer:
+    - Usually hidden to save space
+    - Slides out when you need access to its contents
+    - Contains organized items (navigation links, user info, settings)
+    - Can be closed to get back to the main content
+    - Doesn't interfere with the main workspace when closed
+    
+    **When to use Drawer:**
+    - Main app navigation (Home, Settings, Profile, About)
+    - Secondary navigation that doesn't fit in the main UI
+    - User account information and actions
+    - App settings and preferences
+    - Multi-section apps where users need to switch between areas
+    
+    **When NOT to use Drawer:**
+    - For primary actions users need frequently (use buttons instead)
+    - In simple apps with only a few screens (use bottom navigation or tabs)
+    - For temporary actions (use dialogs or bottom sheets)
+    
+    **Examples:**
+    ```python
+    # Basic navigation drawer
+    Drawer(
+        child=Column(children=[
+            # Header with user info
+            Container(
+                padding=EdgeInsets.all(16),
+                child=Row(children=[
+                    CircleAvatar("user.jpg"),
+                    SizedBox(width=12),
+                    Column(children=[
+                        Text("John Doe", style=TextStyle(fontWeight="bold")),
+                        Text("john@example.com", style=TextStyle(color="gray"))
+                    ])
+                ])
+            ),
+            Divider(),
+            
+            # Navigation items
+            ListTile(leading=Icon("home"), title="Home", onTap=go_home),
+            ListTile(leading=Icon("person"), title="Profile", onTap=go_profile),
+            ListTile(leading=Icon("settings"), title="Settings", onTap=go_settings),
+            Divider(),
+            ListTile(leading=Icon("help"), title="Help", onTap=show_help),
+            ListTile(leading=Icon("logout"), title="Sign Out", onTap=sign_out)
+        ])
+    )
+    
+    # Custom styled drawer
+    Drawer(
+        width=280,  # Wider than default
+        backgroundColor=Colors.surface,
+        elevation=4.0,  # More dramatic shadow
+        child=Column(children=[
+            # Custom header
+            Container(
+                height=200,
+                decoration=BoxDecoration(
+                    gradient=LinearGradient(["blue", "purple"])
+                ),
+                child=Center(child=Text("My App", style=TextStyle(color="white")))
+            ),
+            # Navigation content...
+        ])
+    )
+    ```
+    
+    **Key parameters:**
+    - **child**: The content inside the drawer (usually a Column with navigation items)
+    - **width**: How wide the drawer should be (default: 304px following Material Design)
+    - **backgroundColor**: Background color of the drawer
+    - **elevation**: Shadow depth (how much it "floats" above the main content)
+    - **shadowColor**: Color of the shadow
+    - **padding**: Internal spacing around the drawer content
+    
+    **Navigation patterns:**
+    Most drawers follow this structure:
+    1. **Header**: User info, app logo, or branding
+    2. **Main Navigation**: Primary app sections
+    3. **Divider**: Visual separator
+    4. **Secondary Actions**: Settings, help, sign out
+    
+    **Material Design tip:**
+    Keep drawer content organized and prioritize the most important navigation
+    items at the top. Users' eyes naturally scan from top to bottom!
     """
     shared_styles: Dict[Tuple, str] = {} # For shared Drawer styling
 
@@ -212,12 +411,74 @@ class Drawer(Widget):
 
 
 
-
+# =============================================================================
+# END DRAWER - The Slide-out Panel from the Right Edge
+# =============================================================================
 class EndDrawer(Widget):
     """
-    Represents the content panel displayed typically from the end edge (e.g., right) of a Scaffold.
-    Its visibility is controlled externally (e.g., by Scaffold JS).
-    Compatible with the reconciliation rendering system.
+    Represents a Material Design navigation drawer that slides in from the end
+    (right side in left-to-right locales) of the screen. It is typically used
+    within a `Scaffold`.
+
+    **What is EndDrawer?**
+    The `EndDrawer` is a content panel that is hidden by default and can be revealed by the
+    user, typically by swiping from the right edge of the screen or tapping an icon in the
+    `AppBar`. It's functionally identical to a `Drawer` but appears from the opposite side.
+    It is often used for secondary actions, filters, or profile information.
+
+    **Real-world analogy:**
+    It's like a pull-out spice rack or a sliding pantry built into the side of a kitchen
+    cabinet. It's neatly tucked away until you need it, and then it slides out to reveal
+    its contents, providing extra functionality without cluttering the main workspace.
+
+    **When to use EndDrawer:**
+    - To provide access to secondary navigation or actions.
+    - To display filtering options for a list of content.
+    - For profile details, notifications, or a shopping cart summary.
+    - When you already have a primary `Drawer` on the left and need another panel.
+
+    **Usage with `Scaffold`:**
+    The `EndDrawer` is almost exclusively used in the `endDrawer` property of a `Scaffold`
+    widget. The `Scaffold` is responsible for handling the logic to open, close, and animate
+    the drawer, as well as managing the scrim (the dark overlay) that appears over the main content.
+
+    **Examples:**
+    ```python
+    # Define the content for the EndDrawer
+    my_end_drawer_content = EndDrawer(
+        child=ListView(
+            children=[
+                ListTile(title=Text("Filter by Date")),
+                ListTile(title=Text("Filter by Category")),
+                Divider(),
+                ListTile(title=Text("Sort Ascending")),
+            ]
+        )
+    )
+
+    # Place it in a Scaffold
+    Scaffold(
+        appBar=AppBar(
+            title=Text("My App"),
+            # An action button in the AppBar is often used to open the EndDrawer
+        ),
+        body=Center(child=Text("Main Content")),
+        endDrawer=my_end_drawer_content
+    )
+
+    # To open the drawer programmatically, you would use a ScaffoldKey/ScaffoldState.
+    # scaffoldKey.currentState.openEndDrawer()
+    ```
+
+    **Key parameters:**
+    - **child**: The `Widget` that defines the content displayed inside the drawer. This is required.
+    - **width**: The width of the drawer when it is open. Defaults to the Material Design standard of 304px.
+    - **backgroundColor**: The background color of the drawer panel.
+    - **padding**: `EdgeInsets` to apply padding around the child content.
+    - **elevation** & **shadowColor**: These properties control the shadow that gives the drawer a sense of depth, although the `Scaffold` is what actually renders it.
+
+    **Note on State:**
+    You do not control the visibility of the `EndDrawer` directly with a boolean flag. The `Scaffold` manages its open/closed state internally. You interact with it programmatically through a `ScaffoldState` object.
     """
     shared_styles: Dict[Tuple, str] = {} # For shared EndDrawer styling (if any distinct from Drawer)
 
@@ -319,12 +580,78 @@ class EndDrawer(Widget):
     # Removed: __new__, to_html(), to_css(), toggle()
 
 
-# --- BottomSheet Refactored ---
+# =============================================================================
+# BOTTOM SHEET - The Contextual Panel That Slides Up from the Bottom
+# =============================================================================
 class BottomSheet(Widget):
     """
-    A Material Design Bottom Sheet panel that slides up from the bottom.
-    Visibility controlled externally. Drag behavior requires separate JS implementation.
-    Compatible with the reconciliation rendering system.
+    A Material Design panel that slides up from the bottom edge of the screen to
+    reveal more content. It is typically used to present a set of contextual
+    choices or a simple task related to the current screen.
+
+    **What is BottomSheet?**
+    A Bottom Sheet is a temporary surface that anchors to the bottom of the screen. It's an
+    alternative to menus or dialogs and is primarily used on mobile. There are two main types:
+    - **Modal Bottom Sheets**: These are the most common. They appear over the main UI, which
+      is obscured by a scrim (dark overlay). The user must interact with the sheet (e.g.,
+      make a choice or dismiss it) before they can interact with the rest of the app.
+    - **Persistent Bottom Sheets**: (Not covered by this implementation) These are integrated
+      with the app content and are not modal.
+
+    **Real-world analogy:**
+    It's like pulling open the bottom drawer of a desk to quickly grab a tool. The drawer
+    slides out, presenting a specific set of items. You pick what you need, close the drawer,
+    and your main workspace is clear again. The drawer's contents are directly related to the
+    task you were doing at your desk.
+
+    **When to use BottomSheet:**
+    - To offer a set of choices after a user action (e.g., a "Share via..." panel).
+    - To present a simple, self-contained task, like composing a short reply.
+    - As a more modern, mobile-friendly alternative to a simple dialog or menu.
+    - When you need to provide more context or richer controls than a simple menu allows.
+
+    **Usage:**
+    The visibility of a `BottomSheet` is controlled by the parent state, often within a `Scaffold`.
+    You would typically have a state variable like `_is_sheet_open` and a function that shows it by
+    calling `setState`.
+
+    **Examples:**
+    ```python
+    # Define the content for the BottomSheet
+    my_bottom_sheet = BottomSheet(
+        child=ListView(
+            children=[
+                ListTile(leading=Icon("photo"), title=Text("Share to Gallery")),
+                ListTile(leading=Icon("chat"), title=Text("Share to Chat App")),
+                ListTile(leading=Icon("link"), title=Text("Copy Link")),
+            ]
+        )
+    )
+
+    # In a parent stateful widget's build method:
+    # (Simplified logic, usually used with Scaffold's bottomSheet property)
+
+    # if self.state.is_sheet_open:
+    #     return Stack(
+    #         children=[
+    #             MyMainScreen(), # Main app content
+    #             my_bottom_sheet
+    #         ]
+    #     )
+    # else:
+    #     return MyMainScreen()
+    ```
+
+    **Key parameters:**
+    - **child**: The `Widget` that defines the content displayed inside the sheet. Required.
+    - **maxHeight**: The maximum height the sheet can have, often a percentage of the screen height (e.g., "60%"). This prevents it from covering the entire screen.
+    - **backgroundColor**: The background color of the sheet.
+    - **borderTopRadius**: Controls the roundness of the top corners, a key part of its Material Design look.
+    - **showDragHandle**: (bool) If `True`, displays the small horizontal bar at the top that indicates the sheet can be dragged.
+    - **onDismissed**: A callback function that is called when the user dismisses the sheet (e.g., by tapping the scrim or swiping down).
+
+    **Note on State:**
+    Similar to a `Drawer`, the state (open/closed) of a `BottomSheet` is managed externally by its parent. You don't set an `is_open` property directly on the widget itself.
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -506,12 +833,59 @@ class BottomSheet(Widget):
 
 
 
-# --- SnackBarAction Refactored ---
+# =============================================================================
+# SNACKBAR ACTION - The Action Button Inside a SnackBar
+# =============================================================================
 class SnackBarAction(Widget):
     """
-    Represents the action button within a SnackBar.
-    Usually styled as a text button with specific coloring.
-    Compatible with the reconciliation rendering system.
+    Represents an optional action button displayed at the end of a `SnackBar`.
+    This widget is a configuration object used to define the action's behavior
+    and appearance.
+
+    **What is SnackBarAction?**
+    A `SnackBarAction` defines a clickable button, usually with a short text label
+    like "Undo", "Retry", or "Dismiss", that appears within a `SnackBar`. It provides
+    the user with an immediate way to respond to the notification they just received.
+    This widget is not used by itself; it is passed to the `action` property of a `SnackBar`.
+
+    **Real-world analogy:**
+    It's like the "Snooze" button on an alarm clock. The alarm itself is the notification
+    (the `SnackBar` message), and the "Snooze" button (`SnackBarAction`) is the immediate,
+    contextual action you can take in response to it.
+
+    **When to use SnackBarAction:**
+    - To provide an "Undo" option after an action like deleting an item or sending a message.
+    - To allow the user to "Retry" a failed operation.
+    - To give a quick way to "Dismiss" a persistent notification.
+
+    **Examples:**
+    ```python
+    # Define a function to be called when the action is pressed
+    def undo_delete():
+        print("Undo action was triggered!")
+
+    # Create the SnackBarAction, passing the label and the function
+    my_action = SnackBarAction(
+        label=Text("UNDO"),
+        onPressed=undo_delete
+    )
+
+    # Now, use this action when creating the SnackBar
+    SnackBar(
+        content=Text("Item deleted."),
+        action=my_action
+    )
+    ```
+
+    **Key parameters:**
+    - **label**: The `Widget` (almost always a `Text` widget) to display as the button's content. Required.
+    - **onPressed**: The callback function to execute when the user taps the action button.
+    - **textColor**: The color of the label text. Material Design guidelines recommend a highly
+      contrasting color (Inverse Primary) to make it stand out against the dark `SnackBar` background.
+
+    **Note on Styling:**
+    The styling of the `SnackBarAction` is heavily guided by Material Design principles to ensure it looks
+    like a button and has adequate touch targets. You primarily control the label text and its color.
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -604,13 +978,70 @@ class SnackBarAction(Widget):
 
     # Removed: __new__, to_html()
 
-
-# --- SnackBar Refactored ---
+# =============================================================================
+# SNACKBAR - A Brief, Temporary Notification at the Bottom of the Screen
+# =============================================================================
 class SnackBar(Widget):
     """
-    Provides brief messages about app processes at the bottom of the screen.
-    Visibility and timer controlled externally. Implements M3 styling.
-    Compatible with the reconciliation rendering system.
+    A lightweight, temporary notification that provides brief feedback about an
+    operation. It appears at the bottom of the screen, displays a message, and
+    can optionally include an action.
+
+    **What is SnackBar?**
+    A `SnackBar` is a pop-up message used for "transient" notifications. It informs the user
+    of something that happened (or is happening) without interrupting their workflow. It
+    appears for a few seconds and then disappears automatically. It should not contain
+    critical information that requires a user's immediate action to proceed.
+
+    **Real-world analogy:**
+    It's like the toast popping out of a toaster. It appears briefly to signal that a
+    process is complete, gets your attention, and then you can either ignore it or take
+    an action (like grabbing the toast). It doesn't block you from doing other things
+    in the kitchen.
+
+    **When to use SnackBar:**
+    - After an action is completed (e.g., "Message sent", "Profile updated", "Item added to cart").
+    - To confirm a user's action, especially if it's reversible (e.g., "Conversation archived").
+    - To provide system status updates (e.g., "Connected", "Offline").
+
+    **Usage:**
+    The visibility of a `SnackBar` is typically managed by a controller or state manager,
+    often associated with a `Scaffold`. You don't manage an `is_open` flag on the `SnackBar`
+    itself. Instead, you would call a function like `scaffoldKey.currentState.showSnackBar(...)`
+    to make it appear.
+
+    **Examples:**
+    ```python
+    # A simple SnackBar with just a message
+    simple_snackbar = SnackBar(
+        content=Text("Your profile has been saved.")
+    )
+
+    # A SnackBar with an "Undo" action
+    undo_snackbar = SnackBar(
+        content=Text("Email has been deleted."),
+        action=SnackBarAction(
+            label=Text("UNDO"),
+            onPressed=handle_undo_action
+        ),
+        duration=5000 # Show for 5 seconds
+    )
+
+    # To show it (conceptual example):
+    # scaffoldState.showSnackBar(simple_snackbar)
+    ```
+
+    **Key parameters:**
+    - **content**: The main message to display, usually a `Text` widget. Required.
+    - **action**: An optional `SnackBarAction` widget to display a button.
+    - **duration**: The time in milliseconds that the `SnackBar` will be visible before
+      it automatically disappears. Defaults to 4000 (4 seconds).
+    - **backgroundColor**: The background color of the `SnackBar` container. Material Design
+      recommends a dark, high-contrast color (Inverse Surface).
+    - **textColor**: The color of the main content text. Material Design recommends a light
+      color that is readable on the dark background (Inverse On Surface).
+    - **shapeRadius**: The roundness of the corners.
+    - **elevation**: The z-axis elevation, which controls the shadow's prominence.
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -787,11 +1218,105 @@ class SnackBar(Widget):
 
 
 
-# --- Center Refactored ---
+# =============================================================================
+# CENTER WIDGET - The "Perfect Centering Machine" for Layout Alignment
+# =============================================================================
+
 class Center(Widget):
     """
-    A layout widget that centers its child within itself.
-    Uses flexbox for centering. Compatible with reconciliation.
+    The "perfect centering machine" that puts its child widget exactly in the middle!
+    
+    **What is Center?**
+    Think of Center as a "bullseye target" that always places its child widget
+    at the exact center - both horizontally and vertically. It's like having
+    a magnetic center point that pulls your content to the middle.
+    
+    **Real-world analogy:**
+    Center is like the centering mechanism on a pottery wheel:
+    - No matter what shape or size your clay (child widget), it centers it perfectly
+    - Works both horizontally (left-right) and vertically (up-down)
+    - Takes up the full available space to have room to center within
+    - The centered item stays in the middle even if the wheel (container) changes size
+    
+    **When to use Center:**
+    - Loading screens with spinners in the middle
+    - Welcome messages or logos
+    - Empty state illustrations
+    - Modal dialog content
+    - Any content that should be perfectly centered
+    
+    **Common use cases:**
+    - App splash screens
+    - "No data" placeholder screens
+    - Centered buttons or call-to-action elements
+    - Profile pictures in circular containers
+    - Error messages and status displays
+    
+    **Examples:**
+    ```python
+    # Simple centered text
+    Center(
+        child=Text("Welcome to MyApp!")
+    )
+    
+    # Centered loading spinner
+    Center(
+        child=CircularProgressIndicator()
+    )
+    
+    # Centered login form
+    Center(
+        child=Container(
+            width=300,
+            padding=EdgeInsets.all(24),
+            child=Column(children=[
+                Text("Sign In"),
+                TextField("Username"),
+                TextField("Password"),
+                ElevatedButton(child=Text("Login"), onPressed=login)
+            ])
+        )
+    )
+    
+    # Centered icon with message
+    Center(
+        child=Column(
+            mainAxisSize=MainAxisSize.MIN,  # Don't take full height
+            children=[
+                Icon(Icons.check_circle, size=64, color="green"),
+                SizedBox(height=16),
+                Text("Success!")
+            ]
+        )
+    )
+    ```
+    
+    **Key parameters:**
+    - **child**: The widget to center (required)
+    
+    **How it works:**
+    Center uses CSS Flexbox to achieve perfect centering:
+    - Sets `justify-content: center` (horizontal centering)
+    - Sets `align-items: center` (vertical centering)
+    - Takes up full available width and height to center within
+    
+    **Center vs other alignment widgets:**
+    - **Center**: Perfect center alignment (both horizontal and vertical)
+    - **Align**: More flexible positioning (top-left, bottom-right, etc.)
+    - **Padding**: Adds space around content but doesn't center
+    - **Container with alignment**: Can center within a specific sized container
+    
+    **Layout tips:**
+    1. **Content size**: Use `MainAxisSize.MIN` in Column/Row children to prevent them from taking full space
+    2. **Nested centering**: You can put Center inside other layout widgets
+    3. **Responsive**: Center automatically adjusts when screen size changes
+    4. **Multiple items**: To center multiple items, wrap them in Column or Row first
+    
+    **Perfect for:**
+    - Landing pages and welcome screens
+    - Loading states and progress indicators
+    - Empty states and placeholder content
+    - Modal dialogs and popups
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -852,12 +1377,65 @@ class Center(Widget):
 
 
 
-# --- Placeholder Refactored ---
+# =============================================================================
+# PLACEHOLDER - A Visual "To-Do" Note for Your UI Layout
+# =============================================================================
 class Placeholder(Widget):
     """
-    A widget that draws a box with a cross inside, useful for indicating
-    where content will eventually go. Can also display a child.
-    Compatible with the reconciliation rendering system.
+    A widget that draws a simple box with a dashed border, useful for indicating
+    where content will eventually be placed during development. It can also be used
+    to conditionally display a child widget.
+
+    **What is Placeholder?**
+    The `Placeholder` widget is a visual tool for developers. It acts as a temporary
+    stand-in for a widget that you haven't built yet or for content that will be loaded
+    dynamically. It helps you visualize your UI layout and structure before all the
+    final components are ready.
+
+    **Real-world analogy:**
+    It's like using a sticky note or drawing a box on a whiteboard to block out space for a
+    photo or a chart in a presentation you're designing. It says, "Something important will
+    go here," allowing you to build the rest of the layout around it.
+
+    **When to use Placeholder:**
+    - **During development**: To block out sections of your UI for widgets you plan to build later.
+    - **Dynamic Content**: As a temporary display while waiting for data to load from a network request.
+    - **Conditional UI**: To show a placeholder when a certain condition is not met (e.g., "Add an item to see your list").
+    - **Layout Debugging**: To quickly fill space and understand how your layout widgets (like `Row`, `Column`, `Flex`) are distributing space.
+
+    **Two Modes of Operation:**
+    1.  **Placeholder Mode (no child)**: If you don't provide a `child` widget, it will render a dashed box with specified dimensions and optional text.
+    2.  **Pass-through Mode (with child)**: If you provide a `child` widget, the `Placeholder` simply renders the child, acting as a transparent wrapper. This is useful for easily swapping between a real widget and a placeholder.
+
+    **Examples:**
+    ```python
+    # 1. A simple 200x150 placeholder box for a future image gallery
+    Placeholder(
+        width=200,
+        height=150,
+        fallbackText="Image Gallery"
+    )
+
+    # 2. Using Placeholder while data is loading
+    def build(self):
+        if self.state.is_loading:
+            return Placeholder(height=300, fallbackText="Loading user profile...")
+        else:
+            return UserProfileCard(user=self.state.user)
+
+    # 3. Using the pass-through mode
+    # This will just render the Text widget, not the placeholder box.
+    Placeholder(
+        child=Text("This is a real widget.")
+    )
+    ```
+
+    **Key parameters:**
+    - **child**: An optional `Widget` to display. If provided, the placeholder box itself is not rendered.
+    - **width**, **height**: The dimensions of the placeholder box.
+    - **color**: The color of the dashed border and the fallback text.
+    - **strokeWidth**: The thickness of the dashed border.
+    - **fallbackText**: The text to display inside the placeholder box.
     """
     shared_styles: Dict[Tuple, str] = {} # For the placeholder box style
 
@@ -970,11 +1548,55 @@ class Placeholder(Widget):
     # Removed instance methods: to_html()
 
 
-# --- Padding Refactored ---
+# =============================================================================
+# PADDING - A Simple Way to Add Space Around a Widget
+# =============================================================================
 class Padding(Widget):
     """
-    A widget that insets its child by the given padding.
-    Applies padding styles directly. Not a shared style component usually.
+    A widget that insets its child by a given amount of padding, creating empty
+    space around it.
+
+    **What is Padding?**
+    `Padding` is a simple but essential layout widget. It wraps another widget (`child`)
+    and adds a specified amount of empty space on its top, right, bottom, and/or left
+    sides. It doesn't have any visual appearance itself; it only affects the position
+    and layout of its child.
+
+    **Real-world analogy:**
+    It's like the matting in a picture frame. The matting creates a blank space between
+    the photo (`child`) and the frame's edge, giving the photo breathing room and making
+    the composition look better. The matting itself isn't the main content, but it's
+    crucial for the overall presentation.
+
+    **When to use Padding:**
+    - To create space between a widget and its parent's borders.
+    - To add space between adjacent widgets in a `Row` or `Column`.
+    - To create consistent spacing throughout your app's UI.
+
+    **Examples:**
+    ```python
+    # 1. Add 16 pixels of padding on all sides of a Text widget
+    Padding(
+        padding=EdgeInsets.all(16),
+        child=Text("This text has breathing room.")
+    )
+
+    # 2. Add different padding on the horizontal and vertical sides
+    Padding(
+        padding=EdgeInsets.symmetric(horizontal=24, vertical=12),
+        child=Button(label=Text("Padded Button"))
+    )
+
+    # 3. Add padding only to the top
+    Padding(
+        padding=EdgeInsets.only(top=32),
+        child=Text("This is pushed down from the top.")
+    )
+    ```
+
+    **Key parameters:**
+    - **padding**: An `EdgeInsets` object that defines the amount of space to add. This is required. `EdgeInsets` provides convenient constructors like `all()`, `symmetric()`, and `only()` to specify the padding values.
+    - **child**: The `Widget` to be inset.
     """
     def __init__(self,
                  padding: EdgeInsets, # Padding is required
@@ -1007,11 +1629,63 @@ class Padding(Widget):
     # Removed instance methods: to_html()
 
 
-# --- Align Refactored ---
+# =============================================================================
+# ALIGN - A Widget to Position a Child Within Itself
+# =============================================================================
 class Align(Widget):
     """
-    Aligns its child within itself and optionally sizes itself based on the child.
-    Uses flexbox for alignment. Not typically a shared style component.
+    A widget that aligns its child within itself. It acts as a parent container
+    that positions a single child according to a specified `Alignment`.
+
+    **What is Align?**
+    `Align` creates a container and places its `child` at a specific point within that
+    container's boundaries. By default, the `Align` widget will try to be as big as
+    possible (like a `Container` without explicit dimensions). You can then position
+    the child at the `center`, `topLeft`, `bottomRight`, or any other `Alignment` point.
+
+    **Real-world analogy:**
+    Think of a large, blank wall as the `Align` widget. You have a single small painting (`child`)
+    to hang on it. The `Alignment` object tells you exactly where to put the nail: dead center,
+    in the top-left corner, or exactly 25% from the top and 75% from the left.
+
+    **When to use Align:**
+    - To position a single child within a larger area.
+    - When you need to place a widget in a corner or at the center of its parent.
+    - As a simpler alternative to a `Stack` when you only have one child to position.
+
+    **Difference from `Center`:**
+    The `Center` widget is just a convenient shorthand for `Align(alignment=Alignment.center)`.
+    `Align` is more flexible and allows you to specify any alignment, not just the center.
+
+    **Examples:**
+    ```python
+    # A 200x200 container with a small box aligned to the bottom right
+    Container(
+        width=200,
+        height=200,
+        color=Colors.blue_grey,
+        child=Align(
+            alignment=Alignment.bottomRight,
+            child=Container(width=50, height=50, color=Colors.cyan)
+        )
+    )
+
+    # Aligning a FloatingActionButton to the top center of its container
+    Align(
+        alignment=Alignment.topCenter,
+        child=FloatingActionButton(child=Icon("add"))
+    )
+
+    # Using a fractional alignment (25% from top, 75% from left)
+    Align(
+        alignment=Alignment(0.25, 0.75),
+        child=Text("Custom Position")
+    )
+    ```
+
+    **Key parameters:**
+    - **alignment**: An `Alignment` object that specifies where to position the child. This is required. `Alignment` provides presets like `topLeft`, `center`, `bottomRight`, etc., or you can create a custom fractional alignment.
+    - **child**: The `Widget` to be aligned.
     """
     def __init__(self,
                  alignment: Alignment, # Alignment is required
@@ -1050,11 +1724,61 @@ class Align(Widget):
 
     # Removed instance methods: to_html()
 
-# --- AspectRatio Refactored ---
+# =============================================================================
+# ASPECT RATIO - The Widget That Enforces a Proportional Shape
+# =============================================================================
 class AspectRatio(Widget):
     """
-    A widget that sizes its child to a specific aspect ratio.
-    This is a rendering widget that creates a div with the `aspect-ratio` CSS property.
+    A widget that attempts to size its child to a specific aspect ratio.
+
+    **What is AspectRatio?**
+    The `AspectRatio` widget is a simple container that forces its child to have a
+    specific proportional shape. The aspect ratio is defined as the ratio of width
+    to height (e.g., 16/9 for a widescreen video). The widget will try to find the
+    largest possible size for its child within the available constraints while
+    maintaining the specified ratio.
+
+    **Real-world analogy:**
+    It's like a picture frame designed for a specific photo format, such as a
+    widescreen (16:9) frame or a square (1:1) frame for an Instagram photo. No matter
+    how you resize the frame itself, the opening inside for the photo always maintains
+    its intended shape.
+
+    **When to use AspectRatio:**
+    - To display images or videos that must maintain their original proportions.
+    - To create square containers for profile pictures or icons.
+    - In grid layouts to ensure all grid items have a uniform shape.
+    - Any time you need a widget to have a width that is a multiple of its height, or vice versa.
+
+    **Examples:**
+    ```python
+    # 1. A container for a widescreen video (16:9 ratio)
+    AspectRatio(
+        aspectRatio=16/9,
+        child=Container(
+            color=Colors.black,
+            child=Center(child=Text("Video Player", style=TextStyle(color=Colors.white)))
+        )
+    )
+
+    # 2. A perfect square for a profile image
+    AspectRatio(
+        aspectRatio=1.0,
+        child=Image(
+            src="profile_pic.jpg",
+            fit=BoxFit.COVER # Ensures the image fills the square
+        )
+    )
+    ```
+
+    **Key parameters:**
+    - **aspectRatio**: A `float` representing the ratio of width to height. This is required.
+    - **child**: The `Widget` to be sized.
+
+    **Layout behavior:**
+    - The `AspectRatio` widget first tries to fit its parent's constraints.
+    - Then, it determines one dimension (e.g., width) and calculates the other dimension (height) based on the `aspectRatio` to size its child.
+    - For example, if it's given an infinite height but a fixed width of 320px, and the `aspectRatio` is 16/9, the child's height will be calculated as 320 / (16/9) = 180px.
     """
     def __init__(self,
                  aspectRatio: float,
@@ -1073,12 +1797,61 @@ class AspectRatio(Widget):
     def get_required_css_classes(self) -> Set[str]:
         return set()
 
-# --- FittedBox Refactored ---
+# =============================================================================
+# FITTED BOX - The Widget That Scales and Fits its Child
+# =============================================================================
 class FittedBox(Widget):
     """
-    Scales and positions its child within itself according to fit.
-    Applies object-fit styles or uses transform depending on complexity.
-    Compatible with the reconciliation rendering system.
+    Scales and positions its child within itself according to a specified fit,
+    ensuring the child fits neatly within the available space.
+
+    **What is FittedBox?**
+    A `FittedBox` takes a child widget of any size and scales it up or down to fit
+    within the `FittedBox`'s own boundaries. You can control how the scaling and
+    positioning happens using the `fit` and `alignment` properties.
+
+    **Real-world analogy:**
+    It's like the "Scale to Fit" or "Fill Page" options when you print a photo. The
+    printer paper is the `FittedBox` and your photo is the `child`. You can choose to:
+    - **`BoxFit.contain`**: Shrink the photo so the whole thing is visible, even if it leaves empty space on the paper.
+    - **`BoxFit.cover`**: Zoom in on the photo so it completely covers the paper, even if some of the photo gets cropped.
+    - **`BoxFit.fill`**: Stretch or squash the photo to match the paper's dimensions exactly, which might distort it.
+    - And several other options.
+
+    **When to use FittedBox:**
+    - When you have a widget (like an image or a complex `Row` of text) that might be too large for its container, and you want it to shrink gracefully instead of overflowing.
+    - To make a child widget expand to fill all available space, potentially cropping it.
+    - In responsive layouts where you need content to adapt to different container sizes without breaking the layout.
+
+    **Examples:**
+    ```python
+    # A 100x100 box where an image is scaled down to be fully visible inside
+    Container(
+        width=100,
+        height=100,
+        color=Colors.grey,
+        child=FittedBox(
+            fit=BoxFit.CONTAIN,
+            child=Image(src="a_very_large_image.jpg")
+        )
+    )
+
+    # A title that will shrink its font size to fit on a single line
+    Container(
+        width=200,
+        height=50,
+        child=FittedBox(
+            fit=BoxFit.FIT_WIDTH,
+            child=Text("This is a very long title that might overflow")
+        )
+    )
+    ```
+
+    **Key parameters:**
+    - **child**: The `Widget` to be scaled and positioned.
+    - **fit**: A `BoxFit` value that determines how the child is inscribed into the box. Common values are `CONTAIN`, `COVER`, `FILL`, `FIT_WIDTH`, and `FIT_HEIGHT`.
+    - **alignment**: An `Alignment` object that controls how the child is positioned within the box if there's any empty space (e.g., when using `BoxFit.contain`).
+    - **clipBehavior**: Determines whether to clip the child if it overflows the box's bounds (e.g., when using `BoxFit.cover`).
     """
     # Styling is instance-specific based on fit/alignment. No shared styles.
 
@@ -1119,12 +1892,63 @@ class FittedBox(Widget):
 
     # Removed instance methods: to_html()
 
-# --- FractionallySizedBox Refactored ---
+# =============================================================================
+# FRACTIONALLY SIZED BOX - The "Percentage-Based" Sizing Widget
+# =============================================================================
 class FractionallySizedBox(Widget):
     """
-    Sizes its child to a fraction of the total available space.
-    Applies percentage width/height styles.
-    Compatible with the reconciliation rendering system.
+    A widget that sizes its child to a fraction of the total available space,
+    making it useful for creating responsive, proportional layouts.
+
+    **What is FractionallySizedBox?**
+    `FractionallySizedBox` is a layout widget that tells its child to be a certain
+    percentage of its parent's width and/or height. It first lets its parent determine
+    the available space, and then it calculates its child's size based on the given
+    `widthFactor` and `heightFactor`.
+
+    **Real-world analogy:**
+    It's like giving instructions on a blueprint: "This window should take up exactly
+    50% of the wall's width and 30% of its height." Regardless of whether the final wall
+    is large or small, the window will always maintain those proportions relative to it.
+
+    **When to use FractionallySizedBox:**
+    - To create responsive UI elements that scale with the screen size.
+    - To make a widget occupy a specific percentage of its parent's area.
+    - To create proportional columns or rows without using a more complex `Flex` widget.
+    - To center a box that is, for example, 80% of the screen's width.
+
+    **Examples:**
+    ```python
+    # Center a card that takes up 90% of the available width
+    FractionallySizedBox(
+        widthFactor=0.9,
+        child=Card(
+            child=Padding(
+                padding=EdgeInsets.all(16),
+                child=Text("This card scales with the screen width.")
+            )
+        )
+    )
+
+    # Place a banner at the bottom that is 100% of the width and 20% of the height
+    Align(
+        alignment=Alignment.bottomCenter,
+        child=FractionallySizedBox(
+            widthFactor=1.0,
+            heightFactor=0.2,
+            child=Container(
+                color=Colors.blue,
+                child=Center(child=Text("Banner Ad"))
+            )
+        )
+    )
+    ```
+
+    **Key parameters:**
+    - **widthFactor**: The fraction (from 0.0 to 1.0 and beyond) of the available width the child should occupy.
+    - **heightFactor**: The fraction of the available height the child should occupy.
+    - **alignment**: An `Alignment` object that controls how the child is positioned within the full space if the factors are less than 1.0. Defaults to `center`.
+    - **child**: The `Widget` to be sized.
     """
     # Styling is instance-specific based on factors. No shared styles.
 
@@ -1164,12 +1988,57 @@ class FractionallySizedBox(Widget):
 
     # Removed instance methods: to_html()
 
-# --- Flex Refactored ---
+# =============================================================================
+# FLEX - The Master Widget for One-Dimensional Layouts
+# =============================================================================
 class Flex(Widget):
     """
-    A widget that displays its children in a one-dimensional array, either
-    horizontally (Row) or vertically (Column). This is a more general version.
-    Compatible with the reconciliation rendering system.
+    A powerful and efficient widget that displays its children in a one-dimensional
+    array. This is the underlying engine for `Row` and `Column` and can be used
+    directly for more complex or dynamic layouts.
+
+    **What is Flex?**
+    `Flex` is a low-level layout primitive that gives you precise control over how a
+    series of child widgets are arranged and spaced along a single axis (either
+    horizontally or vertically). It's the foundation of modern web and app layout,
+    providing a robust system for distributing space and aligning items. The `Row`
+    and `Column` widgets are just convenient wrappers around `Flex`.
+
+    **Real-world analogy:**
+    Think of arranging books on a bookshelf. `Flex` is the bookshelf itself.
+    - **`direction`**: Are you stacking the books side-by-side (`HORIZONTAL`) or on top of each other (`VERTICAL`)?
+    - **`mainAxisAlignment`**: After placing the books, are they all pushed to the `start` of the shelf, centered in the `middle`, or spread out `evenly`?
+    - **`crossAxisAlignment`**: Are the books all aligned to the `front` edge of the shelf, the `back` edge, or centered in the middle of its depth?
+
+    **When to use Flex (instead of Row/Column):**
+    - When you need to programmatically change the layout direction from horizontal to vertical (e.g., for responsive design).
+    - When creating a custom layout widget where you want to expose all flexbox properties directly.
+    - In most everyday situations, using the more readable `Row` and `Column` widgets is preferred.
+
+    **Examples:**
+    ```python
+    # A layout that is a Row on wide screens and a Column on narrow screens
+    def build(self, context):
+        is_wide_screen = context.mediaQuery.size.width > 600
+        layout_direction = Axis.HORIZONTAL if is_wide_screen else Axis.VERTICAL
+
+        return Flex(
+            direction=layout_direction,
+            mainAxisAlignment=MainAxisAlignment.SPACE_AROUND,
+            children=[
+                Icon(Icons.home),
+                Icon(Icons.search),
+                Icon(Icons.settings),
+            ]
+        )
+    ```
+
+    **Key parameters:**
+    - **children**: A `List` of `Widget`s to display.
+    - **direction**: The axis along which the children are placed. `Axis.HORIZONTAL` for a row-like layout, `Axis.VERTICAL` for a column-like layout.
+    - **mainAxisAlignment**: How the children should be placed along the main axis (`direction`). Options include `START`, `CENTER`, `END`, `SPACE_BETWEEN`, `SPACE_AROUND`, `SPACE_EVENLY`.
+    - **crossAxisAlignment**: How the children should be placed along the axis perpendicular to the `direction`. Options include `START`, `CENTER`, `END`, `STRETCH`.
+    - **padding**: Optional `EdgeInsets` to create space around the flex container.
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -1268,12 +2137,58 @@ class Flex(Widget):
 
     # Removed instance methods: to_html()
 
-# --- Wrap Refactored ---
+# =============================================================================
+# WRAP - The Layout for "Line-Breaking" Content
+# =============================================================================
 class Wrap(Widget):
     """
-    Displays its children in multiple horizontal or vertical runs.
-    Uses CSS Flexbox with wrapping enabled.
-    Compatible with the reconciliation rendering system.
+    A layout widget that arranges its children in horizontal or vertical "runs".
+    `Wrap` is similar to a `Row` or `Column` but will automatically wrap its
+    children to the next line if there isn't enough space on the current one.
+
+    **What is Wrap?**
+    `Wrap` is a flexible layout that prevents its children from overflowing. When a `Row`
+    runs out of horizontal space, its content gets clipped or pushes other elements
+    out of the way. When a `Wrap` runs out of space, it simply moves the next child
+    down to a new line, creating another "run". This is essential for building
+    responsive UIs that look good on any screen size.
+
+    **Real-world analogy:**
+    It's like writing words on a piece of paper. You write words one after another
+    (like items in a `Row`). When you reach the right margin, you don't keep writing
+    off the edge of the page; you naturally "wrap" to the beginning of the next line.
+    The `Wrap` widget does the same thing for widgets.
+
+    **When to use Wrap:**
+    - Displaying a list of tags, chips, or categories.
+    - Creating a photo gallery with variable-sized images.
+    - Any time you have a variable number of items in a `Row`-like layout and you don't want them to overflow.
+    - Building responsive forms or toolbars that reflow on smaller screens.
+
+    **Examples:**
+    ```python
+    # A collection of user-interest "chips" that will wrap onto multiple lines
+    Wrap(
+        spacing=8.0,      # Horizontal gap between chips
+        runSpacing=4.0,   # Vertical gap between lines of chips
+        children=[
+            Chip(label=Text("Photography")),
+            Chip(label=Text("Travel")),
+            Chip(label=Text("Cooking")),
+            Chip(label=Text("Technology")),
+            Chip(label=Text("Music")),
+            Chip(label=Text("Software Development")),
+        ]
+    )
+    ```
+
+    **Key parameters:**
+    - **children**: A `List` of `Widget`s to display.
+    - **direction**: The primary axis of the runs. `Axis.HORIZONTAL` (default) means children are laid out left-to-right and wrap to new lines vertically.
+    - **spacing**: The amount of empty space to place between children along the main axis (e.g., horizontal gap).
+    - **runSpacing**: The amount of empty space to place between the runs themselves (e.g., vertical gap).
+    - **alignment**: How the children are aligned within a single run (e.g., `MainAxisAlignment.START`).
+    - **runAlignment**: How the runs themselves are aligned within the `Wrap` (e.g., `MainAxisAlignment.CENTER`).
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -1393,12 +2308,82 @@ class Wrap(Widget):
 
     # Removed instance methods: to_html()
 
-
+# =============================================================================
+# DIALOG - The Modal Pop-up for Critical Information and Actions
+# =============================================================================
 class Dialog(Widget):
     """
-    Displays an M3-style Dialog box within the main application window.
-    Visibility is controlled externally. Doesn't create a separate native window.
-    Compatible with the reconciliation rendering system.
+    A Material Design dialog that appears over the main application content,
+    requiring user interaction. It's used to present critical information or
+    ask for a decision.
+
+    **What is Dialog?**
+    A dialog is a modal window that interrupts the user's workflow to deliver
+    important information or request a choice. When a dialog is active, the
+    background content is typically obscured by a scrim (a dark overlay),
+    preventing interaction until the dialog is dismissed.
+
+    **Real-world analogy:**
+    It's like a bank teller asking you, "Are you sure you want to withdraw this amount?"
+    before completing a transaction. They stop the normal process, present you with a
+    clear choice, and wait for your explicit confirmation ("Yes" or "No") before
+    proceeding. You cannot continue with anything else until you've answered.
+
+    **When to use Dialog:**
+    - **Confirmation:** Ask users to confirm a significant action (e.g., "Delete item?", "Discard draft?").
+    - **Alerts:** Inform users about a critical situation that requires acknowledgement (e.g., "Connection Lost").
+    - **Choices:** Present a set of simple, related options that the user must choose from.
+    - **Simple Forms:** Gather a small amount of information, like a username and password.
+
+    **Usage Pattern (External State Control):**
+    The visibility of a `Dialog` is not controlled by an internal property. Instead, its parent `StatefulWidget` manages its visibility.
+    1.  A state variable (e.g., `_show_dialog = False`) determines if the dialog should be in the widget tree.
+    2.  An event (like a button press) calls `setState` to set `_show_dialog = True`, causing the dialog to be built and appear.
+    3.  An action button *inside* the dialog (e.g., "OK" or "Cancel") calls a method that uses `setState` to set `_show_dialog = False`, dismissing it.
+
+    **Examples:**
+    ```python
+    # This is a conceptual example of how a stateful parent would manage the dialog.
+
+    class MyScreenState(State):
+        def __init__(self):
+            super().__init__()
+            self._show_confirm_dialog = False
+
+        def _show_dialog(self):
+            self.setState({"_show_confirm_dialog": True})
+
+        def _hide_dialog(self):
+            self.setState({"_show_confirm_dialog": False})
+
+        def build(self):
+            dialog = Dialog(
+                title=Text("Confirm Deletion"),
+                content=Text("Are you sure you want to delete this file? This action cannot be undone."),
+                actions=[
+                    TextButton(label=Text("CANCEL"), onPressed=self._hide_dialog),
+                    Button(label=Text("DELETE"), onPressed=self._delete_file_and_hide_dialog),
+                ]
+            )
+
+            return Stack(
+                children=[
+                    # Main screen content
+                    Scaffold(body=Button(label=Text("Delete File"), onPressed=self._show_dialog)),
+                    # Conditionally render the dialog on top
+                    dialog if self._show_confirm_dialog else Container(),
+                ]
+            )
+    ```
+
+    **Key parameters:**
+    - **title**: The `Widget` (usually `Text`) displayed at the top of the dialog.
+    - **content**: The main body of the dialog, providing more detail.
+    - **actions**: A `List` of `Widget`s (usually `Button`s or `TextButton`s) displayed at the bottom, allowing the user to respond.
+    - **icon**: An optional `Icon` widget displayed above the title.
+    - **backgroundColor**: The color of the dialog's surface.
+    - **shape**: The `BorderRadius` of the dialog's corners.
+    - **barrierColor**: The color of the scrim that overlays the background content.
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -1630,13 +2615,62 @@ class Dialog(Widget):
 
 
 
-# The RoundedPolygon class can be removed from here, as its logic is now in JS.
-
+# =============================================================================
+# CLIP PATH - The Widget for Creating Custom, Responsive Shapes
+# =============================================================================
 class ClipPath(Widget):
     """
-    A widget that renders a container and clips its child using a path.
-    The path is defined by a list of points and an optional corner radius,
-    and is made fully responsive by a client-side engine.
+    A widget that clips its child to a custom, non-rectangular shape. The shape
+    is defined by a list of points on a "design canvas" (`viewBox`) and is made
+    fully responsive by a client-side engine.
+
+    **What is ClipPath?**
+    `ClipPath` is a powerful decorative widget that allows you to break free from
+    rectangular layouts. You define a polygon shape, and this widget will use that
+    shape to "cut out" its child, hiding any parts of the child that fall outside
+    the shape. The key feature is its responsiveness: the custom shape automatically
+    scales and adapts to the widget's size.
+
+    **Real-world analogy:**
+    It's like a magical, resizing cookie cutter. You design the cutter's shape once
+    (the `points` on the `viewBox`). Then you can use it on any size sheet of dough
+    (the `child` widget), and the cutter will automatically scale itself to create a
+    proportionally correct shape every time.
+
+    **When to use ClipPath:**
+    - To create hero banners with angled or curved edges.
+    - For uniquely shaped containers, buttons, or image holders (e.g., hexagons, chevrons, speech bubbles).
+    - To add dynamic and visually interesting decorative elements to your background.
+    - For creating complex overlapping UI with non-rectangular boundaries.
+
+    **Key Concepts:**
+    - **`viewBox`**: This is your "design canvas" or "blueprint" size (e.g., 100x100).
+    - **`points`**: This is a list of `(x, y)` coordinates on your `viewBox` canvas that define the vertices of your polygon shape. For example, `(0, 0)` is the top-left corner and `(100, 50)` is the middle-right edge of a 100x100 viewBox.
+    - The client-side engine takes these blueprint coordinates and calculates a responsive SVG `clip-path` for the final rendered widget.
+
+    **Examples:**
+    ```python
+    # Creating a downward-pointing chevron shape clipping an image
+    ClipPath(
+        # The design canvas is 100 units wide and 50 units high
+        viewBox=(100, 50),
+        # Points defining the chevron shape on the canvas
+        points=[(0, 0), (50, 50), (100, 0)],
+        # Apply a corner radius to smooth the points
+        radius=5,
+        child=Image(
+            src="landscape.jpg",
+            fit=BoxFit.COVER
+        )
+    )
+    ```
+
+    **Key parameters:**
+    - **child**: The `Widget` to be clipped. This is required.
+    - **points**: A `List` of `(x, y)` tuples defining the vertices of your clipping shape.
+    - **viewBox**: A `(width, height)` tuple defining the coordinate system for your `points`.
+    - **radius**: A `float` value to create rounded corners on the clipping path.
+    - **width**, **height**, **aspectRatio**: Standard sizing properties that control the size of the `ClipPath` container itself.
     """
     def __init__(self,
                  key: Optional[Key] = None,
@@ -1686,10 +2720,88 @@ class ClipPath(Widget):
 
 
 
-
+# =============================================================================
+# LIST TILE - The Building Block of Lists
+# =============================================================================
 class ListTile(Widget):
-    """A single fixed-height row that typically contains some text as well as a
-    leading or trailing icon. Conforms to Material 3 list item specs."""
+    """
+    A single fixed-height row that conforms to Material Design list item specs.
+    It's a versatile and fundamental widget for creating structured list entries
+    with optional leading and trailing icons or widgets.
+
+    **What is ListTile?**
+    `ListTile` is a highly structured and opinionated widget that provides a
+    pre-defined layout for a row in a list. It has designated "slots" for
+    a `leading` widget (like an icon or avatar), a `title`, a `subtitle`, and a
+    `trailing` widget (like another icon or a switch). This structure ensures
+    consistency and adheres to Material Design guidelines.
+
+    **Real-world analogy:**
+    It's like an entry in a modern phone's contact list. Each entry has a
+    consistent structure:
+    - A contact photo on the left (`leading`).
+    - The person's name (`title`).
+    - Their phone number or email below the name (`subtitle`).
+    - A call or message icon on the right (`trailing`).
+    `ListTile` provides the blueprint for creating such structured rows.
+
+    **When to use ListTile:**
+    - As the primary child of a `ListView` for displaying rows of data.
+    - To create items in a `Drawer` for navigation.
+    - For building rows in a settings menu (e.g., an icon, setting name, and a `Switch`).
+    - Any time you need a standardized, single-line list item with optional icons.
+
+    **Examples:**
+    ```python
+    # 1. A simple ListTile used for navigation
+    ListView(
+        children=[
+            ListTile(
+                leading=Icon("inbox"),
+                title=Text("Inbox"),
+                onTap=lambda: navigate_to("inbox")
+            ),
+            ListTile(
+                leading=Icon("send"),
+                title=Text("Sent"),
+                onTap=lambda: navigate_to("sent")
+            )
+        ]
+    )
+
+    # 2. A more complex ListTile with all slots filled
+    ListTile(
+        leading=CircleAvatar(child=Text("A")),
+        title=Text("Alice"),
+        subtitle=Text("alice@example.com"),
+        trailing=Icon("phone"),
+        selected=True, # Highlight this tile
+        onTap=start_call
+    )
+
+    # 3. A ListTile for a setting with a Switch
+    ListTile(
+        title=Text("Enable Notifications"),
+        trailing=Switch(value=is_notifications_enabled, onChanged=toggle_notifications),
+        onTap=toggle_notifications # Allow tapping the whole row
+    )
+    ```
+
+    **Key parameters:**
+    - **leading**: The widget to display at the beginning of the tile (left side).
+    - **title**: The primary content, typically `Text`.
+    - **subtitle**: Additional content displayed below the title, typically `Text`.
+    - **trailing**: The widget to display at the end of the tile (right side).
+    - **onTap**: The callback function to execute when the tile is tapped.
+    - **selected**: (bool) If `True`, the tile is rendered with a highlighted background to indicate it's selected.
+    - **enabled**: (bool) If `False`, the tile is visually de-emphasized and will not respond to taps.
+    - **dense**: (bool) If `True`, renders a more compact version of the tile with less vertical height.
+
+    **Layout and Styling:**
+    `ListTile` uses a CSS Grid layout internally to position its `leading`, `title`, `subtitle`,
+    and `trailing` children. State changes (like `selected` or `disabled`) are handled by
+    dynamically adding CSS classes, allowing for efficient and clean styling.
+    """
     shared_styles: Dict[Tuple, str] = {}
 
     def __init__(self,
@@ -1816,11 +2928,86 @@ class ListTile(Widget):
 
 
 
-
+# =============================================================================
+# SLIDER - The Control for Selecting a Value from a Range
+# =============================================================================
 class Slider(Widget):
     """
-    A Material Design slider that allows a user to select a value from a range.
-    Accepts a SliderTheme for detailed styling.
+    A Material Design slider that allows a user to select a value from a
+    continuous or discrete range by dragging a thumb along a track.
+
+    **What is Slider?**
+    A `Slider` is an interactive component that represents a range of values. Users
+    can drag the slider's "thumb" to select a specific value. It can be continuous,
+    allowing selection of any value in the range, or discrete (using `divisions`),
+    snapping the thumb to predefined steps.
+
+    **Real-world analogy:**
+    It's like the volume control on a stereo, the brightness setting on your screen,
+    or a fader on a professional audio mixing board. It provides an intuitive, visual
+    way to adjust a value between a minimum and maximum limit.
+
+    **When to use Slider:**
+    - For settings that reflect a range of intensities, such as volume, brightness, or color saturation.
+    - To select a value where the relative position is more important than the exact number (e.g., font size).
+    - In filters to define a range of values (e.g., price, distance).
+    - For scrubbing through media playback like a video or audio track.
+
+    **State Management Pattern (Controller):**
+    The `Slider` is a "controlled component," meaning it does not manage its own value.
+    Its parent `StatefulWidget` is responsible for its state.
+    1.  Create a `SliderController` in the parent state and hold onto it.
+    2.  Pass this `controller` to the `Slider` widget.
+    3.  Use the `onChanged` callback to receive updates from the slider as the user drags it.
+    4.  Inside `onChanged`, call `setState` in the parent to update the application's state, which in turn will update the `SliderController`'s value, causing the UI to reflect the change.
+
+    **Examples:**
+    ```python
+    # Inside a StatefulWidget's State class
+    class _MySettingsPageState(State):
+        def __init__(self):
+            super().__init__()
+            # 1. Create and hold the controller
+            self.volume_controller = SliderController(value=0.5)
+
+        # 3. Define the callback
+        def on_volume_changed(self, new_value):
+            # 4. Update the state
+            self.setState({}) # Rebuild to reflect the new value
+            self.volume_controller.value = new_value
+            print(f"New volume: {new_value}")
+
+        def build(self):
+            return Column(children=[
+                Text(f"Volume: {self.volume_controller.value:.2f}"),
+                # A continuous slider
+                Slider(
+                    key=Key("volume_slider"),
+                    controller=self.volume_controller, # 2. Pass the controller
+                    onChanged=self.on_volume_changed,
+                    min=0.0,
+                    max=1.0
+                ),
+                # A discrete slider for star ratings (0 to 5)
+                Slider(
+                    key=Key("rating_slider"),
+                    controller=self.rating_controller,
+                    onChanged=self.on_rating_changed,
+                    min=0,
+                    max=5,
+                    divisions=5 # Creates 5 steps
+                )
+            ])
+    ```
+
+    **Key parameters:**
+    - **key**: A **required** `Key` for this stateful widget.
+    - **controller**: A **required** `SliderController` instance that holds the current value of the slider.
+    - **onChanged**: A callback function that fires continuously as the thumb is dragged, providing the new value.
+    - **onChangeEnd**: A callback that fires only when the user releases the thumb.
+    - **min**, **max**: The minimum and maximum values of the slider's range.
+    - **divisions**: If set to an integer, the slider becomes discrete, snapping to a number of evenly spaced intervals.
+    - **theme**: A `SliderTheme` object for comprehensive styling of the track, thumb, and overlay.
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -1994,12 +3181,123 @@ class Slider(Widget):
 
 
 
+# =============================================================================
+# CHECKBOX WIDGET - The "Toggle Choice Box" for Binary Options
+# =============================================================================
+
 class Checkbox(Widget):
     """
-    A Material Design checkbox that conforms to the framework's style-swapping logic.
-    It treats its 'checked' and 'unchecked' states as two distinct visual styles,
-    each with its own shared CSS class, allowing it to work with the existing
-    core update mechanism.
+    The "digital checkbox" for yes/no, on/off, true/false choices - like checking items off a list!
+    
+    **What is Checkbox?**
+    Think of Checkbox as a "digital version" of the checkboxes you see on forms and surveys.
+    Users can click it to toggle between checked (☑) and unchecked (☐) states.
+    It's perfect for binary choices, options, and settings.
+    
+    **Real-world analogy:**
+    Checkbox is like the checkboxes on a restaurant order form:
+    - Each item can be either selected or not selected
+    - You can see at a glance what's been chosen (checkmark appears)
+    - Clicking toggles between checked and unchecked
+    - Each checkbox is independent (unlike radio buttons)
+    - Used for "yes/no" type questions
+    
+    **When to use Checkbox:**
+    - Settings that can be enabled/disabled
+    - Features users can opt in/out of
+    - Terms and conditions acceptance
+    - Multi-select options (user can pick several)
+    - Todo list items that can be marked complete
+    
+    **When NOT to use Checkbox:**
+    - Single choice from multiple options (use RadioButton instead)
+    - Actions that happen immediately (use Switch instead)
+    - Navigation choices (use buttons or links)
+    
+    **Examples:**
+    ```python
+    # Simple settings checkbox
+    notifications_enabled = True
+    Checkbox(
+        key=Key("notifications"),
+        value=notifications_enabled,
+        onChanged=lambda new_value: set_notifications(new_value)
+    )
+    
+    # Checkbox with custom colors
+    Checkbox(
+        key=Key("terms_accepted"),
+        value=terms_accepted,
+        activeColor="green",     # Color when checked
+        checkColor="white",     # Color of the checkmark
+        inactiveColor="gray",   # Color when unchecked
+        onChanged=lambda value: accept_terms(value)
+    )
+    
+    # Checkbox in a list of options
+    Column(children=[
+        Text("Select your preferences:"),
+        Checkbox(
+            key=Key("email_updates"),
+            value=email_updates,
+            onChanged=toggle_email_updates
+        ),
+        Text("Email updates"),
+        Checkbox(
+            key=Key("push_notifications"), 
+            value=push_notifications,
+            onChanged=toggle_push_notifications
+        ),
+        Text("Push notifications")
+    ])
+    
+    # Todo list checkbox
+    CheckboxListTile(
+        title=Text("Buy groceries"),
+        value=task.completed,
+        onChanged=lambda completed: mark_task_complete(task.id, completed)
+    )
+    ```
+    
+    **Key parameters:**
+    - **key**: REQUIRED! Unique identifier for the checkbox
+    - **value**: Current state (True = checked, False = unchecked)
+    - **onChanged**: Function called when user clicks (gets the new value)
+    - **activeColor**: Color when checked (default: theme primary color)
+    - **checkColor**: Color of the checkmark symbol (default: white)
+    - **inactiveColor**: Color when unchecked (default: gray)
+    
+    **State management pattern:**
+    Checkbox follows the "controlled component" pattern:
+    ```python
+    # Your app manages the state
+    is_enabled = False
+    
+    def toggle_setting(new_value):
+        global is_enabled
+        is_enabled = new_value
+        # Update your app state here
+    
+    # Checkbox displays the state and notifies you of changes
+    Checkbox(
+        key=Key("setting"),
+        value=is_enabled,      # Current state
+        onChanged=toggle_setting  # Called when clicked
+    )
+    ```
+    
+    **Checkbox vs Switch vs RadioButton:**
+    - **Checkbox**: Independent yes/no choices (can select multiple)
+    - **Switch**: Immediate on/off actions (like toggling WiFi)
+    - **RadioButton**: One choice from many options (mutually exclusive)
+    
+    **Accessibility tip:**
+    Always pair checkboxes with descriptive labels or wrap them in
+    CheckboxListTile for better usability!
+    
+    **Material Design:**
+    This checkbox follows Material Design 3 guidelines with proper
+    animations, ripple effects, and theming support.
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -2148,13 +3446,141 @@ class Checkbox(Widget):
 
 # ... (keep all your other widget classes)
 
+# =============================================================================
+# SWITCH WIDGET - The "Digital Toggle Switch" for Instant On/Off Actions
+# =============================================================================
+
 class Switch(Widget):
     """
-    A Material Design switch that toggles a boolean state.
-
-    This widget conforms to the framework's style-swapping logic by treating
-    its 'on' and 'off' states as two distinct visual styles, each with its own
-    shared CSS class.
+    The "digital light switch" for instant on/off actions - like flipping a real switch!
+    
+    **What is Switch?**
+    Think of Switch as a "digital version" of a physical light switch or power button.
+    It toggles between ON and OFF states with a sliding animation, providing immediate
+    feedback for actions that take effect instantly.
+    
+    **Real-world analogy:**
+    Switch is like the light switches in your home:
+    - Flip it one way = ON (lights turn on immediately)
+    - Flip it the other way = OFF (lights turn off immediately)
+    - The position clearly shows the current state
+    - The action happens instantly when you flip it
+    - Has a satisfying physical movement (sliding animation)
+    
+    **When to use Switch:**
+    - Settings that take effect immediately (WiFi on/off, Dark mode, etc.)
+    - Features that users want to enable/disable quickly
+    - System controls (Bluetooth, Location, Notifications)
+    - Preferences that apply right away
+    - Any on/off action where users expect instant results
+    
+    **When NOT to use Switch:**
+    - Choices that need confirmation (use Checkbox instead)
+    - Actions that require saving (use Checkbox + Save button)
+    - Multiple related options (use Checkbox group)
+    - Navigation choices (use buttons or links)
+    
+    **Switch vs Checkbox:**
+    - **Switch**: Immediate actions ("Turn on WiFi now")
+    - **Checkbox**: Selections for later ("Include WiFi in backup")
+    
+    **Examples:**
+    ```python
+    # WiFi toggle switch
+    wifi_enabled = True
+    Switch(
+        key=Key("wifi_switch"),
+        value=wifi_enabled,
+        onChanged=lambda enabled: toggle_wifi(enabled)
+    )
+    
+    # Dark mode switch with custom colors
+    Switch(
+        key=Key("dark_mode"),
+        value=is_dark_mode,
+        activeColor="purple",      # Track color when ON
+        thumbColor="white",       # Thumb (slider) color
+        onChanged=lambda enabled: set_dark_mode(enabled)
+    )
+    
+    # Notification switch in settings
+    ListTile(
+        leading=Icon(Icons.notifications),
+        title=Text("Push Notifications"),
+        trailing=Switch(
+            key=Key("notifications"),
+            value=notifications_enabled,
+            onChanged=lambda enabled: {
+                set_notifications(enabled),
+                show_toast("Notifications " + ("enabled" if enabled else "disabled"))
+            }
+        )
+    )
+    
+    # Settings group with multiple switches
+    Column(children=[
+        Text("Privacy Settings"),
+        SwitchListTile(
+            title="Location Services",
+            value=location_enabled,
+            onChanged=toggle_location
+        ),
+        SwitchListTile(
+            title="Analytics",
+            value=analytics_enabled, 
+            onChanged=toggle_analytics
+        ),
+        SwitchListTile(
+            title="Crash Reporting",
+            value=crash_reporting_enabled,
+            onChanged=toggle_crash_reporting
+        )
+    ])
+    ```
+    
+    **Key parameters:**
+    - **key**: REQUIRED! Unique identifier for the switch
+    - **value**: Current state (True = ON, False = OFF)
+    - **onChanged**: Function called when user toggles (gets the new value)
+    - **activeColor**: Color of the track when ON (default: theme primary)
+    - **thumbColor**: Color of the sliding thumb/knob
+    
+    **State management pattern:**
+    Switch follows the "controlled component" pattern:
+    ```python
+    # Your app manages the state
+    is_enabled = False
+    
+    def handle_toggle(new_state):
+        global is_enabled
+        is_enabled = new_state
+        # Apply the change immediately
+        apply_setting(new_state)
+    
+    # Switch shows current state and handles changes
+    Switch(
+        key=Key("setting"),
+        value=is_enabled,        # What to display
+        onChanged=handle_toggle  # What to do when toggled
+    )
+    ```
+    
+    **Animation and feedback:**
+    Switch provides visual feedback with:
+    - Smooth sliding animation between states
+    - Color changes (track and thumb)
+    - Haptic feedback on supported devices
+    - Clear visual state indication
+    
+    **Accessibility:**
+    - Screen readers announce "Switch, on" or "Switch, off"
+    - Can be activated with keyboard (Space or Enter)
+    - High contrast support for visibility
+    - Proper touch target size for easy tapping
+    
+    **Material Design compliance:**
+    Follows Material Design 3 guidelines with proper colors, animations,
+    and interaction patterns for consistency across your app.
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -2278,17 +3704,86 @@ class Switch(Widget):
         """
 
 
-# In pythra/widgets.py
 
-# ... (keep all your other widget classes)
-
+# =============================================================================
+# RADIO - The "Select One" Button
+# =============================================================================
 class Radio(Widget):
     """
-    A Material Design radio button.
+    A Material Design radio button, used to select one exclusive option from a set.
 
-    Used to select one option from a set. A radio button's state is determined
-    by comparing its `value` to a `groupValue`. When the radio button is tapped,
-    it calls the `onChanged` callback with its `value`.
+    **What is a Radio button?**
+    Radio buttons are used when a user must select exactly one choice from a list of
+    mutually exclusive options. Tapping on an unselected radio button selects it, and
+    simultaneously deselects any other radio button in the same group that was
+-   previously selected.
+
+    **Real-world analogy:**
+    It's like the buttons on an old car radio for selecting a station preset.
+    Pressing one button (e.g., "Preset 1") automatically un-presses any other
+    preset button that was active. You can only listen to one station at a time.
+
+    **State Management Pattern (Group Value):**
+    The state of a `Radio` button is "controlled" by its parent `StatefulWidget`.
+    1.  The parent state holds the currently selected value for the entire group
+        (e.g., `self.selected_option = "Option A"`). This is the `groupValue`.
+    2.  Each `Radio` widget in the group is created with its own unique `value`
+        (e.g., `"Option A"`, `"Option B"`).
+    3.  Each `Radio` compares its own `value` to the `groupValue` from the parent.
+        If they match, it displays as selected.
+    4.  An `onChanged` callback is provided to all radio buttons. When a user taps
+        a radio button, it calls `onChanged` with its own unique `value`.
+    5.  The parent's `onChanged` handler then calls `setState`, updating the `groupValue`
+        to the new value, which causes the UI to rebuild and reflect the new selection.
+
+    **Examples:**
+    ```python
+    # Inside a StatefulWidget's State class
+    class MyFormState(State):
+        def __init__(self):
+            super().__init__()
+            # 1. Hold the group's selected value in the parent state
+            self.delivery_option = "standard"
+
+        # 4. Define the callback
+        def on_option_changed(self, new_value):
+            # 5. Update the state
+            self.setState({"delivery_option": new_value})
+
+        def build(self):
+            return Column(
+                children=[
+                    Text("Select Delivery Option:"),
+                    ListTile(
+                        title=Text("Standard (5-7 days)"),
+                        leading=Radio(
+                            key=Key("radio_standard"),
+                            value="standard", # 2. This radio's unique value
+                            groupValue=self.delivery_option, # 3. Compare with group value
+                            onChanged=self.on_option_changed
+                        ),
+                        onTap=lambda: self.on_option_changed("standard")
+                    ),
+                    ListTile(
+                        title=Text("Express (1-2 days)"),
+                        leading=Radio(
+                            key=Key("radio_express"),
+                            value="express",
+                            groupValue=self.delivery_option,
+                            onChanged=self.on_option_changed
+                        ),
+                        onTap=lambda: self.on_option_changed("express")
+                    ),
+                ]
+            )
+    ```
+
+    **Key parameters:**
+    - **key**: A **required**, unique `Key` for the radio button.
+    - **value**: The unique value that this specific radio button represents. When this radio is selected, the `groupValue` will become this `value`.
+    - **groupValue**: The currently selected value for the entire group of radio buttons.
+    - **onChanged**: A callback function that is invoked with the radio's `value` when it is tapped.
+    - **theme**: An optional `RadioTheme` to customize the colors and appearance.
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -2421,14 +3916,69 @@ class Radio(Widget):
         }}
         """
 
-# In pythra/widgets.py
-
+# =============================================================================
+# DROPDOWN - The Classic "Select from a List" Control
+# =============================================================================
 class Dropdown(Widget):
     """
-    A custom, stateless dropdown widget.
+    A Material Design dropdown button that displays a list of choices when tapped,
+    allowing the user to select one.
 
-    Its state (selected value) is managed by a `DropdownController`.
-    It renders pure HTML and is controlled by the dropdown.js engine.
+    **What is a Dropdown?**
+    A `Dropdown` (also known as a select or spinner) is a compact button that, when
+    tapped, reveals a menu of options. It displays the currently selected option or a
+    `hintText` if nothing is selected. It's an essential form element for choosing
+    from a moderate number of items.
+
+    **Real-world analogy:**
+    It's like a drop-down menu on a website, such as a country selector in a shipping
+    form. You see the current choice (e.g., "United States"), and clicking it reveals a
+    scrollable list of all other available countries to choose from.
+
+    **State Management Pattern (Controller):**
+    Like the `Slider`, the `Dropdown` is a "controlled component."
+    1.  Create and hold a `DropdownController` in the parent `StatefulWidget`'s state. This controller stores the `selectedValue`.
+    2.  Pass this `controller` to the `Dropdown` widget.
+    3.  Provide an `onChanged` callback. When the user selects a new item from the menu, this function is called with the new value.
+    4.  In your `onChanged` handler, call `setState` and update the `DropdownController`'s `selectedValue` to reflect the user's choice.
+
+    **Examples:**
+    ```python
+    # Inside a StatefulWidget's State class
+    class MyFormState(State):
+        def __init__(self):
+            super().__init__()
+            # 1. Create and hold the controller. Can be initialized with a value.
+            self.category_controller = DropdownController(selectedValue="tech")
+
+        # 3. Define the callback
+        def on_category_changed(self, new_value):
+            print(f"New category selected: {new_value}")
+            # 4. Update the state and controller
+            self.category_controller.selectedValue = new_value
+            self.setState({})
+
+        def build(self):
+            return Dropdown(
+                key=Key("category_dropdown"),
+                controller=self.category_controller, # 2. Pass the controller
+                onChanged=self.on_category_changed,
+                hintText="Select a category",
+                items=[
+                    ("Technology", "tech"), # Tuple of (Display Label, Value)
+                    ("Lifestyle", "life"),
+                    ("Finance", "fin"),
+                ]
+            )
+    ```
+
+    **Key parameters:**
+    - **key**: A **required**, unique `Key` for the dropdown.
+    - **controller**: A **required** `DropdownController` that manages the selected value.
+    - **items**: A `List` of options to display in the menu. Each item can be a simple `str` (where the label and value are the same) or a `Tuple` of `(label, value)`.
+    - **onChanged**: The callback function that is invoked with the new `value` when an item is selected.
+    - **hintText**: The placeholder text to display when no value is selected.
+    - **theme**: An optional `DropdownTheme` for detailed styling of the button and the menu.
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -2618,16 +4168,80 @@ class Dropdown(Widget):
         }}
         """
 
-# In pythra/widgets.py
-# (Make sure to import TapDetails, PanUpdateDetails from your events file)
 
 
+# =============================================================================
+# GESTURE DETECTOR - The "Sense of Touch" for Your Widgets
+# =============================================================================
 class GestureDetector(Widget):
     """
-    A widget that detects gestures.
+    An invisible widget that detects gestures made on its child, such as taps,
+    drags, and long presses, without providing any visual feedback.
 
-    This widget does not have a visual representation but instead tries to
-    recognize gestures that are made on its child widget.
+    **What is GestureDetector?**
+    `GestureDetector` is a special-purpose widget that wraps your interactive
+    components. It doesn't draw anything on the screen; its only job is to listen for
+    user input events (like mouse clicks or touch events) on its child widget and
+    invoke the appropriate callback functions you provide.
+
+    **Real-world analogy:**
+    It's like putting a touch-sensitive layer over a physical object. The object
+    itself (`child`) doesn't change, but the layer can now detect when you tap it,
+    how long you press it, or if you drag your finger across it, and then it can
+    trigger an electronic response.
+
+    **When to use GestureDetector:**
+    - To make a non-interactive widget, like a `Container` or `Image`, tappable.
+    - To add complex interactions like double-taps or long-presses to a widget.
+    - For creating custom draggable elements, like sliders, knobs, or resizable panels.
+    - When you need to capture raw pointer events for custom painting or animations.
+
+    **Important Note on `Button`s:**
+    You should generally not wrap a `Button` or `FloatingActionButton` with a `GestureDetector`,
+    as those widgets have their own built-in gesture detection (`onPressed`). Using a
+    `GestureDetector` on them can lead to conflicting behavior. Use it for widgets
+    that are not inherently interactive.
+
+    **Examples:**
+    ```python
+    # 1. Making a Card tappable and double-tappable
+    GestureDetector(
+        key=Key("interactive_card"),
+        onTap=lambda details: print(f"Card tapped at position: {details.localPosition}"),
+        onDoubleTap=lambda: print("Card double-tapped!"),
+        child=Card(
+            child=Padding(padding=EdgeInsets.all(16), child=Text("Tap Me!"))
+        )
+    )
+
+    # 2. A draggable container
+    class DraggableBoxState(State):
+        def __init__(self):
+            super().__init__()
+            self.offset = Offset(0, 0) # Store the position
+
+        def on_pan_update(self, details: PanUpdateDetails):
+            # Update the offset by the amount the user dragged
+            self.setState({"offset": self.offset + details.delta})
+
+        def build(self):
+            return Positioned(
+                left=self.offset.dx,
+                top=self.offset.dy,
+                child=GestureDetector(
+                    key=Key("draggable_box"),
+                    onPanUpdate=self.on_pan_update,
+                    child=Container(width=100, height=100, color=Colors.blue)
+                )
+            )
+    ```
+
+    **Key parameters (Callbacks):**
+    - **child**: The `Widget` that will be the target of the gestures.
+    - **onTap**: Called when the user completes a brief tap. Provides `TapDetails` with the position.
+    - **onDoubleTap**: Called when the user taps the same location twice in quick succession.
+    - **onLongPress**: Called when the user holds their finger or mouse down for an extended period.
+    - **onPanStart**, **onPanUpdate**, **onPanEnd**: A sequence of callbacks that fire when the user initiates, moves, and releases a drag gesture. `onPanUpdate` provides `PanUpdateDetails` with the delta (change in position).
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -2737,13 +4351,71 @@ class GestureDetector(Widget):
         return f"{container_rule}\n{child_rule}"
 
 
-
+# =============================================================================
+# GRADIENT BORDER CONTAINER - The "Animated Glowing Border" Widget
+# =============================================================================
 class GradientBorderContainer(Widget):
     """
-    A widget that wraps its child with an animated gradient border.
+    A decorative widget that wraps its child with an animated, glowing gradient
+    border. It intelligently adapts its border radius to match the child's own
+    corner rounding.
 
-    It intelligently calculates its own border-radius based on the child's
-    styling and the specified border width (padding).
+    **What is GradientBorderContainer?**
+    This widget is a pure "eye candy" component. It draws a border around its child
+    that is not a solid color, but rather a smooth, multi-color gradient. Furthermore,
+    this gradient is animated, typically shifting its colors along the border's path
+    to create a subtle, shimmering, or glowing effect.
+
+    **Real-world analogy:**
+    It's like framing a picture with a neon sign or a string of color-changing LED
+    lights. The frame itself becomes a dynamic, attention-grabbing element that
+    enhances the content within.
+
+    **When to use GradientBorderContainer:**
+    - To highlight an important or "featured" card in a list.
+    - To create a visually appealing, premium-looking button or container.
+    - As a decorative frame for user avatars or profile pictures.
+    - To draw attention to an element that is currently active or selected.
+
+    **Intelligent Radius Calculation:**
+    A key feature of this widget is its ability to automatically detect the
+    `borderRadius` of its direct `child` (if it's a `Container` with a `BoxDecoration`).
+    It then calculates the correct outer radius for itself to ensure the border
+    perfectly and evenly wraps the child, no matter the corner rounding.
+
+    **Examples:**
+    ```python
+    # A standard Card with an animated gradient border
+    GradientBorderContainer(
+        key=Key("featured_card"),
+        borderWidth=4,
+        # A theme can define the gradient colors, speed, etc.
+        theme=GradientBorderTheme(
+            colors=[Colors.pink, Colors.purple, Colors.cyan],
+            direction="to right"
+        ),
+        child=Card(
+            decoration=BoxDecoration(borderRadius=BorderRadius.all(12)),
+            child=ListTile(title=Text("Featured Item"))
+        )
+    )
+
+    # A circular avatar with a glowing border
+    GradientBorderContainer(
+        key=Key("glowing_avatar"),
+        borderWidth=3,
+        child=CircleAvatar(
+            radius=40,
+            child=Text("A")
+        )
+    )
+    ```
+
+    **Key parameters:**
+    - **key**: A **required** `Key` for the widget.
+    - **child**: The `Widget` to be wrapped with the gradient border. This is required.
+    - **borderWidth**: The thickness of the gradient border in pixels.
+    - **theme**: A `GradientBorderTheme` object that controls the `colors`, `direction`, `speed`, and animation `timing` of the gradient.
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -2846,12 +4518,72 @@ class GradientBorderContainer(Widget):
         """
 
 
-# In pythra/widgets.py
-
+# =============================================================================
+# GRADIENT CLIP PATH BORDER - The Animated Border for Custom Shapes
+# =============================================================================
 class GradientClipPathBorder(Widget):
     """
-    A widget that wraps its child with an animated gradient border that
-    perfectly matches the shape of a complex ClipPath.
+    A sophisticated decorative widget that wraps its child with an animated gradient
+    border, where the border's shape is defined by a custom, responsive `ClipPath`.
+
+    **What is GradientClipPathBorder?**
+    This widget is the ultimate combination of custom shaping and decorative flair. It
+    merges the animated, multi-color border effect of `GradientBorderContainer` with
+    the powerful, non-rectangular shaping of `ClipPath`. The result is a child widget
+    that appears to be framed by a glowing, animated border that perfectly follows
+    any custom polygon shape you define.
+
+    **Real-world analogy:**
+    Imagine creating a custom-shaped neon sign (e.g., in the shape of a star or an
+    arrow). The unique shape of the glass tubing is the `ClipPath`. The glowing,
+    color-shifting gas inside the tube is the animated gradient border. This widget
+    allows you to create that precise, custom-shaped "glow" around any other widget.
+
+    **When to use GradientClipPathBorder:**
+    - To create highly stylized, "premium" UI elements that need to stand out.
+    - For hero banners or containers with angled or curved edges that you want to highlight with an active, glowing border.
+    - To create uniquely shaped buttons (like hexagons or chevrons) that have an animated border on hover or when selected.
+    - When you want to draw maximum attention to a featured item that is already using a `ClipPath` for its shape.
+
+    **How it Works (Behind the Scenes):**
+    This widget uses an advanced layering and clipping technique handled by a JavaScript engine:
+    1.  It creates a stack of two layers: a background layer and a content layer for your `child`.
+    2.  The background layer is styled with the animated gradient.
+    3.  Based on your `points`, `viewBox`, and `borderWidth`, the engine calculates two responsive SVG `clip-path`s.
+    4.  The **outer path** is applied to the gradient background layer.
+    5.  A slightly smaller, **inset path** is applied to the content layer that hosts your `child`.
+    6.  The visual difference between these two stacked, clipped layers is what you see as the perfectly shaped, animated border.
+
+    **Examples:**
+    ```python
+    # An image inside a hexagonal container with a glowing, animated border.
+    GradientClipPathBorder(
+        key=Key("hex_avatar_border"),
+        # The geometric definition of the hexagon on a 100x100 canvas
+        viewBox=(100, 100),
+        points=[(50, 0), (100, 25), (100, 75), (50, 100), (0, 75), (0, 25)],
+        radius=8, # Smooth the corners of the hexagon
+        borderWidth=5,
+        theme=GradientBorderTheme(
+            colors=[Colors.cyan, Colors.purple, Colors.pink],
+            speed="3s"
+        ),
+        # The child widget that will be clipped and framed
+        child=Image(
+            src="profile_pic.jpg",
+            fit=BoxFit.COVER
+        )
+    )
+    ```
+
+    **Key parameters:**
+    - **key**: A **required** `Key` for the widget.
+    - **child**: The `Widget` to be framed and clipped. This is required.
+    - **points**: A `List` of `(x, y)` tuples defining the vertices of the custom shape on the `viewBox`.
+    - **viewBox**: A `(width, height)` tuple that defines the coordinate system or "blueprint" for your `points`.
+    - **radius**: A `float` value that creates rounded corners on your custom shape.
+    - **borderWidth**: The thickness of the animated gradient border in pixels.
+    - **theme**: A `GradientBorderTheme` object that controls the `colors`, `direction`, `speed`, and animation `timing` of the gradient.
     """
     shared_styles: Dict[Tuple, str] = {}
 

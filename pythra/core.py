@@ -1,6 +1,6 @@
 # pythra/core.py
 
-# --- ADD THESE IMPORTS AT THE TOP OF THE FILE ---
+# --- ADDED THESE IMPORTS AT THE TOP OF THE FILE ---
 import cProfile
 import pstats
 import io
@@ -45,115 +45,139 @@ if TYPE_CHECKING:
 
 class Framework:
     """
-    Manages the application window, widget tree, state updates,
-    and the reconciliation data flow for rendering the UI.
+    The main PyThra Framework class - this is the heart of your application!
+    
+    Think of this as the "manager" that handles everything:
+    - Setting up your app window
+    - Loading plugins and packages 
+    - Managing your UI widgets
+    - Serving static files (CSS, JS, images)
+    - Handling user interactions
+    
+    This class uses the "singleton pattern" - meaning there's only ever 
+    one instance of the Framework running at a time.
     """
 
-    _instance = None
-    # config = Config()
-
+    _instance = None  # Stores the single Framework instance
+    
     @classmethod
     def instance(cls):
+        """Gets the current Framework instance, creates one if needed"""
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
 
     def __init__(self):
-        """Initializes the framework, reconciler, and core components."""
+        """
+        Sets up the PyThra Framework when your app starts.
+        
+        This method runs automatically and handles:
+        - Finding your project folder
+        - Loading your config file
+        - Setting up asset directories
+        - Initializing the package/plugin system
+        - Starting the web server for static files
+        """
+        # Make sure only one Framework instance exists (singleton pattern)
         if Framework._instance is not None:
-            raise Exception("This class is a singleton!")
+            raise Exception("Only one Framework instance can exist at a time!")
         Framework._instance = self
 
-        # --- THIS IS THE DEFINITIVE FIX ---
-        # 1. Determine the project root. We define this as the directory
-        #    where the user's main application script is running.
-        #    `sys.argv[0]` reliably gives us the path to the executed script (e.g., 'lib/main.py').
-        main_script_path = os.path.abspath(sys.argv[0])
-        # We assume the project root is the parent of the 'lib' directory, or the
-        # directory of the script itself if not in 'lib'.
+        # STEP 1: Find your project's root directory
+        # This is where your config.yaml, assets/, and plugins/ folders live
+        main_script_path = os.path.abspath(sys.argv[0])  # Path to your main.py file
+        
+        # If your main.py is in a 'lib' folder, go up one level to find project root
         if "lib" in Path(main_script_path).parts:
             self.project_root = Path(main_script_path).parent.parent
         else:
+            # Otherwise, project root is where your main.py lives
             self.project_root = Path(main_script_path).parent
 
-        print(f"✅ Framework initialized. Project Root detected at: {self.project_root}")
+        print(f"🎯 PyThra Framework | Project Root detected at: {self.project_root}")
 
+        # STEP 2: Load your project configuration
+        # This reads settings from your config.yaml file
         self.config = Config(config_path=self.project_root / 'config.yaml')
 
-        # All paths are now relative to the project root
+        # STEP 3: Set up directory paths for your app
+        # web/ folder: Contains HTML, CSS, JS files for the UI
+        # assets/ folder: Contains images, fonts, and other static files
         self.web_dir = self.project_root / self.config.get('web_dir', 'web')
         self.assets_dir = self.project_root / self.config.get('assets_dir', 'assets')
 
-        # Ensure these directories exist within the user's project
+        # Create these directories if they don't exist yet
         self.web_dir.mkdir(exist_ok=True)
         self.assets_dir.mkdir(exist_ok=True)
         
-        # Copy default assets if they don't exist
+        # Copy default PyThra files (CSS, JS) to your project if missing
         self._ensure_default_assets()
 
         self.html_file_path = self.web_dir / "index.html"
         self.css_file_path = self.web_dir / "styles.css"
 
-        # --- NEW: Enhanced Package Management System ---
+        # STEP 4: Initialize the Package/Plugin System
+        # This handles loading plugins from your plugins/ folder
         self.package_manager = PackageManager(self.project_root)
         self.package_manager.set_framework(self)
         
-        # Legacy compatibility - will be populated by PackageManager
-        self.plugins = {}  # For backward compatibility
-        self.plugin_js_modules = {}  # Managed by PackageManager
+        # Keep these for backward compatibility with older plugins
+        self.plugins = {}  # Old-style plugin storage
+        self.plugin_js_modules = {}  # JavaScript modules from plugins
         
-        # Discover and load packages
-        print("🔎 Discovering packages...")
+        # STEP 4a: Auto-discover packages and plugins
+        # This scans your project for any plugins you've added
+        print("🔍 PyThra Framework | Scanning for packages and plugins...")
         discovered_packages = self.package_manager.discover_all_packages()
         
-        # Auto-load local packages (plugins in plugins/ directory)
+        # Automatically load any plugins found in your plugins/ directory
         local_packages = [name for name, packages in discovered_packages.items() 
                          if any(pkg.path.parent.name == "plugins" for pkg in packages)]
         
         if local_packages:
+            # Load the packages and handle any dependency issues
             loaded_packages, warnings = self.package_manager.resolve_and_load_packages(local_packages)
-            for warning in warnings:
-                print(f"⚠️ Package warning: {warning}")
             
-            print(f"✅ Loaded {len(loaded_packages)} packages: {list(loaded_packages.keys())}")
+            # Show any warnings (like missing dependencies)
+            for warning in warnings:
+                print(f"⚠️  PyThra Framework | Package Warning: {warning}")
+            
+            print(f"🎉 PyThra Framework | Successfully loaded {len(loaded_packages)} packages: {', '.join(loaded_packages.keys())}")
         
-        # The asset server now serves from the project's asset directory
+        # STEP 5: Start the Asset Server
+        # This serves your static files (images, CSS, JS) to the web browser
         package_asset_dirs = self.package_manager.get_asset_server_dirs()
         self.asset_server = AssetServer(
-            directory=str(self.assets_dir),
-            port=self.config.get("assets_server_port"),
-            # Pass the package asset directories to the server
-            extra_serve_dirs=package_asset_dirs
+            directory=str(self.assets_dir),  # Main assets directory
+            port=self.config.get("assets_server_port"),  # Port from config
+            extra_serve_dirs=package_asset_dirs  # Plugin asset directories
         )
-        # --- END OF KEY CHANGE ---
 
-        self.api = webwidget.Api()
-        self.reconciler = Reconciler()
-        self.root_widget: Optional[Widget] = None
-        self.window = None
-        self.id = "main_window_id"
+        # STEP 6: Initialize core components
+        self.api = webwidget.Api()  # Handles JavaScript <-> Python communication
+        self.reconciler = Reconciler()  # Manages UI updates efficiently
+        self.root_widget: Optional[Widget] = None  # Your main UI widget
+        self.window = None  # The application window
+        self.id = "main_window_id"  # Unique ID for the main window
 
-        self.called = False
+        # Internal tracking variables
+        self.called = False  # Tracks if the app has been started
 
-        # State Management / Reconciliation Control
+        # State Management System
+        # These handle when your UI needs to be updated
         self._reconciliation_requested: bool = False
         self._pending_state_updates: Set[State] = set()
 
-        self._result = None
+        self._result = None  # Stores UI update results
 
-        # # Asset Management
-        # self.html_file_path = os.path.abspath("web/index.html")
-        # self.css_file_path = os.path.abspath("web/styles.css")
-        # self.asset_server = AssetServer(
-        #     directory=self.config.get("assets_dir"),
-        #     port=self.config.get("assets_server_port"),
-        # )
-        self.asset_server.start()
-        # os.makedirs("web", exist_ok=True)
+        # STEP 7: Start the asset server and finalize setup
+        self.asset_server.start()  # Begin serving static files
 
+        # Tell widgets where to find the Framework instance
         Widget.set_framework(self)
         StatefulWidget.set_framework(self)
-        print("Framework Initialized with new Reconciler architecture.")
+        
+        print("🚀 PyThra Framework | Initialization Complete! Ready to build your amazing app! 🎯")
 
     # Package management methods are now handled by PackageManager
     # Legacy methods kept for backward compatibility if needed
@@ -168,8 +192,22 @@ class Framework:
 
     def _ensure_default_assets(self):
         """
-        Copies essential default assets (like JS files and fonts) from the
-        framework's package to the user's project directory if they are missing.
+        Ensures your project has all the essential files PyThra needs to work properly.
+        
+        Think of this as "copying the blueprint files" to your project:
+        - JavaScript files that handle UI interactions
+        - CSS files for styling
+        - Font files for icons (Material Symbols)
+        - Other static assets PyThra needs
+        
+        This method only copies files that are missing - it won't overwrite
+        files you've customized in your project.
+        
+        How it works:
+        1. Finds the template files inside the PyThra package installation
+        2. Copies web files (JS, CSS) to your project's web/ folder
+        3. Copies asset files (fonts, images) to your project's assets/ folder
+        4. Only copies if the files don't already exist in your project
         """
         # Find the source path inside the installed pythra package
         package_root = Path(__file__).parent
@@ -197,13 +235,44 @@ class Framework:
                         shutil.copy(item, dest_item)
 
     def set_root(self, widget: Widget):
-        """Sets the root widget for the application."""
+        """
+        Sets the main widget that will be displayed when your app starts.
+        
+        Think of this as telling PyThra: "This is the main screen I want to show"
+        
+        Args:
+            widget: The main widget of your application (usually a Scaffold, 
+                   MaterialApp, or custom widget you've created)
+        
+        Example:
+            app = Framework.instance()
+            app.set_root(MyMainWidget())
+            app.run()
+        """
         self.root_widget = widget
 
     # We will refactor the rendering logic out of `run` into its own method
     def _perform_initial_render(self, root_widget: Widget, title: str):
-        """Builds, reconciles, and generates the initial HTML, CSS, and JS."""
-        print("\n>>> Framework: Performing Initial Render <<<")
+        """
+        The "magic moment" where PyThra converts your Python widgets into a web page!
+        
+        This is like a master chef preparing a complex meal - lots happens behind the scenes:
+        
+        What this method does:
+        1. **Build Phase**: Converts your widget tree into a detailed blueprint
+        2. **Reconcile Phase**: Figures out what HTML elements need to be created
+        3. **Analyze Phase**: Determines what JavaScript engines are needed (sliders, dropdowns, etc.)
+        4. **Generate Phase**: Creates the actual HTML, CSS, and JavaScript code
+        5. **Write Phase**: Saves everything to files that the browser can display
+        
+        Args:
+            root_widget: Your main app widget (set via set_root())
+            title: The window title that appears in the browser tab
+        
+        Think of it as PyThra's "rendering engine" - similar to how a game engine
+        converts 3D models into pixels on your screen, but for web UI!
+        """
+        print("\n🎨 PyThra Framework | Performing Initial UI Render...")
 
         # 1. Build the full widget tree
         built_tree_root = self._build_widget_tree(root_widget)
@@ -227,7 +296,7 @@ class Framework:
 
         # 4. Analyze required JS engines for optimization
         required_engines = self._analyze_required_js_engines(built_tree_root, result)
-        print(f"🔍 Analysis complete: {len(required_engines)} JS engines required: {required_engines}")
+        print(f"⚙️ PyThra Framework | Analysis Complete: {len(required_engines)} JS engines needed: {', '.join(required_engines) if required_engines else 'None'}")
         
         # 5. Generate initial HTML, CSS, and JS with optimized loading
         root_key = initial_tree_to_reconcile.get_unique_id() if initial_tree_to_reconcile else None
@@ -253,7 +322,30 @@ class Framework:
         block: bool = True
     ):
         """
-        Builds the initial UI, writes necessary files, creates the window, and starts the app.
+        The "GO!" button for your PyThra application - this starts everything!
+        
+        This is the final step in launching your app. Think of it like starting your car:
+        1. Checks that everything is ready (root widget is set)
+        2. Renders your UI into HTML, CSS, and JavaScript
+        3. Creates the application window with your specified settings
+        4. Starts the event loop (keeps your app running and responsive)
+        
+        Args:
+            title: What appears in the window title bar (default from config)
+            width: Window width in pixels (default from config)
+            height: Window height in pixels (default from config) 
+            frameless: If True, removes window decorations (no title bar, borders)
+            maximized: If True, starts the window maximized
+            fixed_size: If True, prevents user from resizing the window
+            block: If True, keeps the program running (you almost always want this)
+        
+        Example:
+            app = Framework.instance()
+            app.set_root(MyMainWidget())
+            app.run(title="My Awesome App", width=1200, height=800)
+        
+        Note: This method will block (not return) until the user closes the app,
+        unless you set block=False (which is rarely what you want).
         """
         if not self.root_widget:
             raise ValueError("Root widget not set. Use set_root() before run().")
@@ -276,7 +368,7 @@ class Framework:
         )
 
         # 9. Start the application event loop.
-        print("Framework: Starting application event loop...")
+        print("🎆 PyThra Framework | Starting application event loop...")
         webwidget.start(window=self.window, debug=bool(self.config.get("Debug", False)))
 
     def close(self):
@@ -493,7 +585,7 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
             print("Error: Window not available for reconciliation.")
             return
 
-        print("\n--- Framework: Processing Granular Reconciliation Cycle ---")
+        print("\n🔄 PyThra Framework | Processing Smart UI Update Cycle...")
         start_time = time.time()
 
         # Get the full map of the currently rendered UI for the main context.
@@ -524,7 +616,7 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
             else:
                 parent_html_id = old_widget_data["parent_html_id"]
 
-            print(f"Reconciling subtree for: {widget_to_rebuild.__class__.__name__} (Key: {widget_key})")
+            print(f"🔧 PyThra Framework | Updating: {widget_to_rebuild.__class__.__name__} (ID: {widget_key[:8]}...)")
 
             # 1. Build ONLY the subtree for the dirty widget.
             # This is fast because it doesn't traverse the whole application.
@@ -559,7 +651,7 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
         new_css_keys = set(all_active_css_details.keys())
         css_update_script = ""
         if not hasattr(self, '_last_css_keys') or self._last_css_keys != new_css_keys:
-             print("Framework: CSS classes may have changed. Regenerating stylesheet.")
+             print("🎨 PyThra Framework | CSS styles changed - Updating stylesheet...")
              # We need to generate CSS from the *entire* app's styles, not just the subtree.
              # We can get this by iterating over the updated main_context_map.
              full_css_details = {
@@ -571,7 +663,7 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
              css_update_script = self._generate_css_update_script(css_rules)
              self._last_css_keys = new_css_keys
         else:
-             print("Framework: CSS classes are unchanged. Skipping CSS generation.")
+             print("✅ PyThra Framework | CSS styles unchanged - Skipping regeneration")
 
         # Generate the DOM patch script from our aggregated patches.
         # No new JS initializers are expected during a partial update.
@@ -579,15 +671,15 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
 
         combined_script = (css_update_script + "\n" + dom_patch_script).strip()
         if combined_script:
-            print(f"Framework: Executing {len(all_patches)} DOM patches.")
-            print("Patches:", all_patches)
+            print(f"🛠️ PyThra Framework | Applying {len(all_patches)} UI changes to browser...")
+            print(f"📝 PyThra Framework | Patch Details: {[f'{p.action}({p.html_id[:8]}...)' for p in all_patches]}")
             self.window.evaluate_js(self.id, combined_script)
         else:
-            print("Framework: No DOM changes detected.")
+            print("✨ PyThra Framework | UI is up-to-date - No changes needed")
 
         self._pending_state_updates.clear()
         print(
-            f"--- Framework: Reconciliation Complete (Total: {time.time() - start_time:.4f}s) ---"
+            f"🎉 PyThra Framework | UI Update Complete! (⏱️ {time.time() - start_time:.4f}s)"
         )
 
         # --- PROFILER REPORTING ---
@@ -605,8 +697,35 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
     # --- Widget Tree Building ---
     def _build_widget_tree(self, widget: Optional[Widget]) -> Optional[Widget]:
         """
-        Recursively builds the widget tree, calling build() on StatefulWidget instances.
-        This version correctly preserves the StatefulWidget in the tree structure.
+        The "Widget Tree Builder" - converts your nested widgets into a complete tree structure.
+        
+        Think of this like building a family tree, but for widgets:
+        - Each widget might have children (other widgets inside it)
+        - StatefulWidgets need special handling (they have changing data)
+        - StatelessWidgets are simpler (they just display things)
+        
+        What this method does:
+        1. **StatelessWidget**: Calls its build() method to get its child widget
+        2. **StatefulWidget**: Gets its current state, calls state.build() to get child
+        3. **Regular Widget**: Just processes any children it already has
+        4. **Recursive**: Does this for every widget and all their children
+        
+        Args:
+            widget: The widget to build (could be any type of widget)
+            
+        Returns:
+            The same widget, but with all its children properly built and connected
+            
+        Example Widget Tree:
+        ```
+        Scaffold (StatelessWidget)
+        └─ Column (Regular Widget)
+            ├─ Text("Hello") (Regular Widget)
+            └─ Counter (StatefulWidget)
+                └─ Text("Count: 5") (Built from Counter's state)
+        ```
+        
+        This method makes sure every widget in your tree is "ready to render".
         """
         if widget is None:
             return None

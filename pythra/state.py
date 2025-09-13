@@ -1,4 +1,28 @@
-# pythra/state.py
+# =============================================================================
+# PYTHRA STATE MANAGEMENT SYSTEM - The "Memory" of Your App
+# =============================================================================
+
+"""
+PyThra State Management System
+
+This is the "memory system" of your PyThra app - it handles widgets that need to 
+remember things and change over time (like counters, form inputs, shopping carts, etc.)
+
+**Key Concepts:**
+1. **StatefulWidget**: A widget that can change and "remember" things
+2. **StatelessWidget**: A widget that never changes (like static text or images)
+3. **State**: The "brain" that manages what a StatefulWidget remembers
+
+**Real-world analogy:**
+- StatelessWidget = A printed poster (never changes)
+- StatefulWidget = A digital display screen (can show different content)
+- State = The computer controlling what the digital screen shows
+
+**When to use which:**
+- Use StatelessWidget for things that never change (logos, static text)
+- Use StatefulWidget for interactive elements (buttons with counters, forms, etc.)
+"""
+
 import weakref
 import time
 from PySide6.QtCore import QTimer
@@ -12,11 +36,45 @@ if TYPE_CHECKING:
     from .core import Framework # Framework uses State, State uses Framework
     # No need to import StatefulWidget itself if defined in this file
 
-# --- StatefulWidget Class ---
+# =============================================================================
+# STATEFUL WIDGET - Widgets That Can "Remember" and Change
+# =============================================================================
+
 class StatefulWidget(Widget):
     """
-    A widget that has mutable state managed by a State object.
-    (Docstring remains the same)
+    A widget that can change and "remember" things - like a counter button or a form input.
+    
+    **What makes it "Stateful"?**
+    Unlike a StatelessWidget (which is like a printed poster that never changes),
+    a StatefulWidget is like a digital screen that can show different content over time.
+    
+    **How it works:**
+    1. **Widget**: The "screen" that displays something to the user
+    2. **State**: The "computer" that controls what the screen shows
+    3. **Connection**: They're linked together so they can communicate
+    
+    **Real-world examples:**
+    - Counter button (remembers the current count)
+    - Text input field (remembers what you've typed)
+    - Shopping cart (remembers what items are in it)
+    - Toggle switch (remembers if it's on or off)
+    
+    **Key difference from StatelessWidget:**
+    ```python
+    # StatelessWidget - always shows the same thing
+    class Welcome(StatelessWidget):
+        def build(self):
+            return Text("Welcome to my app!")  # Never changes
+    
+    # StatefulWidget - can show different things
+    class Counter(StatefulWidget):
+        def createState(self):
+            return CounterState()  # Has a "brain" that manages changing data
+    ```
+    
+    **Usage:**
+    You inherit from this class and implement createState() to define what
+    your widget needs to "remember".
     """
     _framework_ref: Optional[weakref.ref['Framework']] = None
 
@@ -41,13 +99,49 @@ class StatefulWidget(Widget):
         return self._state
 
 
+# =============================================================================
+# STATELESS WIDGET - Widgets That Never Change (Like Static Posters)
+# =============================================================================
+
 class StatelessWidget(Widget):
     """
-    A widget that describes part of the user interface by building a constellation
-    of other widgets that describe the user interface more concretely.
-
-    The building process is stateless, meaning it depends only on the configuration
-    information in the object itself (its constructor parameters) and the build context.
+    A widget that never changes - like a printed poster or a road sign.
+    
+    **What makes it "Stateless"?**
+    "Stateless" means it has no memory and doesn't change. Once you create it,
+    it shows the same thing forever (unless you rebuild the entire widget tree).
+    
+    **Think of it like:**
+    - A printed poster on a wall (the content never changes)
+    - A road sign (always shows the same message)
+    - A company logo (looks the same every time)
+    
+    **When to use StatelessWidget:**
+    - Static text that never changes ("Welcome to my app!")
+    - Images that are always the same
+    - Layout containers that don't need to remember anything
+    - Navigation bars with fixed content
+    
+    **How it works:**
+    1. You create a StatelessWidget by inheriting from this class
+    2. You implement the build() method to return other widgets
+    3. The build() method is called once when the widget is created
+    4. The result is always the same (given the same input parameters)
+    
+    **Example:**
+    ```python
+    class WelcomeMessage(StatelessWidget):
+        def __init__(self, name):
+            super().__init__()
+            self.name = name  # This won't change after creation
+            
+        def build(self):
+            return Text(f"Welcome, {self.name}!")  # Always shows the same welcome
+    ```
+    
+    **Key principle:**
+    The build() method should always return the same widget structure
+    when given the same constructor parameters. No surprises, no changes!
     """
     def __init__(self, key: Optional[Key] = None):
         super().__init__(key=key)
@@ -62,11 +156,56 @@ class StatelessWidget(Widget):
             f"{self.__class__.__name__} must implement the build() method."
         )
 
-# --- State Class ---
+# =============================================================================
+# STATE CLASS - The "Brain" That Controls StatefulWidgets
+# =============================================================================
+
 class State:
     """
-    Manages the mutable state for a StatefulWidget.
-    (Docstring remains the same)
+    The "brain" that controls what a StatefulWidget shows and remembers.
+    
+    **What is State?**
+    State is like the "computer" that controls a digital display screen (StatefulWidget).
+    It holds all the data that can change, and tells the screen what to show.
+    
+    **Real-world analogy:**
+    Think of a vending machine:
+    - StatefulWidget = The display screen showing "Insert $2.50"
+    - State = The computer inside that tracks money inserted, items selected, etc.
+    - When you insert money, the State updates and tells the screen to show "$1.00 inserted"
+    
+    **What does State manage?**
+    - Variables that change over time (like counters, user input, etc.)
+    - Business logic (what happens when buttons are clicked)
+    - UI updates (when to refresh the display)
+    
+    **Key State responsibilities:**
+    1. **Memory**: Stores data that changes (like `self.counter = 0`)
+    2. **Logic**: Handles events (like `def increment(): self.counter += 1`)
+    3. **Updates**: Tells PyThra when the UI needs to refresh (`self.setState()`)
+    4. **Lifecycle**: Handles setup and cleanup (initState, dispose)
+    
+    **Example State class:**
+    ```python
+    class CounterState(State):
+        def initState(self):
+            self.count = 0  # This is what we "remember"
+            
+        def increment(self):
+            self.count += 1  # Change the data
+            self.setState()  # Tell PyThra "please update the UI!"
+            
+        def build(self):
+            return Button(
+                text=f"Count: {self.count}",
+                onClick=self.increment  # Wire up the logic
+            )
+    ```
+    
+    **Lifecycle methods you can override:**
+    - initState(): Called once when created (like __init__ but for UI)
+    - build(): Called whenever UI needs to update (returns the widgets to show)
+    - dispose(): Called when removed (cleanup timers, save data, etc.)
     """
     def __init__(self):
         self._widget_ref: Optional[weakref.ref['StatefulWidget']] = None
@@ -126,17 +265,17 @@ class State:
         """Notify the framework that the internal state of this object has changed."""
         widget = self.get_widget()
         if not widget:
-            print(f"Warning: Cannot setState for {self.__class__.__name__}, widget reference lost.")
+            print(f"⚠️ PyThra State | Cannot setState for {self.__class__.__name__} - widget reference lost")
             return
 
         if self.framework:
             # Use getattr for safety, though framework should exist if widget exists
             key_info = getattr(widget, 'key', None)
-            print(f">>> setState triggered for State: {self.__class__.__name__} (Widget Key: {key_info}) <<<")
+            print(f"🔄 PyThra State | setState triggered: {self.__class__.__name__} (Widget Key: {key_info})")
             # Pass 'self' (the State instance) to the framework
             self.framework.request_reconciliation(self)
         else:
-            print(f"setState failed for {self.__class__.__name__}: Framework not available.")
+            print(f"❌ PyThra State | setState failed for {self.__class__.__name__}: Framework not available")
 
 
     # --- Drawer/Snackbar/etc. Methods ---

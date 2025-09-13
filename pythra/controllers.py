@@ -1,14 +1,108 @@
-# pythra/controllers.py
+# =============================================================================
+# PYTHRA CONTROLLERS - The "Remote Controls" for Interactive Widgets
+# =============================================================================
+#
+# Controllers are the "remote controls" that let you programmatically interact
+# with widgets from your application code. Think of them like TV remote controls:
+# - You can change the channel (set values)
+# - You can check what's currently showing (get values) 
+# - You can get notified when something changes (add listeners)
+#
+# This file contains all the controller classes that manage state for
+# interactive widgets like text fields, sliders, dropdowns, etc.
+#
+# =============================================================================
+
 from typing import Any, Dict, List, Optional, Set, Tuple, Union, Callable
+import json
+import weakref
+
+# =============================================================================
+# TEXT EDITING CONTROLLER - The "Keyboard Manager" for Text Input
+# =============================================================================
 
 class TextEditingController:
     """
-    A controller for an editable text field.
-
-    This class is used to read and modify the text of a TextField, and to listen
-    for changes.
-
-    :param text: The initial text this controller should have.
+    The "remote control" for text input fields - manages text content and notifies you of changes.
+    
+    **What is TextEditingController?**
+    Think of this as a "smart notepad" that not only holds text, but also tells you
+    when someone writes or erases something. It's the bridge between your TextField
+    widget and your application logic.
+    
+    **Real-world analogy:**
+    Like a shared Google Doc:
+    - You can write text in it (set text)
+    - You can read what's currently written (get text)
+    - You can get notified when someone else changes it (add listeners)
+    - Multiple people can "watch" for changes (multiple listeners)
+    
+    **When to use TextEditingController:**
+    - User input forms (name, email, password fields)
+    - Search boxes that need to react to typing
+    - Chat applications where you need to process messages
+    - Any time you need to programmatically control text input
+    
+    **Key features:**
+    1. **Text storage**: Holds the current text value
+    2. **Change detection**: Automatically detects when text changes
+    3. **Observer pattern**: Notifies listeners when changes happen
+    4. **Programmatic control**: You can set text from code
+    
+    **Basic usage pattern:**
+    ```python
+    # 1. Create a controller
+    name_controller = TextEditingController(text="John Doe")
+    
+    # 2. Use it in a TextField
+    name_field = TextField(
+        key=Key("name"),
+        controller=name_controller,
+        decoration=InputDecoration(label="Full Name")
+    )
+    
+    # 3. Read the current value anytime
+    current_name = name_controller.text
+    
+    # 4. Set a new value programmatically
+    name_controller.text = "Jane Smith"  # This will update the UI!
+    
+    # 5. Listen for changes
+    def on_name_changed():
+        print(f"Name changed to: {name_controller.text}")
+        # Maybe validate the input, save to database, etc.
+    
+    name_controller.add_listener(on_name_changed)
+    ```
+    
+    **Advanced example - Form validation:**
+    ```python
+    email_controller = TextEditingController()
+    error_message = ""
+    
+    def validate_email():
+        global error_message
+        email = email_controller.text
+        if "@" not in email:
+            error_message = "Please enter a valid email"
+        else:
+            error_message = ""
+        # Trigger UI rebuild to show/hide error
+        framework.rebuild()
+    
+    email_controller.add_listener(validate_email)
+    ```
+    
+    Args:
+        text: The initial text content (default: empty string)
+    
+    Attributes:
+        text: Current text value (can be read and written)
+        
+    Methods:
+        add_listener(): Register a function to call when text changes
+        remove_listener(): Unregister a change listener
+        clear(): Quickly erase all text
     """
     def __init__(self, text: str = ""):
         self._text = text
@@ -83,33 +177,137 @@ class TextEditingController:
 #     def __repr__(self):
 #         return f"SliderController(value={self._value})"
 
-# In pythra/controllers.py (or a similar file)
+# =============================================================================
+# SLIDER CONTROLLER - The "Volume Knob" for Range Inputs
+# =============================================================================
 
 class SliderController:
     """
-    Manages the value of a Slider widget.
-
-    A SliderController is used to read and modify the current value of a Slider.
-    The parent widget that creates the controller is responsible for updating its
-    value within a `setState` call to trigger a rebuild.
+    The "volume knob" for sliders - keeps track of the slider's position and status.
+    
+    **What is SliderController?**
+    A SliderController manages the numeric value of a Slider widget (like a volume slider
+    or brightness control). It knows both the current value and whether the user has
+    finished dragging (useful for knowing when to save the final value).
+    
+    **Real-world analogy:**
+    Like a dimmer switch for lights:
+    - You can see the current brightness level (value)
+    - You can set the brightness from elsewhere (change value)
+    - You can tell when someone stops adjusting it (isDragEnded)
+    
+    **When to use SliderController:**
+    - Volume controls in media players
+    - Brightness/contrast adjustments
+    - Progress indicators (e.g., video playback position)
+    - Any numeric input with a visual range representation
+    - Settings that have a continuous range (font size, zoom level)
+    
+    **Key features:**
+    1. **Value storage**: Holds the current slider value (0.0 to 1.0 by default)
+    2. **Drag state**: Indicates if user is actively dragging or has finished
+    3. **Direct control**: You can set values programmatically
+    
+    **Example usage:**
+    ```python
+    # Create a controller with an initial value of 0.5 (halfway)
+    volume_controller = SliderController(value=0.5)
+    
+    # Use it in a Slider widget
+    volume_slider = Slider(
+        key=Key("volume"),
+        controller=volume_controller,
+        min=0.0,
+        max=100.0,
+        divisions=10,  # Optional tick marks
+        label="Volume",
+    )
+    
+    # Read the current value anywhere in your code
+    current_volume = volume_controller.value
+    
+    # Set a new value programmatically
+    def mute_audio():
+        volume_controller.value = 0.0
+        # Remember to call setState() to update the UI
+    ```
+    
+    Args:
+        value: The initial numeric value (default: 0.0)
+        isDragEnded: Whether drag operation is complete (used internally)
+    
+    Attributes:
+        value: The current slider value (read/write)
+        isDragEnded: Flag indicating if user has released the slider
     """
     def __init__(self, value: float = 0.0, isDragEnded: bool = False):
         self.value = value
         self.isDragEnded = isDragEnded
 
 
-# In pythra/controllers.py
 
-# ... (keep your existing controllers)
 
+# =============================================================================
+# DROPDOWN CONTROLLER - The "Menu Selector" for DropdownButton
+# =============================================================================
 
 class DropdownController:
     """
-    Manages the state of a Dropdown widget.
-
-    This includes the currently selected value and the open/closed state of the
-    dropdown menu. The parent widget is responsible for creating and managing
-    this controller.
+    The "menu manager" for dropdown fields - tracks selected item and open/closed state.
+    
+    **What is DropdownController?**
+    A DropdownController keeps track of what's currently selected in a dropdown menu
+    and whether the dropdown is currently expanded or collapsed. It bridges your
+    DropdownButton widget with your application's logic.
+    
+    **Real-world analogy:**
+    Like a TV's input selector:
+    - Shows what input is currently selected (HDMI, AV, etc.)
+    - Can be in open or closed state (menu displayed or hidden)
+    - Can be controlled programmatically (remote) or manually (buttons)
+    
+    **When to use DropdownController:**
+    - Selection menus (categories, sort orders, filters)
+    - Settings that have discrete options (language, theme, font)
+    - Form fields with predefined choices (state/province, country)
+    - Navigation between related views
+    
+    **Key features:**
+    1. **Selection tracking**: Remembers what item is currently chosen
+    2. **Open/close state**: Keeps track of whether the menu is expanded
+    3. **Programmatic control**: You can set the selected value from code
+    
+    **Example usage:**
+    ```python
+    # Create a controller with "Medium" initially selected
+    size_controller = DropdownController(selectedValue="Medium")
+    
+    # Available options
+    size_options = ["Small", "Medium", "Large", "X-Large"]
+    
+    # Use it in a dropdown widget
+    size_dropdown = DropdownButton(
+        key=Key("size_selector"),
+        controller=size_controller,
+        items=[DropdownMenuItem(value=size, child=Text(size)) for size in size_options],
+        hint=Text("Select Size"),
+    )
+    
+    # Read the current selection anywhere
+    current_size = size_controller.selectedValue
+    
+    # Set a new selection programmatically
+    def reset_to_default():
+        size_controller.selectedValue = "Medium"
+        # Remember to call setState() to update the UI
+    ```
+    
+    Args:
+        selectedValue: The initially selected item (default: None = nothing selected)
+    
+    Attributes:
+        selectedValue: The currently selected item (read/write)
+        isOpen: Whether the dropdown menu is currently expanded (internal use)
     """
     def __init__(self, selectedValue: Any = None):
         self.selectedValue = selectedValue
@@ -117,7 +315,6 @@ class DropdownController:
 
 
 
-# In pythra/controllers.py
 
 class VirtualListController:
     """

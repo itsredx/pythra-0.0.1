@@ -1,8 +1,48 @@
-"""
-PyThra CLI - Main command line interface
+# =============================================================================
+# PYTHRA CLI SYSTEM - The "Command Center" for PyThra Development
+# =============================================================================
 
-This module provides the main CLI entry point for PyThra framework
-including package management, project creation, and development tools.
+"""
+PyThra Command Line Interface (CLI)
+
+This is your "command center" for working with PyThra projects! Think of it like
+the "control room" that helps you manage your PyThra applications from the terminal.
+
+**What can the PyThra CLI do?**
+🚀 **Project Management**:
+   - Create new projects instantly
+   - Run your applications
+   - Build apps for distribution
+   - Check if everything is working properly
+
+🎮 **Available Commands**:
+   - `pythra create-project <name>` - Creates a new PyThra project
+   - `pythra run` - Runs your PyThra application
+   - `pythra build` - Builds your app for distribution
+   - `pythra doctor` - Checks if PyThra is working properly
+   - `pythra package <command>` - Manages packages and plugins
+
+**Real-world analogy:**
+Think of the PyThra CLI like a "Swiss Army Knife" for app development:
+- Just like a Swiss Army Knife has tools for different tasks
+- The CLI has commands for different development tasks
+- You use the right tool/command for what you want to accomplish
+
+**How to use it:**
+Open your terminal and type `pythra` followed by a command:
+```bash
+# Create a new app called "my-awesome-app"
+pythra create-project my-awesome-app
+
+# Run your app
+cd my-awesome-app
+pythra run
+
+# Check if everything is working
+pythra doctor
+```
+
+This file contains all the command implementations that make the CLI work!
 """
 
 import click
@@ -16,11 +56,43 @@ def cli():
     pass
 
 
+# =============================================================================
+# CREATE PROJECT COMMAND - The "Project Generator" 
+# =============================================================================
+
 @cli.command()
 @click.argument('project_name')
 @click.option('--template', default='basic', help='Project template to use')
 def create_project(project_name: str, template: str):
-    """Create a new PyThra project"""
+    """
+    Creates a brand new PyThra project with everything you need to get started!
+    
+    **What this command does:**
+    Think of it like a "project starter kit generator" that:
+    1. 📁 Creates a new folder for your project
+    2. 🏷️ Sets up the proper directory structure (lib/, assets/, plugins/, etc.)
+    3. 📝 Creates template files with working example code
+    4. ⚙️ Sets up configuration files with sensible defaults
+    5. 📚 Generates documentation to help you get started
+    
+    **Real-world analogy:**
+    Like using a "house blueprint" to build a new house - it gives you
+    the basic structure, rooms, and utilities, so you can focus on decorating
+    and customizing instead of building from scratch.
+    
+    **Example usage:**
+    ```bash
+    pythra create-project my-calculator-app
+    pythra create-project photo-editor --template advanced
+    ```
+    
+    **What you get:**
+    - A working counter app as an example
+    - Proper project structure
+    - Configuration file (config.yaml)
+    - README with instructions
+    - Everything ready to run with `pythra run`
+    """
     try:
         from pathlib import Path
         import shutil
@@ -161,12 +233,13 @@ Visit https://docs.pythra.dev for more information.
         with open(project_path / "README.md", 'w') as f:
             f.write(readme_content)
         
-        click.echo(f"✅ Created new PyThra project: {project_name}")
-        click.echo(f"📁 Project created at: {project_path}")
+        click.echo(f"\n🎉 PyThra CLI | Successfully created new project: '{project_name}'!")
+        click.echo(f"📁 PyThra CLI | Project location: {project_path}")
         click.echo(f"")
-        click.echo(f"Next steps:")
+        click.echo(f"🚀 Next steps to run your app:")
         click.echo(f"  1. cd {project_name}")
         click.echo(f"  2. pythra run")
+        click.echo(f"\n✨ Your new PyThra app is ready! Happy coding! 🎨")
         
     except Exception as e:
         click.echo(f"Error creating project: {e}", err=True)
@@ -231,7 +304,7 @@ def build(onefile: bool, icon: str, output_dir: str):
             'lib/main.py'
         ])
         
-        click.echo("🔨 Building PyThra application...")
+        click.echo("🔨 PyThra CLI | Building your application for distribution...")
         click.echo(f"Command: {' '.join(cmd)}")
         
         # Check if PyInstaller is available
@@ -244,8 +317,8 @@ def build(onefile: bool, icon: str, output_dir: str):
         result = subprocess.run(cmd)
         
         if result.returncode == 0:
-            click.echo("✅ Build completed successfully!")
-            click.echo(f"📦 Output in: {build_dir}")
+            click.echo("✅ PyThra CLI | Build completed successfully!")
+            click.echo(f"📦 PyThra CLI | Your app is ready in: {build_dir}")
         else:
             click.echo("❌ Build failed", err=True)
         
@@ -260,7 +333,7 @@ def doctor():
         import sys
         from pathlib import Path
         
-        click.echo("🔍 PyThra Installation Check")
+        click.echo("🔍 PyThra CLI | Installation Health Check")
         click.echo("=" * 40)
         
         # Python version

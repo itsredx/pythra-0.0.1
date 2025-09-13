@@ -3,12 +3,42 @@ import weakref
 import uuid
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
-# --- Key Class (from previous example) ---
+# =============================================================================
+# KEY CLASS - The "ID Card" System for PyThra Widgets
+# =============================================================================
+
 class Key:
     """
-    A unique identifier for a widget to help distinguish it across rebuilds.
-
-    :param value: Any hashable value to uniquely represent the widget.
+    Think of this as an "ID card" for widgets in your PyThra app!
+    
+    **Why do we need Keys?**
+    Imagine you have a list of 100 buttons, and you delete the 50th one.
+    Without keys, PyThra might get confused and think you deleted a different button!
+    Keys help PyThra keep track of which widget is which, even when things change.
+    
+    **Real-world analogy:**
+    - Like student ID numbers in a classroom roster
+    - Like license plates on cars
+    - Like barcodes on products in a store
+    
+    **When to use Keys:**
+    - Lists of widgets that can change (add/remove items)
+    - Widgets that hold important state (like form inputs)
+    - Any widget you want to "remember" across UI updates
+    
+    **Example:**
+    ```python
+    # Without keys - PyThra might mix up which button is which
+    for name in names:
+        Button(text=name, onClick=delete_person)
+    
+    # With keys - PyThra knows exactly which button belongs to which person  
+    for name in names:
+        Button(key=Key(name), text=name, onClick=delete_person)
+    ```
+    
+    Args:
+        value: Any unique identifier (string, number, etc.) that represents this widget
     """
     def __init__(self, value):
         self.value = value
@@ -18,7 +48,15 @@ class Key:
 
     def __hash__(self):
         """
-        Return a hash for the key. Converts mutable types like lists to hashable ones.
+        Creates a "fingerprint" number for this Key so Python can use it efficiently.
+        
+        **Why is this needed?**
+        Python needs to be able to quickly compare keys and store them in dictionaries.
+        This method converts your key value into a number (hash) for fast lookups.
+        
+        **Special handling:**
+        - Lists get converted to tuples (because lists can change, tuples can't)
+        - This ensures your key works even if you use complex data structures
         """
         # Ensure value is hashable or convert to a hashable type
         if isinstance(self.value, (list, dict)):
@@ -29,15 +67,45 @@ class Key:
     def __repr__(self):
         return f"Key({self.value!r})"
 
-# --- Hashable Helper for Complex Style Objects ---
-# Assume your style objects (EdgeInsets, BoxDecoration, TextStyle)
-# have a method like `to_tuple()` that returns a hashable representation.
+# =============================================================================
+# HASHABLE HELPER - The "Style Comparator" for PyThra
+# =============================================================================
+
 def make_hashable(value):
     """
-    Converts a given value to a hashable representation, useful for comparing widget style props.
-
-    :param value: Any value or style object (EdgeInsets, BoxDecoration, etc.)
-    :return: A hashable version of the value.
+    The "Universal Converter" - makes any value comparable for PyThra's style system.
+    
+    **What's the problem this solves?**
+    PyThra needs to compare widget styles to know when to update the UI.
+    But some style objects (like colors, margins, etc.) are complex and can't be 
+    compared directly. This function converts them into a format that can be compared.
+    
+    **Real-world analogy:**
+    Like converting different currencies to USD so you can compare prices.
+    This converts different data types to a "standard format" so PyThra can compare them.
+    
+    **What it handles:**
+    - Style objects (EdgeInsets, BoxDecoration, etc.) → Convert using their to_tuple() method
+    - Lists → Convert to tuples (lists can change, tuples can't)
+    - Dictionaries → Convert to sorted tuples
+    - Basic types (strings, numbers) → Use as-is
+    - Complex objects → Try to convert, fall back to string if needed
+    
+    Args:
+        value: Any style value that needs to be made comparable
+        
+    Returns:
+        A "fingerprint" version of the value that can be compared efficiently
+        
+    Example:
+        ```python
+        # These two padding objects can now be compared:
+        padding1 = EdgeInsets.all(10)
+        padding2 = EdgeInsets.all(20)
+        hash1 = make_hashable(padding1)  # Returns: (10, 10, 10, 10)
+        hash2 = make_hashable(padding2)  # Returns: (20, 20, 20, 20)
+        # Now PyThra can tell they're different!
+        ```
     """
     if hasattr(value, 'to_tuple'):
         return value.to_tuple() # Prefer specific method if exists
@@ -58,18 +126,50 @@ def make_hashable(value):
         print(f"Warning: Cannot make type {type(value)} hashable for style key.")
         return str(value) # Fallback to string representation (less reliable)
 
-# --- Base Widget Refactored ---
+# =============================================================================
+# WIDGET CLASS - The "Building Block" of All PyThra UI Elements
+# =============================================================================
+
 class Widget:
     """
-    The base class for all widgets in the framework.
-
-    Every visual element inherits from `Widget` and implements its rendering logic.
-
-    :param key: Optional Key to uniquely identify this widget in the widget tree.
-    :param children: Optional list of child widgets (used for layout and nesting).
-
-    :attr _children: List of child widgets.
-    :attr _internal_id: Internal ID generated if no `Key` is provided.
+    The "DNA" of every UI element in PyThra - every button, text, image inherits from this!
+    
+    **Think of Widget like:**
+    - The "base template" for all UI components
+    - Like a "parent class" that gives all widgets common superpowers
+    - The foundation that every visual element is built on
+    
+    **What does Widget provide?**
+    1. **Identity System**: Each widget gets a unique ID (like a social security number)
+    2. **Parent-Child Relationships**: Widgets can contain other widgets (like folders contain files)
+    3. **Style Management**: Handles how the widget looks (colors, sizes, etc.)
+    4. **Communication**: Provides ways for widgets to talk to the main framework
+    
+    **Real-world analogy:**
+    Think of Widget like the "blueprint" for building LEGO pieces:
+    - Every LEGO piece (widget) has connectors (parent-child relationships)
+    - Every piece has an identity (unique ID)
+    - Every piece has properties (color, size, shape = styles)
+    - Every piece can connect to the main structure (framework)
+    
+    **The Widget Family Tree:**
+    ```
+    Widget (this class)
+    ├─ Button (clickable widget)
+    ├─ Text (displays words)
+    ├─ Image (shows pictures)
+    ├─ Container (holds other widgets)
+    └─ ... (hundreds of other widget types)
+    ```
+    
+    Args:
+        key: Optional "ID card" for this widget (helps PyThra track it)
+        children: Optional list of widgets that go "inside" this widget
+    
+    Attributes:
+        _children: The widgets contained inside this widget
+        _internal_id: Auto-generated backup ID if no key is provided
+        framework: Reference to the main PyThra system
     """
     # Keep framework ref for potential *State* access, but not ID generation
     _framework_ref = None

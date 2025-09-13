@@ -1,4 +1,47 @@
-# pythra/widgets.py
+# =============================================================================
+# PYTHRA WIDGET LIBRARY - The "LEGO Blocks" for Building Your UI
+# =============================================================================
+
+"""
+PyThra Widget Library
+
+This is your "LEGO block collection" for building user interfaces! Every visual 
+element in your app (buttons, text, images, layouts, etc.) is a widget defined here.
+
+**What are widgets?**
+Widgets are like LEGO blocks - individual pieces that you can combine to build 
+complex user interfaces. Just like LEGO, each widget has:
+- A specific purpose (button for clicking, text for displaying words)
+- Properties you can customize (colors, sizes, text content)
+- The ability to contain other widgets (like a box containing smaller pieces)
+
+**Widget categories in this file:**
+- **Layout Widgets**: Container, Column, Row (arrange other widgets)
+- **Display Widgets**: Text, Image, Icon (show content to users)
+- **Interactive Widgets**: Button, TextField (respond to user input)
+- **Specialized Widgets**: Custom components for specific needs
+
+**How to use widgets:**
+```python
+# Simple widget
+Text("Hello World!")
+
+# Widget with properties
+Container(
+    child=Text("I'm inside a box!"),
+    color="blue",
+    padding=EdgeInsets.all(20)
+)
+
+# Widgets containing other widgets
+Column(children=[
+    Text("First item"),
+    Text("Second item"),
+    Button(text="Click me!")
+])
+```
+"""
+
 import uuid
 import yaml
 import os
@@ -34,10 +77,74 @@ port = config.get('assets_server_port')
 
 
 
+# =============================================================================
+# CONTAINER WIDGET - The "Styled Box" That Holds Other Widgets
+# =============================================================================
+
 class Container(Widget):
     """
-    A layout widget that serves as a styled box to contain a single child widget.
-    Now supports animated gradient backgrounds.
+    The "Swiss Army Knife" of layout widgets - a styled box that can hold one child widget.
+    
+    **What is Container?**
+    Think of Container like a gift box that you can customize:
+    - You can change its size, color, and decorations
+    - You can add padding (space inside the box)
+    - You can add margins (space around the box)
+    - You can put ONE item inside it (the child widget)
+    
+    **Real-world analogy:**
+    Container is like a customizable picture frame:
+    - The frame itself can be styled (color, border, size)
+    - The picture goes inside (child widget)
+    - You can add matting around the picture (padding)
+    - You can position the frame on the wall (margins, alignment)
+    
+    **Common use cases:**
+    - Adding background colors to widgets
+    - Creating spacing around widgets (padding/margins)
+    - Making widgets specific sizes (width/height)
+    - Adding borders and shadows (decoration)
+    - Creating animated gradient backgrounds
+    
+    **Example uses:**
+    ```python
+    # Simple colored box
+    Container(
+        child=Text("I'm in a blue box!"),
+        color="blue",
+        padding=EdgeInsets.all(20)
+    )
+    
+    # Fancy styled container
+    Container(
+        child=Button("Click me"),
+        decoration=BoxDecoration(
+            color="white",
+            borderRadius=BorderRadius.circular(10),
+            boxShadow=[BoxShadow(color="gray", blur=5)]
+        ),
+        width=200,
+        height=100
+    )
+    
+    # Animated gradient background
+    Container(
+        child=Text("Fancy animated background!"),
+        gradient=GradientTheme(
+            gradientColors=["red", "blue", "green"],
+            animationSpeed="3s"
+        )
+    )
+    ```
+    
+    **Key parameters:**
+    - child: The widget that goes inside the container
+    - color: Simple background color
+    - padding: Space inside the container around the child
+    - margin: Space outside the container
+    - width/height: Fixed dimensions
+    - decoration: Advanced styling (borders, shadows, etc.)
+    - gradient: Animated gradient backgrounds
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -218,208 +325,70 @@ class Container(Widget):
 
 
 
-# class Container(Widget):
-#     """
-#     A layout widget that serves as a styled box to contain a single child widget.
 
-#     The `Container` widget allows styling and positioning of its child through various
-#     layout and style properties like padding, margin, width, height, background color,
-#     decoration, alignment, and more. It automatically generates and reuses shared CSS
-#     class names for identical style combinations to avoid redundancy and optimize rendering.
-#     """
+# =============================================================================
+# TEXT WIDGET - The "Word Display" for Showing Text Content
+# =============================================================================
 
-#     # Class-level cache for mapping unique style definitions to a CSS class name.
-#     # Key: A hashable tuple representing a unique combination of style properties.
-#     # Value: A generated unique CSS class name (e.g., "shared-container-0").
-#     shared_styles: Dict[Tuple, str] = {}
-#     visible_bool: bool = True
-
-#     def __init__(self,
-#                  child: Optional[Widget] = None,
-#                  key: Optional[Key] = None,
-#                  padding: Optional[EdgeInsets] = None,
-#                  color: Optional[str] = None,
-#                  decoration: Optional[BoxDecoration] = None,
-#                  width: Optional[Any] = None,
-#                  height: Optional[Any] = None,
-#                  constraints: Optional[BoxConstraints] = None,
-#                  margin: Optional[EdgeInsets] = None,
-#                  transform: Optional[str] = None,
-#                  alignment: Optional[Alignment] = None,
-#                  clipBehavior: Optional[ClipBehavior] = None,
-#                  visible: bool = True,
-#                  ):
-
-#         super().__init__(key=key, children=[child] if child else [])
-
-#         # --- Store all style properties ---
-#         self.padding = padding
-#         self.color = color
-#         self.decoration = decoration
-#         self.width = width
-#         self.height = height
-#         self.constraints = constraints
-#         self.margin = margin
-#         self.transform = transform
-#         self.alignment = alignment
-#         self.clipBehavior = clipBehavior
-#         self.visible = visible
-
-#         # --- CSS Class Management ---
-#         # 1. Create a unique, hashable key from all style properties.
-#         #    The `make_hashable` helper is crucial here. It converts style objects
-#         #    like EdgeInsets into tuples, making them usable as dictionary keys.
-#         self.style_key = tuple(make_hashable(prop) for prop in (
-#             self.padding, self.color, self.decoration, self.width, self.height,
-#             self.constraints, self.margin, self.transform, self.alignment,
-#             self.clipBehavior,
-#         ))
-
-#         Container.visible_bool = self.visible
-#         # print(self.style_key)
-
-#         # 2. Check the cache. If this style combination is new, create a new class.
-#         #    Otherwise, reuse the existing one.
-#         if self.style_key not in Container.shared_styles:
-#             self.css_class = f"shared-container-{len(Container.shared_styles)}"
-#             Container.shared_styles[self.style_key] = self.css_class
-#         else:
-#             self.css_class = Container.shared_styles[self.style_key]
-
-#     def render_props(self) -> Dict[str, Any]:
-#         """
-#         Return properties for diffing. For a styled container, the only property
-#         that matters for rendering is the CSS class, as all styles are baked into it.
-#         """
-#         # This simplification is key. The DOM element only needs its class.
-#         # The complex style logic lives entirely in the CSS generation.
-#         # --- NEW LOGIC ---
-#         instance_styles = {}
-#         if not self.visible:
-#             instance_styles['display'] = 'none'
-#         else: instance_styles['display'] = 'block'
-
-#         return {
-#             'css_class': self.css_class,
-#             'style': instance_styles # Pass the dynamic styles here
-#             }
-
-#     def get_required_css_classes(self) -> Set[str]:
-#         """Return the shared class name needed for this instance."""
-#         return {self.css_class}
-
-#     @staticmethod
-#     def generate_css_rule(style_key: Tuple, css_class: str) -> str:
-#         """
-#         Static method that correctly unpacks the style_key and generates the CSS rule.
-#         This is called by the Reconciler when it encounters a new CSS class.
-#         """
-#         try:
-#             # 1. Unpack the style_key tuple. The order MUST match the creation order in __init__.
-#             (padding_tuple, color, decoration_tuple, width, height,
-#              constraints_tuple, margin_tuple, transform, alignment_tuple,
-#              clipBehavior) = style_key
-
-#             styles = ["box-sizing: border-box;"]
-
-#             # if not visible:
-#             #     styles.append("display: none;")
-
-#             # 2. Reconstruct style objects from their tuple representations and generate CSS.
-
-#             # Handle Decoration and Color. Decoration can also contain a color.
-#             # If both are present, the explicit `color` property overrides the one in `decoration`.
-#             if decoration_tuple and isinstance(decoration_tuple, tuple):
-#                 # Reconstruct from the tuple created by `make_hashable`.
-#                 # This assumes BoxDecoration.to_tuple() produces a tuple that
-#                 # matches the __init__ signature.
-#                 deco_obj = BoxDecoration(*decoration_tuple)
-#                 # print("Container Deco: ",deco_obj.to_css())
-#                 styles.append(deco_obj.to_css())
-
-#             if color:
-#                 # This will override any background-color from decoration if present.
-#                 styles.append(f"background: {color};")
-            
-#             # Handle Padding and Margin
-#             if padding_tuple and isinstance(padding_tuple, tuple):
-#                 styles.append(f"padding: {EdgeInsets(*padding_tuple).to_css_value()};")
-            
-#             if margin_tuple and isinstance(margin_tuple, tuple):
-#                 styles.append(f"margin: {EdgeInsets(*margin_tuple).to_css_value()};")
-#                 # print(f"margin: {EdgeInsets(*margin_tuple).to_css_value()};")
-
-#             # Handle explicit Width and Height
-#             if width is not None:
-#                 styles.append(f"width: {width}px;" if isinstance(width, (int, float)) else f"width: {width};")
-
-#             if height is not None:
-#                 styles.append(f"height: {height}px;" if isinstance(height, (int, float)) else f"height: {height};")
-            
-#             # Handle BoxConstraints
-#             if constraints_tuple and isinstance(constraints_tuple, tuple):
-#                 constraints_obj = BoxConstraints(*constraints_tuple)
-#                 styles.append(constraints_obj.to_css())
-
-#             # Handle Alignment (for positioning the child)
-#             if alignment_tuple and isinstance(alignment_tuple, tuple):
-#                 align_obj = Alignment(*alignment_tuple)
-#                 # An alignment object implies a flex container to position the child
-#                 styles.append("display: flex;")
-#                 styles.append(f"justify-content: {align_obj.justify_content};")
-#                 styles.append(f"align-items: {align_obj.align_items};")
-
-#             # Handle Transform
-#             if transform:
-#                 styles.append(f"transform: {transform};")
-
-#             # Handle Clipping
-#             if clipBehavior and hasattr(clipBehavior, 'to_css_overflow'):
-#                 overflow_val = clipBehavior.to_css_overflow()
-#                 if overflow_val:
-#                     styles.append(f"overflow: {overflow_val};")
-            
-#             # 3. Assemble and return the final CSS rule.
-#             # The `filter(None, ...)` removes any empty strings from the list.
-#             return f".{css_class} {{ {' '.join(filter(None, styles))} }}"
-
-#         except Exception as e:
-#             import traceback
-#             print(f"ERROR generating CSS for Container {css_class} with key {style_key}:")
-#             traceback.print_exc()
-#             return f"/* Error generating rule for .{css_class} */"
-
-
-# --- Text Widget Refactored ---
 class Text(Widget):
     """
-    A Flutter-inspired Text widget for rendering styled text content within the framework.
-
-    This widget supports shared style deduplication via dynamically generated CSS classes
-    based on a unique style key (style, textAlign, overflow). This helps reduce repeated
-    inline styles and improves CSS performance and reusability.
-
-    Args:
-        data (str): The text content to render.
-        key (Optional[Key]): Optional unique key to identify this widget in the widget tree.
-        style (Optional[TextStyle]): TextStyle object representing font, size, weight, color, etc.
-        textAlign (Optional[str]): Horizontal text alignment (e.g., "left", "center", "right").
-        overflow (Optional[str]): Text overflow behavior, e.g., "ellipsis", "clip", or "visible".
-
-    Attributes:
-        shared_styles (Dict[Tuple, str]): Class-level cache of style keys to CSS class names.
-        style_key (Tuple): A hashable tuple of style-related properties.
-        css_class (str): A CSS class name assigned to this specific style combination.
-
-    Methods:
-        render_props() -> Dict[str, Any]:
-            Returns a dictionary of render-safe properties for widget diffing and updates.
-        
-        get_required_css_classes() -> Set[str]:
-            Returns a set containing the CSS class required for this widget.
-        
-        generate_css_rule(style_key: Tuple, css_class: str) -> str:
-            Static method to generate a valid CSS rule string based on a style key.
+    The fundamental "word display" widget - shows text content to your users!
+    
+    **What is Text widget?**
+    Think of Text like a "smart label maker" that can display any text with custom styling.
+    It's one of the most basic and important widgets - almost every app needs to show text!
+    
+    **Real-world analogy:**
+    Text widget is like a "smart typewriter" that can:
+    - Type any words you want (the data parameter)
+    - Use different fonts, sizes, and colors (the style parameter)
+    - Align text left, center, or right (textAlign parameter)
+    - Handle text that's too long (overflow parameter)
+    
+    **Common use cases:**
+    - Displaying labels ("Name:", "Email:", "Welcome!")
+    - Showing user data (usernames, messages, descriptions)
+    - Creating headings and titles
+    - Displaying instructions or help text
+    - Error messages and notifications
+    
+    **Examples:**
+    ```python
+    # Simple text
+    Text("Hello, World!")
+    
+    # Styled text with custom appearance
+    Text(
+        "Important Notice",
+        style=TextStyle(
+            fontSize=24,
+            fontWeight="bold",
+            color="red"
+        )
+    )
+    
+    # Centered text
+    Text(
+        "This text is centered",
+        textAlign="center"
+    )
+    
+    # Text that shows "..." when too long
+    Text(
+        "This is a very long text that might not fit",
+        overflow="ellipsis"
+    )
+    ```
+    
+    **Key parameters:**
+    - **data**: The actual words to display (required)
+    - **style**: How the text should look (font, size, color, etc.)
+    - **textAlign**: Where to position the text ("left", "center", "right")
+    - **overflow**: What to do if text is too long ("ellipsis" = "...", "clip" = cut off)
+    
+    **Performance feature:**
+    Text widget is smart about styling - if multiple Text widgets use the same style,
+    they share the same CSS class to keep your app running fast!
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -484,11 +453,70 @@ class Text(Widget):
             return f"/* Error generating rule for .{css_class} */"
 
 
-# --- TextButton Refactored ---
+# =============================================================================
+# TEXTBUTTON WIDGET - The "Simple Click Button" for Basic Actions
+# =============================================================================
+
 class TextButton(Widget):
     """
-    A simple button, typically showing text, styled minimally.
-    Compatible with the reconciliation rendering system.
+    A simple, text-based button for basic user interactions - like a clickable label!
+    
+    **What is TextButton?**
+    Think of TextButton like a "clickable text label" - it looks like regular text
+    but responds when users click it. It's perfect for simple actions that don't
+    need heavy visual emphasis.
+    
+    **Real-world analogy:**
+    TextButton is like a "hyperlink" on a website:
+    - Looks like regular text (but maybe colored differently)
+    - Shows it's clickable when you hover over it
+    - Performs an action when clicked
+    - Doesn't have a big button background like "solid" buttons
+    
+    **When to use TextButton:**
+    - Secondary actions ("Cancel", "Skip", "Learn More")
+    - Navigation links ("Go to Settings", "View Details")
+    - Less important actions that shouldn't dominate the screen
+    - Actions in toolbars or menus
+    
+    **When NOT to use TextButton:**
+    - Primary actions (use ElevatedButton instead)
+    - Important actions that need emphasis
+    - Destructive actions (like "Delete" - use colored buttons)
+    
+    **Examples:**
+    ```python
+    # Simple text button
+    TextButton(
+        child=Text("Cancel"),
+        onPressed=lambda: print("Cancel clicked")
+    )
+    
+    # Text button with custom styling
+    TextButton(
+        child=Text("Learn More"),
+        onPressed=go_to_help_page,
+        style=ButtonStyle(
+            foregroundColor="blue",
+            padding=EdgeInsets.all(16)
+        )
+    )
+    
+    # Text button with icon
+    TextButton(
+        child=Row(children=[
+            Icon("info"),
+            Text("Info")
+        ]),
+        onPressed=show_info
+    )
+    ```
+    
+    **Key parameters:**
+    - **child**: What to show inside the button (usually Text, but can be any widget)
+    - **onPressed**: Function to call when button is clicked
+    - **style**: How the button should look (colors, padding, shape, etc.)
+    - **onPressedName**: Custom name for the click handler (for debugging)
     """
     shared_styles: Dict[Tuple, str] = {} # Class variable for shared CSS
 
@@ -671,11 +699,76 @@ class TextButton(Widget):
             traceback.print_exc()
             return f"/* Error generating rule for .{css_class} */"
 
-# --- ElevatedButton Refactored ---
+# =============================================================================
+# ELEVATEDBUTTON WIDGET - The "Primary Action Button" with Emphasis
+# =============================================================================
+
 class ElevatedButton(Widget):
     """
-    A Material Design elevated button with background color and shadow.
-    Compatible with the reconciliation rendering system.
+    The "hero button" of your app - draws attention and emphasizes important actions!
+    
+    **What is ElevatedButton?**
+    Think of ElevatedButton as the "main character" button that stands out from the crowd.
+    It has a background color and a subtle shadow ("elevation") that makes it appear
+    to "float" above the surface, giving it visual importance.
+    
+    **Real-world analogy:**
+    ElevatedButton is like the "big red button" in important control rooms:
+    - It stands out visually from everything else
+    - It has a solid, substantial appearance
+    - It clearly says "this is the main action you should take"
+    - It has depth/shadow that makes it look "elevated" above other elements
+    
+    **When to use ElevatedButton:**
+    - Primary actions ("Save", "Submit", "Continue", "Sign In")
+    - Actions you want users to notice first
+    - Important calls-to-action
+    - The "main" button when you have multiple button options
+    
+    **When NOT to use ElevatedButton:**
+    - Secondary actions (use TextButton or OutlinedButton)
+    - When you have many buttons (only one should be "elevated")
+    - Destructive actions (consider using colored buttons with warning colors)
+    
+    **Examples:**
+    ```python
+    # Simple elevated button with default styling
+    ElevatedButton(
+        child=Text("Save Changes"),
+        onPressed=save_changes
+    )
+    
+    # Custom styled elevated button
+    ElevatedButton(
+        child=Text("Sign In"),
+        onPressed=sign_in,
+        style=ButtonStyle(
+            backgroundColor="#007AFF",  # iOS blue
+            foregroundColor="white",
+            elevation=4,  # More shadow for emphasis
+            padding=EdgeInsets.symmetric(horizontal=24, vertical=12)
+        )
+    )
+    
+    # Elevated button with icon and text
+    ElevatedButton(
+        child=Row(children=[
+            Icon("save", color="white"),
+            SizedBox(width=8),
+            Text("Save")
+        ]),
+        onPressed=save_data
+    )
+    ```
+    
+    **Key parameters:**
+    - **child**: Content inside the button (usually Text, but can be Row with icon + text)
+    - **onPressed**: Function to call when button is clicked
+    - **style**: Appearance customization (colors, elevation, padding, shape, etc.)
+    - **elevation**: How much "shadow/depth" the button has (higher = more dramatic)
+    
+    **Visual hierarchy tip:**
+    Use only ONE ElevatedButton per screen/section to maintain clear visual hierarchy!
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -898,11 +991,85 @@ class ElevatedButton(Widget):
     # Removed instance methods: to_html(), to_css(), to_js()
 
 
-# --- IconButton Refactored ---
+# =============================================================================
+# ICONBUTTON WIDGET - The "Icon-Only Button" for Compact Actions
+# =============================================================================
+
 class IconButton(Widget):
     """
-    A button containing an Icon, typically with minimal styling (transparent background).
-    This widget is fully compatible with the declarative, CSS-driven reconciliation system.
+    A compact button that shows only an icon - perfect for toolbars and space-saving interfaces!
+    
+    **What is IconButton?**
+    Think of IconButton as the "compact action button" that shows only an icon instead of text.
+    It's like having a "shortcut button" that uses universal symbols (icons) to communicate
+    what action it performs, without taking up much space.
+    
+    **Real-world analogy:**
+    IconButton is like the buttons on your TV remote or car dashboard:
+    - Shows a simple, recognizable icon (play button, volume up, etc.)
+    - Takes up minimal space
+    - Instantly recognizable action
+    - Usually has a subtle background or no background at all
+    - Often includes a tooltip when you hover over it
+    
+    **When to use IconButton:**
+    - Toolbars and app bars (save, edit, delete, share icons)
+    - Navigation (back arrow, menu hamburger, search icon)
+    - Secondary actions where space is limited
+    - Actions that are universally understood through icons
+    - Repeated actions in lists (favorite heart, more options)
+    
+    **When NOT to use IconButton:**
+    - Primary actions (use ElevatedButton with text instead)
+    - Actions that aren't clearly represented by an icon
+    - When users might not understand the icon meaning
+    - Complex actions that need explanation
+    
+    **Examples:**
+    ```python
+    # Simple icon button (like a "back" button)
+    IconButton(
+        icon=Icon("arrow_back"),
+        onPressed=go_back
+    )
+    
+    # Icon button with tooltip for clarity
+    IconButton(
+        icon=Icon("favorite", color="red"),
+        onPressed=toggle_favorite,
+        tooltip="Add to favorites"
+    )
+    
+    # Custom styled icon button
+    IconButton(
+        icon=Icon("delete", color="white"),
+        onPressed=delete_item,
+        style=ButtonStyle(
+            backgroundColor="red",
+            padding=EdgeInsets.all(12)
+        ),
+        tooltip="Delete item"
+    )
+    
+    # Icon button with custom size
+    IconButton(
+        icon=Icon("settings"),
+        onPressed=open_settings,
+        iconSize=32,  # Larger than default
+        tooltip="Settings"
+    )
+    ```
+    
+    **Key parameters:**
+    - **icon**: The Icon widget to display (required)
+    - **onPressed**: Function to call when button is clicked
+    - **iconSize**: Size of the icon in pixels (default: 24)
+    - **tooltip**: Text that appears when user hovers (very important for accessibility!)
+    - **style**: Visual customization (background color, padding, etc.)
+    - **enabled**: Whether the button can be clicked (default: True)
+    
+    **Accessibility tip:**
+    Always include a tooltip for IconButton to help users understand what it does!
     """
     # Class-level cache for mapping unique style definitions to a CSS class name.
     shared_styles: Dict[Tuple, str] = {}
@@ -1065,11 +1232,100 @@ class IconButton(Widget):
             traceback.print_exc()
             return f"/* Error generating rule for .{css_class} */"
 
-# --- FloatingActionButton Refactored ---
+# =============================================================================
+# FLOATING ACTION BUTTON - The "Quick Action" Button That Floats Above Everything
+# =============================================================================
+
 class FloatingActionButton(Widget):
     """
-    A circular Material Design button "floating" above the UI, usually with an icon.
-    Compatible with the reconciliation rendering system.
+    The prominent "quick action" button that floats above your app's content - usually circular with an icon.
+    
+    **What is FloatingActionButton (FAB)?**
+    Think of FAB as the "main action button" of your screen. It's a prominent, usually circular
+    button that "floats" above other content and represents the primary action users can take.
+    FABs are designed to catch attention and make the most important action easily accessible.
+    
+    **Real-world analogy:**
+    Like the "emergency call" button in an elevator:
+    - Prominently placed and easily visible
+    - Clearly indicates the most important action
+    - Always accessible regardless of what else is happening
+    - Stands out from other controls
+    
+    **When to use FloatingActionButton:**
+    - Primary action of a screen ("Add new item", "Compose message", "Create", "Call")
+    - Actions users do frequently on that screen
+    - When you want to make an action highly discoverable
+    - Actions that create new content or initiate primary workflows
+    
+    **Common FAB examples by app type:**
+    - Email app: "Compose new message" (pencil icon)
+    - Notes app: "Create new note" (plus icon)
+    - Shopping app: "Add to cart" (shopping cart icon)
+    - Camera app: "Take photo" (camera icon)
+    - Social media: "Create post" (plus or edit icon)
+    
+    **Material Design principles for FABs:**
+    1. **One per screen**: Only use one FAB per screen for the primary action
+    2. **Persistent**: Should be visible and accessible from the main content area
+    3. **Prominent**: Uses contrasting colors to stand out from other content
+    4. **Related to screen**: The action should be directly related to the current screen's content
+    5. **Floating**: Positioned above other content with elevation/shadow
+    
+    **Examples:**
+    ```python
+    # Simple FAB with an icon
+    FloatingActionButton(
+        child=Icon("add"),  # Plus icon for "add new" action
+        onPressed=create_new_item
+    )
+    
+    # FAB with custom styling
+    FloatingActionButton(
+        child=Icon("edit"),
+        onPressed=start_editing,
+        style=ButtonStyle(
+            backgroundColor=Colors.green,
+            elevation=8,  # Higher shadow for more prominence
+            shape=28  # Circular (radius = half of 56px default size)
+        ),
+        tooltip="Start editing"  # Helpful hint on hover
+    )
+    
+    # FAB in a Scaffold (typical usage)
+    Scaffold(
+        appBar=AppBar(title=Text("My Notes")),
+        body=NotesList(),
+        floatingActionButton=FloatingActionButton(
+            child=Icon("add"),
+            onPressed=create_new_note
+        )
+    )
+    ```
+    
+    **Key parameters:**
+    - **child**: The content inside the button (usually an Icon)
+    - **onPressed**: Function called when the button is tapped
+    - **style**: ButtonStyle for customizing appearance (colors, size, shadows)
+    - **tooltip**: Text shown when user hovers over the button (accessibility)
+    - **key**: Optional unique identifier for this widget
+    
+    **Default styling:**
+    - **Shape**: Circular (56px diameter by default)
+    - **Elevation**: Floating above content with shadow
+    - **Colors**: Uses theme's accent/primary colors
+    - **Position**: Fixed in bottom-right corner (when used in Scaffold)
+    - **Icon size**: 24px (standard Material Design icon size)
+    
+    **Accessibility notes:**
+    1. Always include a tooltip for screen readers
+    2. Use clear, recognizable icons
+    3. Make sure the action is obvious from context
+    4. Provide alternative ways to access the same function
+    
+    **Performance notes:**
+    FABs are lightweight and efficient since they're typically just a button with an icon.
+    The floating positioning and shadows are handled efficiently by CSS.
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -1273,13 +1529,82 @@ class FloatingActionButton(Widget):
 
 
 
+# =============================================================================
+# SINGLECHILDSCROLLVIEW WIDGET - The "Scrollable Container" for Overflow Content
+# =============================================================================
+
 class SingleChildScrollView(Widget):
     """
-    A widget that makes its single child scrollable.
-
-    This is useful for content that might be larger than its container,
-    like a tall form on a small screen. It uses a shared CSS class to
-    apply the necessary overflow and direction styles.
+    The "magical expanding container" that makes content scrollable when it's too big to fit!
+    
+    **What is SingleChildScrollView?**
+    Think of SingleChildScrollView as a "smart window" that can show content larger than itself.
+    When your content is too tall or too wide to fit in the available space, this widget
+    adds scroll bars so users can scroll to see the rest.
+    
+    **Real-world analogy:**
+    SingleChildScrollView is like a "scroll viewer" for ancient scrolls:
+    - The scroll itself (child content) might be very long
+    - The "viewing window" (container) shows only a portion at a time
+    - You can scroll up/down (or left/right) to see different parts
+    - The scroll bars appear when the content is larger than the window
+    
+    **When to use SingleChildScrollView:**
+    - Long forms that might not fit on small screens
+    - Text content that could be longer than the screen
+    - Image galleries or content that might overflow
+    - Any content where you're not sure if it will fit
+    - When you have ONE child that might be too big (use ListView for multiple items)
+    
+    **When NOT to use SingleChildScrollView:**
+    - For lists of many items (use ListView instead - it's much more efficient)
+    - When content will definitely fit (adds unnecessary complexity)
+    - For horizontal scrolling of many items (use horizontal ListView)
+    
+    **Examples:**
+    ```python
+    # Vertical scrolling for a long form
+    SingleChildScrollView(
+        child=Column(children=[
+            TextField("Name"),
+            TextField("Email"),
+            TextField("Address"),
+            # ... many more fields
+            ElevatedButton(child=Text("Submit"), onPressed=submit)
+        ])
+    )
+    
+    # Horizontal scrolling for wide content
+    SingleChildScrollView(
+        scrollDirection=Axis.HORIZONTAL,
+        child=Row(children=[
+            Container(width=200, child=Text("Panel 1")),
+            Container(width=200, child=Text("Panel 2")),
+            Container(width=200, child=Text("Panel 3")),
+            # ... more wide panels
+        ])
+    )
+    
+    # Scrollable content with padding
+    SingleChildScrollView(
+        padding=EdgeInsets.all(16),
+        child=Text(
+            "This is a very long text that will definitely not fit "
+            "in a small container and will need to be scrollable..."
+        )
+    )
+    ```
+    
+    **Key parameters:**
+    - **child**: The content that might be too big to fit (required)
+    - **scrollDirection**: Axis.VERTICAL (up/down) or Axis.HORIZONTAL (left/right)
+    - **padding**: Space inside the scroll area around the content
+    - **reverse**: If True, starts scrolled to the bottom/end instead of top/start
+    - **physics**: Controls scroll behavior (bouncy, never scrollable, etc.)
+    
+    **Performance tip:**
+    Only use this for single widgets! For lists of items, use ListView which is optimized
+    to only render visible items and can handle thousands of items efficiently.
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -1395,17 +1720,67 @@ class SingleChildScrollView(Widget):
             return f"/* Error generating rule for .{css_class} */"
 
 
-# In pythra/widgets.py
-
-# ... (other widgets)
+#=============================================================================
+# GLOBAL SCROLLBAR STYLE - A "Set It and Forget It" Theme for Your App's Main Scrollbar
+#=============================================================================
 
 class GlobalScrollbarStyle(Widget):
-    """
-    A special non-rendering widget that applies a custom scrollbar style
-    to the entire application window (the body's scrollbar).
+     """
+    A special, non-rendering widget that applies a custom scrollbar style
+    to the entire application window (the `<body>` element's scrollbar).
 
-    This widget should be placed once in your widget tree, typically at
-    the top level, for example, as a child of your main Scaffold or Container.
+    **What is GlobalScrollbarStyle?**
+    This widget is a "theme setter" for the browser's default scrollbar. It doesn't draw anything
+    on the screen itself, but instead injects a global CSS rule to make the main window scrollbar
+    match your application's aesthetic. You place it once in your app, and it takes care of the rest.
+
+    **Real-world analogy:**
+    It's like choosing the frame style for all the windows in your house. You don't apply it to
+    each pane of glass individually. Instead, you set a single rule ("all window frames will be
+    brushed nickel"), and every window automatically follows that style, creating a consistent look.
+
+    **When to use GlobalScrollbarStyle:**
+    - When you want to customize the main browser scrollbar that appears when the whole page is longer than the screen.
+    - To ensure a consistent visual theme across your entire application.
+    - Place it **once** at the top level of your widget tree, often within your main `Scaffold` or root `Container`.
+
+    **Examples:**
+    ```python
+    # Define a custom theme for the scrollbar
+    my_scrollbar_theme = ScrollbarTheme(
+        thumb_color=Colors.blue[300],
+        track_color=Colors.grey[800],
+        radius=4
+    )
+    
+    # Place the GlobalScrollbarStyle widget at the top of your app
+    Scaffold(
+        appBar=AppBar(title=Text("My App")),
+        body=Column(
+            children=[
+                GlobalScrollbarStyle(theme=my_scrollbar_theme),
+                # ... rest of your app content
+                LongContentThatCausesScrolling(),
+            ]
+        )
+    )
+    ```
+    
+    **Key parameters:**
+    - **theme**: An optional `ScrollbarTheme` object to define the colors, size, and roundness of the scrollbar. If omitted, a default theme is used.
+    - **key**: Optional unique identifier for this widget.
+    
+    **How it works:**
+    Unlike other widgets, `GlobalScrollbarStyle` generates CSS that targets browser-specific pseudo-elements (`::-webkit-scrollbar` for Chrome/Safari, `scrollbar-color` for Firefox) instead of a specific CSS class. This allows it to style the browser's native UI component for scrolling.
+
+    **Accessibility notes:**
+    - Customizing scrollbars can improve visual consistency and readability, especially in dark themes.
+    - Ensure that the contrast between the scrollbar thumb and track is sufficient for users with low vision.
+    - This widget doesn't interfere with keyboard or screen reader scrolling functionality.
+
+    **Performance notes:**
+    - Extremely lightweight. It injects a single, small CSS rule once per theme.
+    - Has zero impact on rendering performance as it is a non-visual widget.
     """
     # Use a class-level cache to ensure the global style is only generated once
     # per unique theme. The key here can be simple, as there's only one global
@@ -1489,15 +1864,80 @@ class GlobalScrollbarStyle(Widget):
             return "/* Error generating global scrollbar style */"
 
 
-# In pythra/widgets.py
+# =============================================================================
+# SCROLLBAR - A Highly-Customizable Scrollable Container
+# =============================================================================
 
 class Scrollbar(Widget):
     """
-    A robust, customizable scrollbar widget powered by the SimpleBar.js library.
-    It provides a consistent, themeable scrolling experience across all browsers.
+    A robust, customizable scrollbar widget that wraps its child, providing a
+    consistent, themeable scrolling experience across all browsers using SimpleBar.js.
 
-    This widget renders a container div that is automatically initialized by SimpleBar.
-    It supports both initial page load and dynamic insertion via DOM patches.
+    **What is Scrollbar?**
+    The `Scrollbar` widget is a container that makes its content scrollable if it overflows.
+    It replaces the often inconsistent and operating-system-dependent native browser scrollbars
+    with a sleek, modern, and fully themeable alternative that looks and feels the same everywhere.
+
+    **Real-world analogy:**
+    Think of it as a high-tech display case for a long, historical scroll. The case itself
+    has a fixed size, but it includes a smooth, elegant track and handle that lets you
+    effortlessly glide through the entire length of the scroll inside, no matter how long it is.
+
+    **When to use Scrollbar:**
+    - For scrollable lists, sidebars, or navigation menus.
+    - In chat windows or logs where content grows over time.
+    - Any container with dynamic content that might exceed its fixed dimensions.
+    - When you need a high-performance scrollable area for thousands of items (using virtualization).
+
+    **Examples:**
+    ```python
+    # 1. Simple scrollable column
+    Scrollbar(
+        height=300, # Fixed height
+        child=Column(
+            children=[Text(f"Item {i}") for i in range(100)]
+        )
+    )
+    
+    # 2. A scrollbar with a custom theme
+    my_theme = ScrollbarTheme(
+        thumb_color=Colors.amber,
+        track_color="transparent",
+        width=12
+    )
+    Scrollbar(
+        height="100%", # Take full parent height
+        theme=my_theme,
+        child=MyLongContentWidget()
+    )
+    
+    # 3. High-performance virtualized list (for thousands of items)
+    Scrollbar(
+        height=500,
+        virtualization_options={
+            'itemHeight': 30, # Height of each row
+            'totalItems': 10000
+        },
+        child=MyItemRenderer() # Widget that renders a single row
+    )
+    ```
+
+    **Key parameters:**
+    - **child**: The single widget to be placed inside the scrollable container.
+    - **theme**: An optional `ScrollbarTheme` to customize the scrollbar's appearance.
+    - **width**: The width of the scrollable area (e.g., '100%', 300).
+    - **height**: The height of the scrollable area (e.g., '100%', 500).
+    - **autoHide**: (bool) If `True` (default), scrollbars fade out when not in use.
+    - **virtualization_options**: A dictionary to enable high-performance virtual scrolling for very large lists. This drastically improves performance by only rendering visible items.
+
+    **Default styling:**
+    - Utilizes a subtle, modern default theme if no `ScrollbarTheme` is provided.
+    - Scrollbars are overlaid on the content and only appear on hover or during scrolling.
+    - Provides a consistent look and feel across Chrome, Firefox, Safari, and Edge.
+
+    **Performance notes:**
+    - Standard usage is very efficient, powered by the battle-tested SimpleBar.js library.
+    - For lists with hundreds or thousands of items, **virtualization is essential**. By providing `virtualization_options`, you switch to a mode that only renders the DOM nodes currently in view, resulting in massive performance gains and instant scrolling, regardless of list size.
     """
     # A class-level cache to share CSS for identical themes.
     shared_styles: Dict[Tuple, str] = {}
@@ -1646,10 +2086,89 @@ class Scrollbar(Widget):
             return ""
 
 
+# =============================================================================
+# COLUMN WIDGET - The "Vertical Stack" for Organizing Content Up-and-Down
+# =============================================================================
+
 class Column(Widget):
     """
-    A widget that displays its children in a vertical array.
-    Compatible with the reconciliation rendering system.
+    The "vertical stack organizer" - arranges multiple widgets in a top-to-bottom layout!
+    
+    **What is Column?**
+    Think of Column as a "vertical filing cabinet" that stacks widgets on top of each other.
+    It's one of the most fundamental layout widgets - you'll use it constantly to organize
+    your app's content vertically (like a shopping list or form fields).
+    
+    **Real-world analogy:**
+    Column is like stacking books on top of each other:
+    - Each book (child widget) sits on top of the previous one
+    - You can control how they align (all to the left, centered, etc.)
+    - You can control spacing between them
+    - The whole stack can be aligned within a larger bookshelf (container)
+    
+    **When to use Column:**
+    - Organizing form fields vertically (Name, Email, Password fields)
+    - Creating menus or lists of buttons
+    - Stacking content like cards or tiles
+    - Building the main layout structure of screens
+    - Any time you need things arranged top-to-bottom
+    
+    **Key concepts:**
+    - **Main Axis**: The vertical direction (top-to-bottom)
+    - **Cross Axis**: The horizontal direction (left-to-right)
+    - **Children**: The widgets you want to stack vertically
+    
+    **Examples:**
+    ```python
+    # Simple vertical list
+    Column(children=[
+        Text("Item 1"),
+        Text("Item 2"),
+        Text("Item 3")
+    ])
+    
+    # Centered form layout
+    Column(
+        mainAxisAlignment=MainAxisAlignment.CENTER,  # Center vertically
+        crossAxisAlignment=CrossAxisAlignment.CENTER,  # Center horizontally
+        children=[
+            Text("Welcome!", style=TextStyle(fontSize=24)),
+            SizedBox(height=20),  # Spacing
+            TextField("Username"),
+            TextField("Password"),
+            ElevatedButton(child=Text("Login"), onPressed=login)
+        ]
+    )
+    
+    # Spaced-out layout filling the screen
+    Column(
+        mainAxisAlignment=MainAxisAlignment.SPACE_BETWEEN,
+        children=[
+            Text("Header"),
+            Text("Content in the middle"),
+            Text("Footer")
+        ]
+    )
+    ```
+    
+    **Key parameters:**
+    - **children**: List of widgets to stack vertically (required)
+    - **mainAxisAlignment**: How to arrange children along the main (vertical) axis:
+      * START: Pack at the top
+      * CENTER: Center in available space
+      * END: Pack at the bottom
+      * SPACE_BETWEEN: Spread out with equal space between
+      * SPACE_AROUND: Spread out with space around each child
+      * SPACE_EVENLY: Equal space between and around all children
+    - **crossAxisAlignment**: How to align children along the cross (horizontal) axis:
+      * START: Align to the left
+      * CENTER: Center horizontally
+      * END: Align to the right
+      * STRETCH: Make each child fill the width
+    - **mainAxisSize**: Whether to take up all available height (MAX) or just what's needed (MIN)
+    
+    **Layout tip:**
+    Column is perfect for mobile-first design since phones are taller than they are wide!
     """
     shared_styles: Dict[Tuple, str] = {} # Class variable for shared CSS
 
@@ -1799,10 +2318,95 @@ class Column(Widget):
 
     # Removed instance methods: to_html(), to_css()
 
+# =============================================================================
+# ROW WIDGET - The "Horizontal Stack" for Organizing Content Left-to-Right
+# =============================================================================
+
 class Row(Widget):
     """
-    A widget that displays its children in a horizontal array.
-    Compatible with the reconciliation rendering system.
+    The "horizontal organizer" - arranges multiple widgets side-by-side in a left-to-right layout!
+    
+    **What is Row?**
+    Think of Row as a "horizontal shelf" that places widgets next to each other from left to right.
+    It's the horizontal companion to Column - while Column stacks things vertically,
+    Row arranges them horizontally (like items on a bookshelf).
+    
+    **Real-world analogy:**
+    Row is like arranging items on a shelf:
+    - Each item (child widget) sits next to the previous one
+    - You can control how they align vertically (top, center, bottom)
+    - You can control spacing and distribution across the shelf
+    - The whole arrangement fits within the shelf's width
+    
+    **When to use Row:**
+    - Navigation bars with multiple buttons side-by-side
+    - Tool bars with icons arranged horizontally  
+    - Button groups (OK, Cancel, Apply)
+    - Form fields that should be on the same line (First Name, Last Name)
+    - Icon + text combinations
+    - Any content that should be arranged left-to-right
+    
+    **Key concepts:**
+    - **Main Axis**: The horizontal direction (left-to-right)
+    - **Cross Axis**: The vertical direction (top-to-bottom)
+    - **Children**: The widgets you want to arrange horizontally
+    
+    **Examples:**
+    ```python
+    # Simple horizontal layout
+    Row(children=[
+        Icon("home"),
+        Text("Home"),
+        Icon("settings")
+    ])
+    
+    # Button group with spacing
+    Row(
+        mainAxisAlignment=MainAxisAlignment.SPACE_EVENLY,
+        children=[
+            TextButton(child=Text("Cancel"), onPressed=cancel),
+            ElevatedButton(child=Text("Save"), onPressed=save),
+            TextButton(child=Text("Help"), onPressed=show_help)
+        ]
+    )
+    
+    # Icon and text combination
+    Row(
+        crossAxisAlignment=CrossAxisAlignment.CENTER,  # Center vertically
+        children=[
+            Icon("person", size=24),
+            SizedBox(width=8),  # Spacing
+            Text("Profile")
+        ]
+    )
+    
+    # Form fields side-by-side
+    Row(children=[
+        Expanded(child=TextField("First Name")),
+        SizedBox(width=16),
+        Expanded(child=TextField("Last Name"))
+    ])
+    ```
+    
+    **Key parameters:**
+    - **children**: List of widgets to arrange horizontally (required)
+    - **mainAxisAlignment**: How to arrange children along the main (horizontal) axis:
+      * START: Pack to the left
+      * CENTER: Center in available space
+      * END: Pack to the right
+      * SPACE_BETWEEN: Spread out with equal space between
+      * SPACE_AROUND: Spread out with space around each child
+      * SPACE_EVENLY: Equal space between and around all children
+    - **crossAxisAlignment**: How to align children along the cross (vertical) axis:
+      * START: Align to the top
+      * CENTER: Center vertically  
+      * END: Align to the bottom
+      * STRETCH: Make each child fill the height
+      * BASELINE: Align text baselines (great for text + icon combinations)
+    - **mainAxisSize**: Whether to take up all available width (MAX) or just what's needed (MIN)
+    
+    **Layout tip:**
+    Use Expanded widget around Row children to control how they share the available width!
     """
     shared_styles: Dict[Tuple, str] = {} # Class variable for shared CSS
 
@@ -1940,8 +2544,34 @@ class Row(Widget):
 
     # Removed instance methods: to_html(), to_css()
 
+# =============================================================================
+# IMAGE HELPER CLASSES - The "Image Source Managers" for Different Image Types
+# =============================================================================
+
 class AssetImage:
-    """Helper to generate URL for local assets served by the framework."""
+    """
+    Points to an image file stored in your project's assets folder - like a "local photo reference"!
+    
+    **What is AssetImage?**
+    Think of AssetImage as a "bookmark" that points to an image file stored locally in your
+    project (like photos you've included with your app). It's like having a filing cabinet
+    of images that ship with your application.
+    
+    **When to use AssetImage:**
+    - App logos and branding images
+    - Icons and graphics that are part of your app design
+    - Default profile pictures or placeholder images
+    - UI elements like backgrounds, patterns, decorations
+    - Any image that doesn't change and ships with your app
+    
+    **Example usage:**
+    ```python
+    # Reference an image in your assets folder
+    logo = AssetImage("logo.png")
+    profile_pic = AssetImage("avatars/default-user.jpg")
+    background = AssetImage("backgrounds/gradient-bg.png")
+    ```
+    """
     def __init__(self, file_name: str):
         # Basic check for leading slashes
         clean_file_name = file_name.lstrip('/')
@@ -1984,7 +2614,32 @@ class AssetIcon:
         return f"AssetIcon('{self.src}')"
 
 class NetworkImage:
-    """Helper to represent a network image URL."""
+    """
+    Points to an image on the internet - like a "web link to a photo"!
+    
+    **What is NetworkImage?**
+    Think of NetworkImage as a "web address" that tells your app where to find an image
+    on the internet. It's like giving someone a URL to look at a photo online.
+    
+    **When to use NetworkImage:**
+    - User profile pictures downloaded from social media or accounts
+    - Product images from an online store or database
+    - Photos from APIs or web services
+    - Dynamic content that changes based on user data
+    - Images stored on your server or cloud storage
+    
+    **Example usage:**
+    ```python
+    # Reference images from the web
+    user_avatar = NetworkImage("https://api.example.com/users/123/avatar.jpg")
+    product_photo = NetworkImage("https://store.example.com/products/456/image.png")
+    weather_icon = NetworkImage(f"https://weather.com/icons/{weather_condition}.svg")
+    ```
+    
+    **Important note:**
+    NetworkImage requires an internet connection to load. Always have fallback
+    AssetImage alternatives for offline scenarios!
+    """
     def __init__(self, url: str):
         # TODO: Add URL validation if needed
         self.src = url
@@ -2001,11 +2656,91 @@ class NetworkImage:
     def __repr__(self):
         return f"NetworkImage('{self.src}')"
 
-# --- Image Widget Refactored ---
+# =============================================================================
+# IMAGE WIDGET - The "Picture Display" for Showing Photos and Graphics
+# =============================================================================
+
 class Image(Widget):
     """
-    Displays an image from an AssetImage or NetworkImage source.
-    Compatible with the reconciliation rendering system.
+    The "picture frame" of your app - displays images from files or the internet!
+    
+    **What is Image widget?**
+    Think of Image as a "smart picture frame" that can display photos, logos, icons,
+    or any visual content. It's like having a digital photo frame that can show
+    images from your photo album (assets) or from the internet.
+    
+    **Real-world analogy:**
+    Image widget is like a picture frame on your wall:
+    - You can put different photos in it (change the image source)
+    - You can resize the frame (width/height)
+    - You can choose how the photo fits (crop, stretch, contain)
+    - You can add rounded corners (borderRadius)
+    - You can position the photo within the frame (alignment)
+    
+    **When to use Image:**
+    - Displaying user profile pictures
+    - Showing product photos in a store app
+    - App logos and branding
+    - Icons and decorative graphics
+    - Backgrounds and visual elements
+    - Photos from galleries or cameras
+    
+    **Examples:**
+    ```python
+    # Simple app logo
+    Image(
+        image=AssetImage("logo.png"),
+        width=200,
+        height=100
+    )
+    
+    # User profile picture with rounded corners
+    Image(
+        image=NetworkImage(user.avatar_url),
+        width=60,
+        height=60,
+        fit=ImageFit.COVER,  # Crop to fill the frame
+        borderRadius=BorderRadius.circular(30)  # Perfect circle
+    )
+    
+    # Product photo that scales nicely
+    Image(
+        image=NetworkImage(product.image_url),
+        width="100%",  # Fill available width
+        height=200,
+        fit=ImageFit.CONTAIN,  # Show entire image without cropping
+        alignment="center"
+    )
+    
+    # Background image
+    Image(
+        image=AssetImage("backgrounds/gradient.jpg"),
+        width="100%",
+        height="100vh",  # Full screen height
+        fit=ImageFit.COVER  # Fill entire area, crop if needed
+    )
+    ```
+    
+    **Key parameters:**
+    - **image**: The image source (AssetImage for local files, NetworkImage for web images)
+    - **width**: How wide the image should be (pixels or percentages like "100%")
+    - **height**: How tall the image should be
+    - **fit**: How the image should fit in the space:
+      * CONTAIN: Show entire image, add letterboxes if needed
+      * COVER: Fill entire space, crop if needed
+      * FILL: Stretch image to fit exactly (may distort)
+      * FIT_WIDTH: Scale to fit width, height adjusts
+      * FIT_HEIGHT: Scale to fit height, width adjusts
+    - **alignment**: Where to position the image ("center", "top", "bottom left", etc.)
+    - **borderRadius**: Rounded corners for the image
+    
+    **Image fit guide:**
+    - Use CONTAIN for logos (never crop, always show full image)
+    - Use COVER for backgrounds and avatars (fill space, cropping is OK)
+    - Use FILL only when aspect ratio doesn't matter
+    
+    **Performance tip:**
+    Always specify width and height to prevent layout jumps while images load!
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -2119,11 +2854,98 @@ class Image(Widget):
 
 
 
+# =============================================================================
+# ICON WIDGET - The "Symbol Display" for Showing Vector Icons
+# =============================================================================
+
 class Icon(Widget):
     """
-    Displays an icon from a font using an IconData object. This widget renders
-    a <span> tag and relies on the browser's font rendering (ligatures)
-    to display the correct symbol.
+    The "symbol display" that shows scalable vector icons - like digital hieroglyphics!
+    
+    **What is Icon widget?**
+    Think of Icon as a "universal symbol display" that can show any icon from a huge
+    library of symbols (like Material Icons). It's like having access to thousands
+    of perfectly designed symbols that scale to any size without getting blurry.
+    
+    **Real-world analogy:**
+    Icon widget is like the symbols on road signs or computer keyboards:
+    - Universally recognizable symbols (home, search, settings, etc.)
+    - Always crisp and clear at any size (vector-based, not pixels)
+    - Convey meaning quickly without words
+    - Consistent styling across your entire app
+    - Take up minimal space but communicate effectively
+    
+    **When to use Icon:**
+    - Navigation buttons (home, back, menu)
+    - Action buttons (search, edit, delete, save)
+    - Status indicators (favorite heart, notification bell)
+    - User interface elements (close X, dropdown arrow)
+    - Decorative elements that enhance usability
+    
+    **Examples:**
+    ```python
+    # Simple icon with default size
+    Icon(Icons.home)
+    
+    # Colored icon with custom size
+    Icon(
+        Icons.favorite,
+        color="red",
+        size=32
+    )
+    
+    # Icon with Material Design 3 variable font features
+    Icon(
+        Icons.settings,
+        size=24,
+        color=Colors.primary,
+        fill=True,          # Filled version of the icon
+        weight=500,         # Medium weight
+        grade=0            # Standard grade
+    )
+    
+    # Icon in a button context
+    IconButton(
+        icon=Icon(Icons.notification, color="blue"),
+        onPressed=show_notifications
+    )
+    ```
+    
+    **Key parameters:**
+    - **icon**: The icon to display (use Icons.name like Icons.home, Icons.search)
+    - **size**: Size in pixels (default: 24)
+    - **color**: Icon color (inherits from parent if not specified)
+    
+    **Advanced Material Design 3 parameters:**
+    - **fill**: True for filled version, False for outlined (default: False)
+    - **weight**: Font weight from 100-700 (default: 400)
+    - **grade**: Visual emphasis from -50 to 200 (default: 0)
+    - **optical_size**: Optimizes for different sizes (default: matches size)
+    
+    **Material Design 3 Icon Variants:**
+    ```python
+    # Outlined (default)
+    Icon(Icons.favorite)  # ♡
+    
+    # Filled
+    Icon(Icons.favorite, fill=True)  # ♥
+    
+    # Different weights
+    Icon(Icons.home, weight=300)  # Lighter
+    Icon(Icons.home, weight=700)  # Bolder
+    ```
+    
+    **Icon library:**
+    PyThra includes thousands of Material Design icons. Common ones:
+    - Icons.home, Icons.search, Icons.menu
+    - Icons.favorite, Icons.star, Icons.thumb_up  
+    - Icons.edit, Icons.delete, Icons.add
+    - Icons.arrow_back, Icons.arrow_forward
+    - Icons.person, Icons.settings, Icons.help
+    
+    **Performance tip:**
+    Icons are vector-based and super lightweight - use them liberally!
+    They're much more efficient than image files for simple symbols.
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -2227,12 +3049,70 @@ class Icon(Widget):
 # knows that an Icon should be a <span>.
 # A good way is to call the widget's own static method if it exists.
 
-# In pythra/widgets.py
 
+# =============================================================================
+# VIRTUAL LIST VIEW STATE (Internal Class)
+# =============================================================================
 class _VirtualListViewState(State):
     """
-    A high-performance scrollable list that renders only the visible items.
-    Powered by SimpleBar for consistent scrolling and styling.
+    The internal state management and logic for the `VirtualListView` widget.
+
+    **Role of this class:**
+    This class is the "engine" behind `VirtualListView`. It is not used directly by developers
+    building an application. Instead, it handles the complex stateful logic required for
+    virtualization to work, including:
+    
+    1.  **Lifecycle Management**: Sets up necessary components when the list is created
+        (`initState`) and cleans up when it's removed (`dispose`).
+    2.  **JavaScript Interop**: Manages the bridge between the Python backend and the
+        JavaScript virtualization library running in the browser.
+    3.  **On-Demand Item Building**: Responds to requests from the JavaScript frontend to build
+        the HTML and CSS for items as they are about to be scrolled into view.
+    4.  **Controller Integration**: Connects to the `VirtualListController` so that external
+        code can command the list to refresh.
+    5.  **Widget Construction**: Builds the final `Scrollbar` widget that hosts the JavaScript
+        virtualization component.
+    
+    **Key Methods and Logic Flow:**
+
+    - **`initState()`**:
+        - Runs once when the `VirtualListView` is first added to the widget tree.
+        - **Registers a callback** (`build_item_for_js`) with the API. This gives the
+          JavaScript frontend a named function it can call to request new list items.
+        - **Pre-renders initial items**: To ensure the list appears instantly without a
+          flicker, it builds the first screen's worth of items ahead of time.
+        - **Prepares `_virtualization_options`**: Bundles all the necessary data
+          (total item count, item size, builder name, initial items) into a dictionary
+          that will be passed to the JavaScript component.
+
+    - **`build_item_for_js(index)`**:
+        - This is the core on-demand building function. It is **called from JavaScript**
+          whenever the virtualizer needs the content for a specific `index`.
+        - It takes the requested `index`, calls the developer's `itemBuilder` function to
+          get the corresponding widget, and performs a partial reconciliation on it.
+        - This reconciliation generates the `html`, `css`, and `callbacks` for that single
+          item without affecting the main application state.
+        - It returns this payload in a dictionary, which the JavaScript side then injects
+          into the DOM.
+
+    - **`refresh_js(indices)`**:
+        - This method is the Python-to-JavaScript command channel.
+        - It is called by the `VirtualListController` when a developer wants to update the list.
+        - It constructs and executes a snippet of JavaScript that tells the frontend
+          virtualization instance to either refresh all its items or just a specific set of
+          items, triggering new calls to `build_item_for_js` as needed.
+
+    - **`build()`**:
+        - This standard state method is called during every rebuild.
+        - Its only job is to construct the visible part of the widget tree: a `Scrollbar`
+          widget configured with the `virtualization_options` that were prepared in `initState`.
+          This effectively hands off the rendering of the list's content to the JavaScript
+          virtualizer.
+    
+    - **`dispose()`**:
+        - Runs when the `VirtualListView` is permanently removed.
+        - It detaches from the `VirtualListController` to prevent memory leaks and dangling
+          references.
     """
     def __init__(self):
         """
@@ -2361,9 +3241,81 @@ class _VirtualListViewState(State):
             virtualization_options=self._virtualization_options
         )
 
+# =============================================================================
+# VIRTUAL LIST VIEW - The High-Performance List for "Infinite" Scrolling
+# =============================================================================
 
-# Modify the main widget class
 class VirtualListView(StatefulWidget):
+    """
+    A highly-performant, scrollable list that only renders the items currently
+    visible on screen. It is the essential choice for lists containing hundreds,
+    thousands, or even millions of items.
+
+    **What is VirtualListView?**
+    VirtualListView is a "smart" list. Instead of creating all of its item widgets at once
+    (which would crash the browser for large lists), it only builds and renders the handful
+    of items that can fit in the visible area. As the user scrolls, it efficiently recycles
+    the containers, swapping content in and out on the fly.
+
+    **Real-world analogy:**
+    Imagine a smart, infinitely long bookshelf viewer. Instead of trying to load every book
+    in the library at once, the viewer only renders the books on the single shelf you are
+    currently looking at. As you move the viewer up or down (scroll), it instantly loads
+    the next shelf's books while unloading the ones that are no longer visible. This allows
+    you to browse a massive library with instant performance.
+
+    **When to use VirtualListView:**
+    - **ALWAYS** for long lists (more than 50-100 items).
+    - Displaying large datasets: social media feeds, contact lists, log files, financial data tables.
+    - When a standard `ListView` becomes slow, janky, or consumes too much memory.
+    - Any time you need a smooth "infinite scroll" experience.
+
+    **Key Concepts:**
+    1.  **Virtualization**: The core technique. Only visible items exist in the DOM, keeping the app fast and lightweight.
+    2.  **`itemBuilder`**: A function you provide that acts as a factory. The list calls it on-demand with an `index` to get the widget for that specific item.
+    3.  **`itemExtent`**: The fixed height (for vertical lists) of each item. This is **crucial** for the virtualization logic to calculate which items should be visible and where to position the scrollbar. All items *must* have the same size.
+    4.  **`VirtualListController`**: An object you create to programmatically control the list, such as forcing it to refresh its data.
+
+    **Examples:**
+    ```python
+    # Controller to manage the list
+    list_controller = VirtualListController()
+
+    # The builder function that creates a widget for a given index
+    def user_card_builder(index: int):
+        return ListTile(
+            leading=Icon("person"),
+            title=Text(f"User Number {index + 1}"),
+            subtitle=Text("This is a virtualized list item.")
+        )
+
+    # The VirtualListView widget itself
+    VirtualListView(
+        key=Key("my-user-list"),
+        controller=list_controller,
+        itemCount=10000,          # Total number of items in our dataset
+        itemBuilder=user_card_builder, # The function to build each item
+        itemExtent=72             # The fixed height of each ListTile
+    )
+
+    # Later, to refresh the list after data changes:
+    # list_controller.refresh()
+    ```
+
+    **Key parameters:**
+    - **key**: A **required** unique `Key` to identify this stateful widget.
+    - **controller**: A **required** `VirtualListController` instance to manage the list.
+    - **itemCount**: The total number of items in the list.
+    - **itemBuilder**: A function that takes an `int` (index) and returns a `Widget`.
+    - **itemExtent**: The fixed size (usually height) in pixels of each item.
+    - **theme**: An optional `ScrollbarTheme` for the scrollbar's appearance.
+    - **width**, **height**: The dimensions of the scrollable container.
+
+    **Performance notes:**
+    This is the definitive solution for performance with large lists. Its memory and CPU usage
+    remain flat and low, regardless of whether `itemCount` is 100 or 1,000,000, because it
+    only ever renders a small, constant number of DOM elements.
+    """
     def __init__(self,
                  key: Key,
                  controller: VirtualListController, # <-- Requires a controller
@@ -2390,10 +3342,74 @@ class VirtualListView(StatefulWidget):
         return _VirtualListViewState()
 
 
+# =============================================================================
+# LIST VIEW - The Simple, Standard Scrollable List
+# =============================================================================
 class ListView(Widget):
     """
-    A scrollable list of widgets arranged linearly.
-    Compatible with the reconciliation rendering system.
+    A standard scrollable list that arranges its children linearly and renders
+    them all at once.
+
+    **What is ListView?**
+    ListView is the fundamental widget for displaying a scrollable collection of items.
+    You provide it with a complete `List` of child widgets, and it lays them out in a
+    column or row, adding a scrollbar if they overflow the container's bounds.
+    It's simple and effective for a limited number of items.
+
+    **Real-world analogy:**
+    Think of a physical scroll of parchment. The entire text (all the child widgets) is
+    written on the scroll from top to bottom. To see different parts, you simply roll it
+    up or down. The whole content is always present, just not all visible at once.
+
+    **When to use ListView:**
+    - For lists with a **small, manageable number of items** (e.g., less than ~50).
+    - Settings menus, navigation drawers, or short lists of options.
+    - When items have variable heights, which is difficult for `VirtualListView`.
+    - When the simplicity of passing a `children` list is preferred over an `itemBuilder`.
+
+    **When NOT to use ListView:**
+    - For long lists. It renders **all** children into the DOM immediately, which will
+      cause severe performance degradation and high memory usage as the list grows.
+      **Use `VirtualListView` for large datasets.**
+
+    **Examples:**
+    ```python
+    # A simple vertical list of settings
+    ListView(
+        padding=EdgeInsets.symmetric(vertical=8),
+        children=[
+            ListTile(title=Text("Wi-Fi"), leading=Icon("wifi")),
+            ListTile(title=Text("Bluetooth"), leading=Icon("bluetooth")),
+            ListTile(title=Text("Display"), leading=Icon("desktop_windows")),
+        ]
+    )
+
+    # A horizontal list of cards
+    Container(
+        height=150,
+        child=ListView(
+            scrollDirection=Axis.HORIZONTAL,
+            children=[
+                Card(child=Text("Item 1"), width=100),
+                Card(child=Text("Item 2"), width=100),
+                Card(child=Text("Item 3"), width=100),
+            ]
+        )
+    )
+    ```
+
+    **Key parameters:**
+    - **children**: A `List` of `Widget`s to display in the scrollable area.
+    - **padding**: `EdgeInsets` to create space between the container's edge and the content.
+    - **scrollDirection**: `Axis.VERTICAL` (default) or `Axis.HORIZONTAL`.
+    - **reverse**: (bool) If `True`, scrolls from bottom-to-top or right-to-left.
+    - **shrinkWrap**: (bool) If `True`, the list's size will be determined by its content. If `False` (default), it will expand to fill the available space provided by its parent.
+
+    **Performance notes:**
+    `ListView` is very efficient for small lists. However, its performance scales linearly
+    with the number of children. For lists of more than a few dozen items, the cost of
+    building, laying out, and painting every widget can lead to a slow UI.
+    **Always profile and switch to `VirtualListView` if performance suffers.**
     """
     shared_styles: Dict[Tuple, str] = {} # Class variable for shared CSS
 
@@ -2548,10 +3564,74 @@ class ListView(Widget):
 
     # Removed instance methods: to_html(), to_css()
 
+
+# =============================================================================
+# GRID VIEW - The Scrollable Grid for Photo Galleries, Products, and More
+# =============================================================================
 class GridView(Widget):
-    """
-    A scrollable, 2D array of widgets.
-    Compatible with the reconciliation rendering system.
+    """"
+    A scrollable, 2D array of widgets arranged in a grid layout. Ideal for
+    presenting items of a similar type, like images or cards.
+
+    **What is GridView?**
+    `GridView` is a widget that arranges its children in a scrollable two-dimensional grid.
+    You specify how many columns (or rows) you want, and it automatically handles the
+    layout, spacing, and aspect ratio of the items to create a clean, organized grid.
+
+    **Real-world analogy:**
+    It's like a perfectly organized photo album or a collector's display case for trading cards.
+    Each item has its own designated slot, arranged in neat rows and columns. If you have
+    more items than can fit on one page, you can simply scroll to see the rest, but the
+    organized structure remains consistent.
+
+    **When to use GridView:**
+    - Photo galleries or image pickers.
+    - Product listings in an e-commerce app.
+    - Dashboards with multiple stat cards.
+    - App launchers or menu selections with icons.
+    - Any time you need to display a collection of items in a uniform grid.
+
+    **Examples:**
+    ```python
+    # 1. A simple 3-column photo gallery
+    GridView(
+        crossAxisCount=3,      # 3 columns
+        mainAxisSpacing=8,     # 8px vertical space between items
+        crossAxisSpacing=8,    # 8px horizontal space between items
+        padding=EdgeInsets.all(8),
+        children=[
+            Image(src="photo1.jpg"),
+            Image(src="photo2.jpg"),
+            Image(src="photo3.jpg"),
+            Image(src="photo4.jpg"),
+            Image(src="photo5.jpg"),
+            Image(src="photo6.jpg"),
+        ]
+    )
+
+    # 2. A grid of square product cards with a 2-column layout
+    GridView(
+        crossAxisCount=2,
+        mainAxisSpacing=16,
+        crossAxisSpacing=16,
+        childAspectRatio=1.0, # Ensures items are perfect squares
+        children=[
+            ProductCard(product=p) for p in my_products
+        ]
+    )
+    ```
+
+    **Key parameters:**
+    - **children**: A `List` of `Widget`s to display in the grid.
+    - **crossAxisCount**: The number of items in the cross-axis. For a vertical-scrolling grid, this is the number of columns. For a horizontal-scrolling grid, this is the number of rows.
+    - **mainAxisSpacing**: The spacing between items along the direction of scrolling (e.g., vertical gap).
+    - **crossAxisSpacing**: The spacing between items perpendicular to the direction of scrolling (e.g., horizontal gap).
+    - **childAspectRatio**: The ratio of the cross-axis size to the main-axis size for each child. For example, `1.0` creates squares, `16/9` creates widescreen rectangles.
+    - **padding**: `EdgeInsets` to create space around the entire grid.
+    - **scrollDirection**: `Axis.VERTICAL` (default) or `Axis.HORIZONTAL`.
+
+    **Performance notes:**
+    Like `ListView`, the standard `GridView` renders all of its children at once. This is perfectly fine for dozens of items, but it can cause performance issues with hundreds or thousands of items. For very large grids, a virtualized version (`VirtualGridView`, if available) would be necessary to maintain a smooth user experience.
     """
     shared_styles: Dict[Tuple, str] = {} # Class variable for shared CSS
 
@@ -2748,12 +3828,71 @@ class GridView(Widget):
 
     # Removed instance methods: to_html(), to_css()
 
-# --- Stack Refactored ---
+# =============================================================================
+# STACK - The Widget for Layering and Positioning
+# =============================================================================
 class Stack(Widget):
     """
-    A widget that positions its children relative to the edges of its box,
-    often overlapping them. Establishes a positioning context.
-    Compatible with the reconciliation rendering system.
+    A widget that layers its children on top of each other, allowing for
+    complex layouts with overlapping elements. It creates a positioning context
+    for its descendants.
+
+    **What is Stack?**
+    `Stack` allows you to place widgets on top of one another, like stacking papers on a desk.
+    By default, they are all aligned to the top-left corner, but you can use the `Positioned`
+    widget on any child to precisely place it relative to the Stack's edges (top, right,
+    bottom, left).
+
+    **Real-world analogy:**
+    It's like a bulletin board or a collage. You start with the board (the `Stack`). Then you
+    can pin a large background image that fills the whole board. On top of that, you can pin a
+    note in the top-right corner, a photo in the center, and a title at the bottom. Each item
+    is placed independently on the z-axis (depth).
+
+    **When to use Stack:**
+    - Placing a text label or badge over an icon (e.g., a notification count).
+    - Displaying text or buttons over a background image.
+    - Creating custom UI elements that involve overlapping shapes or controls.
+    - Building complex layouts where elements need to be anchored to different corners of a container.
+
+    **Examples:**
+    ```python
+    # 1. A simple badge on an icon
+    Stack(
+        children=[
+            Icon("mail", size=32),
+            Positioned(
+                top=0,
+                right=0,
+                child=Container(
+                    padding=EdgeInsets.all(2),
+                    decoration=BoxDecoration(color=Colors.red, shape=BoxShape.CIRCLE),
+                    child=Text("3", style=TextStyle(color=Colors.white, fontSize=10))
+                )
+            )
+        ]
+    )
+
+    # 2. Text centered over a background image
+    Stack(
+        fit=StackFit.expand, # Makes Stack fill its parent
+        children=[
+            Image(src="background.jpg", fit=BoxFit.COVER),
+            Center(
+                child=Text("Welcome!", style=TextStyle(fontSize=48, color=Colors.white))
+            )
+        ]
+    )
+    ```
+
+    **Key parameters:**
+    - **children**: A `List` of `Widget`s to layer. The last widget in the list is the topmost one.
+    - **alignment**: How to align children that are *not* wrapped in a `Positioned` widget. Defaults to top-left.
+    - **fit**: How the `Stack` should size itself. `StackFit.loose` (default) makes it size to its non-positioned children. `StackFit.expand` makes it expand to fill its parent.
+    - **clipBehavior**: Determines if children that extend beyond the `Stack`'s bounds are clipped (hidden) or visible. `HARD_EDGE` (default) will clip them.
+
+    **Using with `Positioned`:**
+    The true power of `Stack` is unlocked with the `Positioned` widget. Wrap any child of a `Stack` in `Positioned` and provide properties like `top`, `bottom`, `left`, or `right` to anchor it to the stack's edges.
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -2875,11 +4014,79 @@ class Stack(Widget):
     # Removed instance methods: to_html(), to_css()
 
 
-# --- Positioned Refactored ---
+# =============================================================================
+# POSITIONED - The Widget That Pins a Child Within a Stack
+# =============================================================================
 class Positioned(Widget):
     """
-    Controls the position of a child within a Stack.
-    Applies absolute positioning styles. Not a shared style component.
+    Controls the position of a child widget within a `Stack`. It only works
+    when it is a direct descendant of a `Stack`.
+
+    **What is Positioned?**
+    `Positioned` is a special wrapper widget that doesn't draw anything itself. Instead,
+    it tells its parent `Stack` exactly where to place its single child. You can "pin" the
+    child to any combination of the `Stack`'s edges (top, right, bottom, left) or give it a
+    specific width and height.
+
+    **Real-world analogy:**
+    Think of the `Stack` as a bulletin board. The `Positioned` widget is the thumbtack.
+    You use the thumbtack (`Positioned`) to pin your item (`child`) to a specific spot on the
+    board, for example, "0 inches from the top and 0 inches from the right" to place it
+    in the top-right corner. Without a `Positioned` wrapper, children are just piled up at
+    the `Stack`'s default alignment point (usually the top-left).
+
+    **When to use Positioned:**
+    - **Exclusively** as a direct child of a `Stack` widget.
+    - To precisely anchor a widget to the corners or edges of a container.
+    - To stretch a widget to fill the `Stack` by setting opposing anchors (e.g., `left=0`, `right=0`).
+    - To create overlapping UI elements like badges, floating buttons, or labels on top of images.
+
+    **Examples:**
+    ```python
+    Stack(
+        children=[
+            # A background container
+            Container(color=Colors.blue_grey, width=200, height=200),
+
+            # Pinned to the top-left corner
+            Positioned(
+                top=10,
+                left=10,
+                child=Text("Top Left")
+            ),
+
+            # Pinned to the bottom-right corner
+            Positioned(
+                bottom=10,
+                right=10,
+                child=Text("Bottom Right")
+            ),
+            
+            # Stretched horizontally, centered vertically
+            Positioned(
+                left=20,
+                right=20,
+                top=90, # (200 / 2) - (20 / 2) -> center of stack - half of height
+                height=20,
+                child=Container(color=Colors.amber, child=Center(child=Text("Stretched")))
+            )
+        ]
+    )
+    ```
+
+    **Key parameters:**
+    - **child**: The single `Widget` to be positioned. This is required.
+    - **top**: The distance in pixels from the top edge of the `Stack`.
+    - **right**: The distance in pixels from the right edge of the `Stack`.
+    - **bottom**: The distance in pixels from the bottom edge of the `Stack`.
+    - **left**: The distance in pixels from the left edge of the `Stack`.
+    - **width**: The explicit width of the child widget.
+    - **height**: The explicit height of the child widget.
+
+    **Layout behavior:**
+    - You can combine anchors. For instance, setting `left`, `top`, and `right` will determine the widget's position and its width implicitly.
+    - If you provide opposing anchors (e.g., `top` and `bottom`) along with a `height`, the `height` takes precedence.
+    - If you provide opposing anchors without a size (e.g., `left=10`, `right=10`), the child will stretch to fill the space between those anchors.
     """
     def __init__(self,
                  child: Widget, # Requires exactly one child
@@ -2936,10 +4143,98 @@ class Positioned(Widget):
 # --- Expanded Refactored ---
 # In pythra/widgets.py
 
+# =============================================================================
+# EXPANDED WIDGET - The "Space Filler" for Flexible Layout Children
+# =============================================================================
+
 class Expanded(Widget):
     """
-    A widget that expands a child of a Column or Row to fill the available
-    space along the main axis.
+    The "greedy space grabber" that makes its child take up all available space in a Row or Column!
+    
+    **What is Expanded?**
+    Think of Expanded as a "space-hungry wrapper" that tells its child widget:
+    "take up as much space as you can get!" It's like having a balloon that inflates
+    to fill all available space in a container.
+    
+    **Real-world analogy:**
+    Expanded is like the adjustable shelves in a bookcase:
+    - You have a fixed bookcase (Row or Column)
+    - Some shelves are fixed size (regular widgets)
+    - Some shelves expand to use leftover space (Expanded widgets)
+    - If you have multiple expanding shelves, they share the space fairly
+    
+    **When to use Expanded:**
+    - Making one widget take up remaining space in a Row/Column
+    - Creating responsive layouts that adapt to screen size
+    - Distributing space proportionally between multiple widgets
+    - Making text or content areas flexible
+    
+    **Common use cases:**
+    - Search bar that takes up remaining width in a header
+    - Content area that fills space between header and footer
+    - Flexible columns in a data table
+    - Responsive button groups
+    
+    **Examples:**
+    ```python
+    # Make middle widget take up remaining space
+    Row(children=[
+        Icon(Icons.menu),           # Fixed size
+        Expanded(                   # Takes remaining space
+            child=TextField("Search...")
+        ),
+        Icon(Icons.search)          # Fixed size
+    ])
+    
+    # Distribute space proportionally between multiple widgets
+    Row(children=[
+        Expanded(                   # Gets 1/3 of available space
+            flex=1,
+            child=Container(color="red", child=Text("1"))
+        ),
+        Expanded(                   # Gets 2/3 of available space
+            flex=2, 
+            child=Container(color="blue", child=Text("2"))
+        )
+    ])
+    
+    # Content that fills vertical space
+    Column(children=[
+        Text("Header"),             # Fixed height
+        Expanded(                   # Fills remaining height
+            child=SingleChildScrollView(
+                child=Text("Long content...")
+            )
+        ),
+        Text("Footer")              # Fixed height
+    ])
+    
+    # Responsive form layout
+    Row(children=[
+        Expanded(child=TextField("First Name")),
+        SizedBox(width=16),  # Fixed spacing
+        Expanded(child=TextField("Last Name"))
+    ])
+    ```
+    
+    **Key parameters:**
+    - **child**: The widget that will be expanded (required)
+    - **flex**: How much space to take relative to other Expanded widgets (default: 1)
+    
+    **Flex explained:**
+    - flex=1: Takes 1 "unit" of available space
+    - flex=2: Takes 2 "units" of available space
+    - If you have two Expanded widgets with flex=1 each, they split space 50/50
+    - If you have flex=1 and flex=2, they split space 33/67
+    
+    **Important notes:**
+    1. **Only works inside Row/Column**: Expanded must be a direct child of Row or Column
+    2. **Flexible vs Fixed**: Mix Expanded with fixed-size widgets for responsive designs
+    3. **Overflow prevention**: Expanded prevents overflow by making content fit available space
+    4. **Nesting**: You can put Row/Column inside Expanded for complex layouts
+    
+    **Layout tip:**
+    Use Expanded to create layouts that look good on both phones and tablets!
     """
     def __init__(self,
                  child: Widget,
@@ -3018,10 +4313,100 @@ class Spacer(Widget):
 
 
 # --- SizedBox Refactored ---
+# =============================================================================
+# SIZEDBOX WIDGET - The "Invisible Spacer" for Precise Layout Control
+# =============================================================================
+
 class SizedBox(Widget):
     """
-    Creates empty space with a fixed width and/or height.
-    Applies direct size styles. Not a shared style component.
+    The "invisible spacer" that creates precise gaps and spacing in your layouts!
+    
+    **What is SizedBox?**
+    Think of SizedBox as an "invisible box" that takes up exact space without showing anything.
+    It's like using an empty picture frame as a spacer - it reserves space but doesn't
+    display any content. Perfect for creating precise gaps between widgets.
+    
+    **Real-world analogy:**
+    SizedBox is like the spacers used in printing or carpentry:
+    - Invisible to the end user but crucial for proper spacing
+    - Has exact measurements (width and height)
+    - Creates consistent gaps between elements
+    - Helps align things properly
+    
+    **When to use SizedBox:**
+    - Creating fixed spacing between widgets
+    - Adding padding-like space without using Container
+    - Making widgets take up exact dimensions
+    - Creating breathing room in dense layouts
+    - Separating groups of related content
+    
+    **Common use cases:**
+    - Space between buttons in a Row
+    - Vertical spacing between sections in a Column
+    - Fixed-size placeholders
+    - Consistent margins and gaps
+    
+    **Examples:**
+    ```python
+    # Horizontal spacing between buttons
+    Row(children=[
+        ElevatedButton(child=Text("Save"), onPressed=save),
+        SizedBox(width=16),  # 16 pixels of horizontal space
+        TextButton(child=Text("Cancel"), onPressed=cancel)
+    ])
+    
+    # Vertical spacing between form sections
+    Column(children=[
+        Text("Personal Information"),
+        TextField("Name"),
+        TextField("Email"),
+        SizedBox(height=32),  # 32 pixels of vertical space
+        Text("Address"),
+        TextField("Street"),
+        TextField("City")
+    ])
+    
+    # Fixed size placeholder or spacer
+    SizedBox(
+        width=200,
+        height=100  # Empty 200x100 pixel rectangle
+    )
+    
+    # Just width (height adjusts to content)
+    SizedBox(width=300, child=Text("This text is in a 300px wide box"))
+    
+    # Just height (width adjusts to content)
+    SizedBox(height=50, child=Icon(Icons.star))
+    ```
+    
+    **Key parameters:**
+    - **width**: Fixed width in pixels (or CSS units like "100%")
+    - **height**: Fixed height in pixels (or CSS units)
+    - **child**: Optional widget to put inside the sized box
+    
+    **Spacing patterns:**
+    ```python
+    # Common spacing values (following 8px grid system)
+    SizedBox(width=8)    # Tiny gap
+    SizedBox(width=16)   # Small gap
+    SizedBox(width=24)   # Medium gap
+    SizedBox(width=32)   # Large gap
+    SizedBox(width=48)   # Extra large gap
+    ```
+    
+    **SizedBox vs Container vs Padding:**
+    - **SizedBox**: Just creates space, no styling
+    - **Container**: Can create space AND style (background, borders, etc.)
+    - **Padding**: Adds space around a widget's content
+    
+    **When to use each:**
+    - Use SizedBox for simple spacing between widgets
+    - Use Container when you need background color or borders
+    - Use Padding when you want space around a widget's content
+    
+    **Performance tip:**
+    SizedBox is very lightweight - use it liberally for spacing!
+    It's more efficient than Container for simple spacing needs.
     """
     # Could potentially use shared styles if many identical sizes are common,
     # but direct styling is often simpler for this widget. Let's stick with direct.
@@ -3057,11 +4442,85 @@ class SizedBox(Widget):
 
     # Removed instance methods: to_html(), widget_id() (use base ID logic)
 
+# =============================================================================
+# APPBAR WIDGET - The "top navigation bar" for Precise Layout Control
+# =============================================================================
+
 class AppBar(Widget):
     """
-    A Material Design app bar, consisting of a toolbar and potentially other
-    widgets like a TabBar and FlexibleSpaceBar.
-    Compatible with the reconciliation rendering system.
+    The "top navigation bar" of your app — a horizontal bar at the top that
+    typically contains a leading icon (like a back button or menu), a title,
+    and optional action buttons (such as search, share, settings). It can also
+    host an additional bottom section (like a TabBar).
+
+    What is AppBar?
+    Think of AppBar as the app's header. It anchors navigation, branding (title),
+    and common actions in a predictable place at the top of the screen.
+
+    Real-world analogy:
+    - Like the title bar of a desktop application window that shows the app name,
+      a back button, and a few quick actions on the right.
+
+    When to use AppBar:
+    - On most app screens to show context (page title) and quick actions
+    - As a place to include a navigation (menu) button or back button
+    - To host a TabBar or other content in the "bottom" area
+
+    Typical layout structure:
+    [ leading ]  [            title            ]  [ actions ... ]
+    [                    bottom (optional)                     ]
+
+    Key parameters:
+    - leading: Optional widget placed at the far left (e.g., IconButton for menu/back)
+    - title: The central label or any widget representing the page title
+    - actions: List of widgets aligned to the right (e.g., IconButtons)
+    - bottom: Optional widget displayed below the toolbar row (e.g., TabBar)
+    - backgroundColor: AppBar background color (theme surface/primary is common)
+    - foregroundColor: Default text/icon color used inside the AppBar
+    - elevation: Adds shadow for depth; higher values appear more elevated
+    - shadowColor: Color of the elevation shadow
+    - centerTitle: If True, centers the title; otherwise it aligns left by default
+    - titleSpacing: Horizontal padding surrounding the title
+    - toolbarHeight: Height of the main toolbar row (commonly around 56px)
+    - leadingWidth: Custom width to reserve for the leading area
+    - pinned: If True, uses sticky positioning so it remains visible while scrolling
+
+    Examples:
+    Basic app bar with a title
+    ```python
+    AppBar(
+        title=Text("Home"),
+    )
+    ```
+
+    App bar with a menu button, centered title, and actions
+    ```python
+    AppBar(
+        leading=IconButton(icon=Icon("menu"), onPressed=open_drawer),
+        title=Text("Dashboard"),
+        centerTitle=True,
+        actions=[
+            IconButton(icon=Icon("search"), onPressed=do_search),
+            IconButton(icon=Icon("more_vert"), onPressed=open_menu),
+        ],
+    )
+    ```
+
+    App bar with a bottom TabBar
+    ```python
+    AppBar(
+        title=Text("Library"),
+        bottom=TabBar(tabs=[Text("Books"), Text("Authors"), Text("Genres")])
+    )
+    ```
+
+    Notes and tips:
+    1) Keep titles short to avoid truncation; AppBar automatically ellipsizes long text
+    2) Use pinned=True for layouts with long, scrollable bodies so the AppBar stays in view
+    3) Prefer consistent leading actions (e.g., back vs menu) for better UX
+    4) The Reconciler adds internal wrapper elements like .appbar-toolbar-row and
+       slot wrappers like .appbar-leading, .appbar-title, .appbar-actions, .appbar-bottom
+       which are styled by the generated CSS for predictable layout.
     """
     shared_styles: Dict[Tuple, str] = {} # Class variable for shared CSS
 
@@ -3238,11 +4697,58 @@ class AppBar(Widget):
 
     # Removed instance methods: to_html(), to_css()
 
-# --- BottomNavigationBarItem Refactored ---
+# =============================================================================
+# BOTTOM NAVIGATION BAR ITEM - A Single "Tab" in the Bottom Navigation Bar
+# =============================================================================
 class BottomNavigationBarItem(Widget):
     """
-    Represents an item (icon and label) within a BottomNavigationBar.
-    Receives its selected state and styling information from the parent.
+    Represents the configuration for a single item (an icon and a label) within a
+    `BottomNavigationBar`. This widget is not meant to be used on its own.
+
+    **What is BottomNavigationBarItem?**
+    Think of this widget not as a visual component you place anywhere, but as a "blueprint"
+    or a data object. You create a list of these blueprints to tell a `BottomNavigationBar`
+    what its tabs should look like and what they should contain. The parent `BottomNavigationBar`
+    is responsible for actually building the visual item and managing its state (e.g., whether it's selected).
+
+    **Real-world analogy:**
+    It's like a tab on a manila file folder. The tab itself just holds a label ("Invoices", "Clients").
+    It only becomes a functional, clickable navigation element when it's attached to the folder and
+    placed inside the file cabinet (the `BottomNavigationBar`). You define the tab's content, but
+    the cabinet handles its position and appearance.
+
+    **When to use BottomNavigationBarItem:**
+    - **Exclusively** inside the `items` list when creating a `BottomNavigationBar`.
+    - To define the icon and label for each top-level destination in your app.
+
+    **Examples:**
+    ```python
+    # Note: This is how you define an item.
+    # You would then place this object inside the `items` list of a BottomNavigationBar.
+
+    # An item for a "Home" screen
+    BottomNavigationBarItem(
+        icon=Icon("home"),
+        label=Text("Home")
+    )
+
+    # An item for a "Profile" screen
+    BottomNavigationBarItem(
+        icon=Icon("person"),
+        label=Text("Profile")
+    )
+    ```
+
+    **Key parameters (What you should provide):**
+    - **icon**: The `Icon` widget to display. This is required.
+    - **label**: The `Text` widget to display below the icon.
+    - **key**: An optional `Key` for reconciliation if the items might be reordered.
+
+    **Important Note on Styling and State:**
+    You do **not** manually set properties like `selected`, `selectedColor`, or `unselectedColor`.
+    The parent `BottomNavigationBar` widget automatically controls these properties based on its
+    own `currentIndex` and styling parameters. It injects the correct state and styles into
+    each item during the build process, ensuring a consistent and centrally managed look and feel.
     """
     # No shared styles needed if styling is mainly based on parent context + selected state
     # But we might add classes for structure: e.g., 'bnb-item', 'bnb-item-icon', 'bnb-item-label'
@@ -3399,11 +4905,76 @@ class BottomNavigationBarItem(Widget):
     # Removed instance methods: to_html()
 
 
-# --- BottomNavigationBar Refactored ---
+# =============================================================================
+# BOTTOM NAVIGATION BAR - The Main Navigation Hub at the Bottom of the Screen
+# =============================================================================
 class BottomNavigationBar(Widget):
     """
-    Displays navigation items at the bottom of the screen.
-    Compatible with the reconciliation rendering system.
+    A material design navigation bar that is displayed at the bottom of an app,
+    providing navigation between top-level views.
+
+    **What is BottomNavigationBar?**
+    This is the persistent bar at the bottom of the screen that allows users to
+    switch between a small number of primary destinations in an app (typically 3-5).
+    It is stateful; it needs to know which item is currently selected (`currentIndex`)
+    and needs a way to report back when a new item is tapped (`onTap`).
+
+    **Real-world analogy:**
+    It's like the main dashboard controls or gear shift in a car (Park, Drive, Neutral, Reverse).
+    It's always visible, easily accessible, and lets you switch between the fundamental
+    operating modes of the vehicle. You can only be in one gear at a time, and selecting
+    a new one changes the entire state of the car.
+
+    **When to use BottomNavigationBar:**
+    - For top-level navigation between the main sections of your application.
+    - When you have between three and five primary destinations.
+    - To provide persistent, ergonomic navigation on mobile devices.
+
+    **State Management Pattern:**
+    The `BottomNavigationBar` is a "controlled component." Its parent `StatefulWidget` must:
+    1.  Hold the current index in its own state (e.g., `self.current_index = 0`).
+    2.  Pass this index to the `BottomNavigationBar(currentIndex=self.current_index)`.
+    3.  Provide an `onTap` callback function that updates the state (e.g., `self.setState({"current_index": new_index})`).
+
+    **Examples:**
+    ```python
+    # This would typically be inside the build method of a StatefulWidget
+    class MyMainScreen(StatefulWidget):
+        def createState(self):
+            return _MyMainScreenState()
+
+    class _MyMainScreenState(State):
+        def __init__(self):
+            super().__init__()
+            self.current_index = 0 # 1. Hold state
+
+        def on_item_tapped(self, index):
+            self.setState({"current_index": index}) # 3. Update state
+
+        def build(self):
+            return Scaffold(
+                # ... body changes based on self.current_index
+                bottomNavigationBar=BottomNavigationBar(
+                    currentIndex=self.current_index, # 2. Pass state
+                    onTap=self.on_item_tapped,
+                    items=[
+                        BottomNavigationBarItem(icon=Icon("home"), label=Text("Home")),
+                        BottomNavigationBarItem(icon=Icon("search"), label=Text("Search")),
+                        BottomNavigationBarItem(icon=Icon("person"), label=Text("Profile")),
+                    ]
+                )
+            )
+    ```
+
+    **Key parameters:**
+    - **items**: A `List` of `BottomNavigationBarItem` objects that define the content of each tab.
+    - **currentIndex**: The index of the item that is currently selected.
+    - **onTap**: A callback function that is invoked with the index of the tapped item.
+    - **backgroundColor**: The background color of the navigation bar.
+    - **selectedItemColor**: The color of the icon and label of the selected item.
+    - **unselectedItemColor**: The color of the icon and label of the unselected items.
+    - **elevation**: The z-axis elevation of the bar, which controls its shadow.
+    - **height**: The height of the navigation bar container.
     """
     shared_styles: Dict[Tuple, str] = {}
 
@@ -3563,11 +5134,78 @@ class BottomNavigationBar(Widget):
 
     # Removed instance methods: to_html(), to_css()
 
+
+# =============================================================================
+# SCAFFOLD WIDGET - The "page layout frame" for Precise Layout Control
+# =============================================================================
+
 class Scaffold(Widget):
     """
-    Implements the basic visual layout structure based on Material Design.
-    Manages AppBar, Body, Drawers, BottomNavigationBar, FAB, etc.
-    Compatible with the reconciliation rendering system.
+    The "page layout frame" for your screen. Scaffold organizes the major
+    structural regions of a Material-style app page and makes them work
+    together: AppBar at the top, a scrollable Body in the middle, an optional
+    BottomNavigationBar at the bottom, and overlay elements like Drawers,
+    FloatingActionButtons (FAB), SnackBars, and BottomSheets.
+
+    What is Scaffold?
+    Think of Scaffold as the building's framework: it defines where the
+    roof (AppBar), main room (Body), and floor (BottomNavigationBar) go, and
+    provides hooks for doors (Drawers) and quick actions (FAB).
+
+    Real-world analogy:
+    - A house layout: a fixed roof (AppBar), a main living area (Body),
+      a hallway at the bottom (BottomNavigationBar), and sliding doors (Drawers)
+      that can overlay the space when opened.
+
+    Key content slots (all optional unless noted):
+    - appBar: Top bar for navigation, title, and actions (use AppBar)
+    - body: The primary content area (scrollable by default)
+    - floatingActionButton: Prominent action button overlayed on the body
+    - bottomNavigationBar: Bottom navigation or persistent control bar
+    - drawer / endDrawer: Left/right slide-in panels for navigation or utilities
+    - bottomSheet: Persistent or modal panel anchored to the bottom
+    - persistentFooterButtons: Buttons that remain visible near the bottom
+    - snackBar: Temporary message overlay typically used for feedback
+
+    Styling and behavior:
+    - backgroundColor: Base background (Material3 Surface role by default)
+    - extendBody: If True, the body can extend behind the bottom navigation
+    - extendBodyBehindAppBar: If True, the body can extend behind the app bar
+    - drawerScrimColor: The translucent overlay color shown behind an open drawer
+
+    Typical usage:
+    ```python
+    Scaffold(
+        appBar=AppBar(title=Text("Home"), pinned=True),
+        body=SingleChildScrollView(
+            child=Column(children=[
+                Text("Welcome!"),
+                SizedBox(height=16),
+                Text("Here is your dashboard."),
+            ])
+        ),
+        floatingActionButton=IconButton(icon=Icon("add"), onPressed=create_item),
+        bottomNavigationBar=BottomNavigationBar(items=[
+            BottomNavigationBarItem(icon=Icon("home"), label=Text("Home")),
+            BottomNavigationBarItem(icon=Icon("search"), label=Text("Search")),
+            BottomNavigationBarItem(icon=Icon("person"), label=Text("Profile")),
+        ]),
+        drawer=Drawer(children=[Text("Item 1"), Text("Item 2")])
+    )
+    ```
+
+    Notes and tips:
+    1) The body area scrolls internally; Scaffold itself uses a CSS grid to
+       maintain a stable header/body/footer layout.
+    2) extendBody and extendBodyBehindAppBar control whether content appears
+       behind the bottom nav or app bar; remember to add padding in your body
+       content or rely on the Scaffold’s automatic padding when not extended.
+    3) Drawers are positioned with smooth transitions and a scrim layer; the
+       scrim color can be tuned with drawerScrimColor.
+    4) The Reconciler creates wrapper elements like .scaffold-appbar,
+       .scaffold-body, .scaffold-bottomnav, .scaffold-drawer-left/right, and
+       .scaffold-scrim which are styled by generated CSS to ensure correct
+       placement and interaction.
     """
     shared_styles: Dict[Tuple, str] = {} # For Scaffold container styles
 
@@ -3769,12 +5407,120 @@ class Scaffold(Widget):
 
 
 
+# =============================================================================
+# TEXTFIELD WIDGET - The "Text Input Box" for User Data Entry
+# =============================================================================
+
 class TextField(Widget):
     """
-    A Material Design-inspired text input field that correctly handles focus
-    during UI rebuilds. It uses a TextEditingController for state management
-
-    and an InputDecoration class for styling.
+    The "text input box" where users can type and edit text - like a digital notepad field!
+    
+    **What is TextField?**
+    Think of TextField as a "smart text box" that users can click on and type into.
+    It's like having a form field on a website, but with beautiful Material Design
+    styling and advanced features like floating labels and error messages.
+    
+    **Real-world analogy:**
+    TextField is like a form you fill out at a doctor's office:
+    - Has a label telling you what to write ("Name:", "Email:", etc.)
+    - Has a box where you write your answer
+    - Shows helpful hints (placeholder text)
+    - Can show error messages if you make a mistake ("Email format invalid")
+    - Can be disabled when you're not allowed to edit
+    - Remembers what you typed even if the page refreshes
+    
+    **When to use TextField:**
+    - User registration forms (name, email, password)
+    - Search boxes and input fields
+    - Settings that users can customize
+    - Comments, messages, and text content
+    - Any place where users need to enter text
+    
+    **Examples:**
+    ```python
+    # Basic text input
+    name_controller = TextEditingController()
+    TextField(
+        key=Key("name_field"),
+        controller=name_controller,
+        decoration=InputDecoration(
+            label="Full Name",
+            hintText="Enter your full name"
+        )
+    )
+    
+    # Email field with validation
+    email_controller = TextEditingController()
+    TextField(
+        key=Key("email_field"),
+        controller=email_controller,
+        decoration=InputDecoration(
+            label="Email Address",
+            hintText="you@example.com",
+            errorText="Please enter a valid email" if not valid_email else None
+        )
+    )
+    
+    # Password field (hidden text)
+    password_controller = TextEditingController()
+    TextField(
+        key=Key("password_field"),
+        controller=password_controller,
+        obscureText=True,  # Hides the text with dots
+        decoration=InputDecoration(
+            label="Password",
+            hintText="At least 8 characters"
+        )
+    )
+    
+    # Disabled field (read-only)
+    TextField(
+        key=Key("readonly_field"),
+        controller=readonly_controller,
+        enabled=False,  # User can't edit
+        decoration=InputDecoration(
+            label="User ID",
+            hintText="Auto-generated"
+        )
+    )
+    ```
+    
+    **Key parameters:**
+    - **key**: REQUIRED! Unique identifier to maintain focus during UI updates
+    - **controller**: TextEditingController that manages the text content and changes
+    - **decoration**: InputDecoration that controls appearance (label, hints, colors, borders)
+    - **obscureText**: True to hide text (for passwords)
+    - **enabled**: False to make it read-only
+    
+    **Controller pattern:**
+    TextField uses a "controller" to manage its content:
+    ```python
+    # Create a controller
+    controller = TextEditingController()
+    
+    # Use it in TextField
+    TextField(key=Key("my_field"), controller=controller, ...)
+    
+    # Read the value
+    user_input = controller.text
+    
+    # Set the value programmatically
+    controller.text = "New value"
+    ```
+    
+    **Input decoration:**
+    Customize appearance with InputDecoration:
+    - **label**: The floating label text
+    - **hintText**: Placeholder text when empty
+    - **errorText**: Error message (makes field red)
+    - **fillColor**: Background color
+    - **border**: Custom border styling
+    
+    **Important notes:**
+    1. **Always use a Key!** This prevents focus loss during UI rebuilds
+    2. **Use controllers** to manage text content and get notified of changes
+    3. **Validate input** and show errors using decoration.errorText
+    4. **Consider accessibility** with proper labels and hints
     """
     shared_styles: Dict[Tuple, str] = {}
 
