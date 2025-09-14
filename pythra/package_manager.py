@@ -408,10 +408,36 @@ class PackageManager:
         """Set weak reference to framework instance"""
         self._framework_ref = weakref.ref(framework)
     
+    def _add_virtual_pythra_package(self):
+        """Add virtual pythra package to satisfy dependencies"""
+        from . import __version__
+        
+        # Create virtual pythra package manifest
+        virtual_manifest_data = {
+            "name": "pythra",
+            "version": getattr(sys.modules.get('pythra', None), '__version__', "0.1.0"),
+            "description": "PyThra Framework Core",
+            "package_type": "utility",
+            "python_modules": [],
+            "tags": ["virtual", "framework"]
+        }
+        
+        virtual_manifest = PackageManifest.from_dict(virtual_manifest_data)
+        virtual_package_info = PackageInfo(
+            manifest=virtual_manifest,
+            path=Path(__file__).parent,  # Point to pythra toolkit directory
+            loaded=True  # Mark as already loaded since it's the framework itself
+        )
+        
+        self._all_packages["pythra"].append(virtual_package_info)
+    
     def discover_all_packages(self, force_refresh: bool = False) -> Dict[str, List[PackageInfo]]:
         """Discover all packages from all sources"""
         if not self._all_packages or force_refresh:
             self._all_packages = defaultdict(list)
+            
+            # Add virtual pythra package to satisfy dependencies
+            self._add_virtual_pythra_package()
             
             for source in self.sources:
                 try:
@@ -481,6 +507,17 @@ class PackageManager:
             if validation_errors:
                 raise PackageLoadError(f"Invalid manifest: {validation_errors}")
             
+            # Create package module in sys.modules to support relative imports
+            package_module = importlib.util.module_from_spec(
+                importlib.util.spec_from_loader(
+                    manifest.name, 
+                    loader=None, 
+                    origin=str(package_info.path)
+                )
+            )
+            package_module.__path__ = [str(package_info.path)]
+            sys.modules[manifest.name] = package_module
+            
             # Load Python modules
             if manifest.python_modules:
                 for module_name in manifest.python_modules:
@@ -489,6 +526,7 @@ class PackageManager:
                         self._load_python_module(package_info, module_name)
                         print(f"✅ Module name: {module_name} Loaded")
                     except Exception as e:
+                        print(f"Failed to load Python module {module_name}: {e}")
                         logger.warning(f"Failed to load Python module {module_name}: {e}")
             
             # Cache JS modules

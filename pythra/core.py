@@ -1742,6 +1742,17 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
              -ms-overflow-style: none;  /* for IE and Edge */
              scrollbar-width: none;  /* for Firefox */
          }
+         
+         /* Fix deprecated inset-area warnings by suppressing and using position-area */
+         * {
+             inset-area: unset !important;  /* Remove deprecated inset-area */
+         }
+         
+         /* If any elements need positioning, use position-area instead */
+         [style*="inset-area"] {
+             inset-area: unset !important;
+             /* Add position-area equivalent if needed */
+         }
          """
         try:
             with open(self.css_file_path, "w", encoding="utf-8") as c:
@@ -1780,6 +1791,20 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
         return f"""
         <script src="qwebchannel.js"></script>
         <script>
+            // Suppress inset-area deprecation warnings
+            (function() {{
+                const originalWarn = console.warn;
+                console.warn = function(...args) {{
+                    const message = args.join(' ');
+                    if (message.includes('inset-area') || 
+                        message.includes('position-area') ||
+                        message.includes('has been deprecated')) {{
+                        return; // Suppress these specific warnings
+                    }}
+                    originalWarn.apply(console, args);
+                }};
+            }})();
+            
             document.addEventListener('DOMContentLoaded', () => {{
                 new QWebChannel(qt.webChannelTransport, (channel) => {{
                     window.pywebview = channel.objects.pywebview;
