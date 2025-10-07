@@ -42,9 +42,7 @@ Column(children=[
 ```
 """
 
-import uuid
-import yaml
-import os
+
 import html
 import json
 from .api import Api
@@ -56,19 +54,9 @@ from .icons import *
 from .icons.base import IconData # Import the new data class
 from .controllers import *
 from .config import Config
-from .events import TapDetails, PanUpdateDetails
 import weakref
 from typing import Any, Dict, List, Optional, Set, Tuple, Union, Callable
 
-
-from .drawing import (
-    PathCommandWidget, 
-    MoveTo, 
-    LineTo,
-    ClosePath,
-    ArcTo,
-) # Import the new command widgets
-#from .drawing import Path
 
 config = Config()
 assets_dir = config.get('assets_dir', 'assets')
@@ -163,7 +151,7 @@ class Container(Widget):
                  clipBehavior: Optional[ClipBehavior] = None,
                  visible: bool = True,
                  gradient: Optional[GradientTheme] = None,
-                 zAxisIndex: int = None): # <-- NEW PARAMETER
+                 zAxisIndex: int = 0): # <-- NEW PARAMETER
 
         super().__init__(key=key, children=[child] if child else [])
 
@@ -200,7 +188,7 @@ class Container(Widget):
         instance_styles = {}
         
         if not self.visible:
-            print("Container self.visible: ", self.visible)
+            # print("Container self.visible: ", self.visible)
             instance_styles['display'] = 'none'
             # instance_styles['visibility'] = 'hidden'
         # else: instance_styles['display'] = 'block'
@@ -554,7 +542,7 @@ class TextButton(Widget):
             # This is one approach, another is during tree traversal in Framework
             if self.onPressed and self.onPressed_id:
                 Api().register_callback(self.onPressed_id, self.onPressed)
-                print(f"[TextButton] Registered callback '{self.onPressed_id}' on style creation.")
+                # print(f"[TextButton] Registered callback '{self.onPressed_id}' on style creation.")
 
         else:
             self.css_class = TextButton.shared_styles[self.style_key]
@@ -802,13 +790,13 @@ class ElevatedButton(Widget):
 
         if self.style_key not in ElevatedButton.shared_styles:
             self.css_class = f"shared-elevatedbutton-{len(ElevatedButton.shared_styles)}"
-            ElevatedButton.shared_styles[self.style_key] = self.css_class
+            ElevatedButton.shared_styles[self.style_key] = self.css_class # type: ignore
             # Register callback - see note in TextButton about timing/location
             if self.onPressed and self.onPressed_id:
                 Api().register_callback(self.onPressed_id, self.onPressed)
-                print(f"[ElevatedButton] Registered callback '{self.onPressed_id}' on style creation.")
+                # print(f"[ElevatedButton] Registered callback '{self.onPressed_id}' on style creation.")
         else:
-            self.css_class = ElevatedButton.shared_styles[self.style_key]
+            self.css_class = ElevatedButton.shared_styles[self.style_key] # type: ignore
 
 
     def render_props(self) -> Dict[str, Any]:
@@ -853,7 +841,7 @@ class ElevatedButton(Widget):
                 'align-items': 'center', # Vertically center icon/text
                 'justify-content': 'center', # Horizontally center icon/text
                 'padding': {EdgeInsets(*padding_tuple).to_css_value()} if padding_tuple else '8px 16px', # Default padding (M3 like)
-                'margin': {EdgeInsets(*margin_tuple).to_css_value()} if margin_tuple else '4px', # Default margin
+                'margin': {EdgeInsets(*margin_tuple).to_css_value()} if margin_tuple else '4px', # Default margin # type: ignore
                 'border': 'none', # Elevated buttons usually have no border by default
                 'border-radius': '20px', # M3 full rounded shape (default for elevated)
                 'background-color': bgColor or '#6200ee', # Use provided or default
@@ -881,7 +869,7 @@ class ElevatedButton(Widget):
                       base_styles_dict['padding'] = padding_obj.to_css_value()
                  except Exception: pass # Ignore if padding_tuple isn't valid
 
-            if margin_tuple:
+            if margin_tuple: # type: ignore
                  # Recreate EdgeInsets or use tuple directly if to_css_value works
                  try:
                       margin_obj = EdgeInsets(*margin_tuple) # Assumes tuple is (l,t,r,b)
@@ -1113,7 +1101,8 @@ class IconButton(Widget):
             self.css_class = IconButton.shared_styles[self.style_key]
 
         # Dynamically add stateful classes for the current render
-        self.current_css_class = f"{self.css_class} {'disabled' if not self.enabled else ''}"
+        disabled_class = 'disabled' if not self.enabled else ''
+        self.current_css_class = f"{self.css_class} {disabled_class}".strip()
 
     def render_props(self) -> Dict[str, Any]:
         """Return properties for diffing by the Reconciler."""
@@ -1360,12 +1349,12 @@ class FloatingActionButton(Widget):
 
         if self.style_key not in FloatingActionButton.shared_styles:
             self.css_class = f"shared-fab-{len(FloatingActionButton.shared_styles)}"
-            FloatingActionButton.shared_styles[self.style_key] = self.css_class
+            FloatingActionButton.shared_styles[self.style_key] = self.css_class # type: ignore
             # Register callback (Move to Framework recommended)
             # if self.onPressed and self.onPressed_id:
             #     Api().register_callback(self.onPressed_id, self.onPressed)
         else:
-            self.css_class = FloatingActionButton.shared_styles[self.style_key]
+            self.css_class = FloatingActionButton.shared_styles[self.style_key] # type: ignore
 
     def render_props(self) -> Dict[str, Any]:
         """Return properties for diffing by the Reconciler."""
@@ -1445,7 +1434,7 @@ class FloatingActionButton(Widget):
                  if bgColor is not None: base_styles_dict['background-color'] = bgColor
                  if fgColor is not None: base_styles_dict['color'] = fgColor
                  # Override padding if provided in key
-                 if padding_tuple:
+                 if padding_tuple: # type: ignore
                      try: padding_obj = EdgeInsets(*padding_tuple); base_styles_dict['padding'] = padding_obj.to_css_value()
                      except: pass
                  # Override shape if provided in key
@@ -1513,8 +1502,8 @@ class FloatingActionButton(Widget):
             active_rule = f".{css_class}:active {{ transform: scale(0.98); /* Example subtle press */ }}"
 
             # Disabled state (add .disabled class)
-            disabled_bg = disBgColor or Colors.rgba(0,0,0,0.12) # M3 Disabled container approx
-            disabled_fg = disFgColor or Colors.rgba(0,0,0,0.38) # M3 Disabled content approx
+            disabled_bg = disBgColor or Colors.rgba(0,0,0,0.12) # type: ignore # M3 Disabled container approx
+            disabled_fg = disFgColor or Colors.rgba(0,0,0,0.38) # type: ignore # M3 Disabled content approx
             disabled_rule = f".{css_class}.disabled {{ background-color: {disabled_bg}; color: {disabled_fg}; box-shadow: none; cursor: default; pointer-events: none; }}"
 
 
@@ -2576,7 +2565,8 @@ class AssetImage:
         # Basic check for leading slashes
         clean_file_name = file_name.lstrip('/')
         # TODO: Add more robust path joining and sanitization
-        self.src = f'http://localhost:{port}/{assets_dir}/{clean_file_name}'
+        self.src = f'http://localhost:{port}/{clean_file_name}'
+        # print("Asset image src: ", self.src)
 
     def get_source(self) -> str:
         return self.src
@@ -3132,22 +3122,22 @@ class _VirtualListViewState(State):
         if not widget: return
 
         # Attach the state to the controller provided by the widget
-        if widget.controller:
-            widget.controller._attach(self)
+        if widget.controller: # type: ignore
+            widget.controller._attach(self) # type: ignore
 
         # --- MOVE ALL SETUP LOGIC HERE ---
-        self.item_builder_name = f"vlist_item_builder_{widget.key.value}"
+        self.item_builder_name = f"vlist_item_builder_{widget.key.value}" # type: ignore
         Api().register_callback(self.item_builder_name, self.build_item_for_js)
 
         # Pre-render the initial items once during initialization.
         initial_items_html = {}
-        initial_item_count = min(widget.initialItemCount, widget.itemCount)
+        initial_item_count = min(widget.initialItemCount, widget.itemCount) # type: ignore
         for i in range(initial_item_count):
             initial_items_html[i] = self.build_item_for_js(i)
         
         self._virtualization_options = {
-            "itemCount": widget.itemCount,
-            "itemExtent": widget.itemExtent,
+            "itemCount": widget.itemCount, # type: ignore
+            "itemExtent": widget.itemExtent, # type: ignore
             "itemBuilderName": self.item_builder_name,
             "initialItems": initial_items_html
         }
@@ -3158,8 +3148,8 @@ class _VirtualListViewState(State):
     def dispose(self):
         # Clean up the controller link to prevent memory leaks
         widget = self.get_widget()
-        if widget and widget.controller:
-            widget.controller._detach()
+        if widget and widget.controller: # type: ignore
+            widget.controller._detach() # type: ignore
         super().dispose()
 
 
@@ -3172,7 +3162,7 @@ class _VirtualListViewState(State):
         if not (self.framework and self.framework.window and widget):
             return
 
-        instance_name = f"{widget.key.value}_vlist"
+        instance_name = f"{widget.key.value}_vlist" # type: ignore
         
         if indices is None:
             print(f"Python: Commanding JS instance '{instance_name}' to perform a FULL refresh.")
@@ -3194,7 +3184,7 @@ class _VirtualListViewState(State):
         if not widget or not self.framework:
             return {"html": "<div>Error</div>", "css": "", "callbacks": {}}
             
-        widget_to_build = widget.itemBuilder(index)
+        widget_to_build = widget.itemBuilder(index) # type: ignore
         built_tree = self.framework._build_widget_tree(widget_to_build)
         
         main_context_map = self.framework.reconciler.get_map_for_context("main")
@@ -3234,10 +3224,10 @@ class _VirtualListViewState(State):
         # The options are now guaranteed to exist because initState ran first.
         return Scrollbar(
             key=widget.key, 
-            width=widget.width,
-            height=widget.height,
-            theme=widget.theme,
-            child=Container(key=Key(f"{widget.key.value}_content"), alignment=Alignment.center),
+            width=widget.width, # type: ignore
+            height=widget.height, # type: ignore
+            theme=widget.theme, # type: ignore
+            child=Container(key=Key(f"{widget.key.value}_content"), alignment=Alignment.center), # type: ignore
             virtualization_options=self._virtualization_options
         )
 
@@ -4796,7 +4786,8 @@ class BottomNavigationBarItem(Widget):
         # --- CSS Class ---
         # Use structural classes, potentially modified by selected state
         self.base_css_class = "bnb-item"
-        self.css_class = f"{self.base_css_class} {'selected' if self.selected else ''}"
+        selected_class = 'selected' if self.selected else ''
+        self.css_class = f"{self.base_css_class} {selected_class}".strip()
 
     def render_props(self) -> Dict[str, Any]:
         """Pass data needed for the reconciler to patch attributes/styles."""
@@ -5124,7 +5115,7 @@ class BottomNavigationBar(Widget):
             # Call the static method of BottomNavigationBarItem to get its rules
             # Pass relevant defaults from BNV style_key if needed by Item's CSS
             # This assumes Item's generate_css_rule doesn't need complex key
-            item_rules = BottomNavigationBarItem.generate_css_rule(None, "bnb-item") # Use base class name
+            item_rules = BottomNavigationBarItem.generate_css_rule(None, "bnb-item") # type: ignore # Use base class name
 
             return f"{container_rule}\n{item_rules}" # Combine container and item rules
 
@@ -5565,9 +5556,9 @@ class TextField(Widget):
 
         if self.style_key not in TextField.shared_styles:
             self.css_class = f"shared-textfield-{len(TextField.shared_styles)}"
-            TextField.shared_styles[self.style_key] = self.css_class
+            TextField.shared_styles[self.style_key] = self.css_class # type: ignore
         else:
-            self.css_class = TextField.shared_styles[self.style_key]
+            self.css_class = TextField.shared_styles[self.style_key] # type: ignore
 
         # Combine base class with dynamic state classes for the current render
         state_classes = []
@@ -5639,7 +5630,7 @@ class TextField(Widget):
                     value="{html.escape(str(props.get('value', '')), quote=True)}"
                     placeholder="{html.escape(str(props.get('placeholder', '')), quote=True)}"
                     oninput="{on_input_handler}"
-                    {'disabled' if not props.get('enabled', True) else ''}
+                    {('disabled' if not props.get('enabled', True) else '').strip()}
                 >
                 <label for="{input_id}" class="textfield-label {css_class.replace('textfield-root-container', '')}">{html.escape(label_text) if label_text else ''}</label>
                 <div class="textfield-outline {css_class.replace('textfield-root-container', '')}"></div>

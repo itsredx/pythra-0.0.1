@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My New Pythra App</title>
+    <!-- ADD SIMPLEBAR CSS -->
+    <link rel="stylesheet" href="./js/scroll-bar/simplebar.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1757190723">
+    <style id="dynamic-styles">
+.shared-container-3 { box-sizing: border-box; background: #2c2c2c; width: 100vw; height: 100vh; }
+.shared-center-0 { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;  }
+.shared-stack-0 { position: relative; display: grid; width: fit-content; height: fit-content; justify-items: start; align-items: start; direction: ltr;  }
+.shared-stack-0 > * { grid-area: 1 / 1; }
+
+                    @property --gradient-angle-shared-container-1 {
+                        syntax: '<angle>';
+                        initial-value: 0deg;
+                        inherits: false;
+                    }
+                    
+
+                    @keyframes bgRotate-shared-container-1 {
+                        0% { --gradient-angle-shared-container-1: 0deg; }
+                        100% { --gradient-angle-shared-container-1: 360deg; }
+                    }
+                    
+.shared-container-1 { box-sizing: border-box; background: repeating-conic-gradient(from var(--gradient-angle-shared-container-1), red, yellow, green, blue, red); animation: bgRotate-shared-container-1 4s linear infinite; padding: 2px; width: 30vh; height: 30vh; }
+
+.shared-container-0 { box-sizing: border-box; background: #EDEDED; padding: 12px; height: 100%; }
+.shared-column-0 { display: flex; flex-direction: column; justify-content: flex-start; align-items: center; height: 100%; direction: ltr; }
+.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: flex-end; width: 100%; direction: ltr; }
+
+            .shared-text-0 {
+                margin: 0; /* Reset default paragraph margin */
+                padding: 0;
+                color: #2c2c2c; font-size: 20px;
+                
+                
+            }
+            
+
+            .shared-text-1 {
+                margin: 0; /* Reset default paragraph margin */
+                padding: 0;
+                color: grey; font-size: 10px;
+                
+                
+            }
+            
+
+            .shared-text-2 {
+                margin: 0; /* Reset default paragraph margin */
+                padding: 0;
+                color: #2c2c2c; font-size: 14px;
+                
+                
+            }
+            
+
+            .shared-text-3 {
+                margin: 0; /* Reset default paragraph margin */
+                padding: 0;
+                color: #2c2c2c; font-size: 20px; font-weight: bold;
+                
+                
+            }
+            
+
+.shared-container-2 { box-sizing: border-box; }
+.shared-row-1 { display: flex; flex-direction: row; justify-content: center; align-items: center; width: 100%; direction: ltr; }
+.shared-iconbutton-0 { display: inline-flex; align-items: center; justify-content: center; padding: 8px; margin: 0; border: none; background-color: None; color: None; cursor: pointer; outline: none; border-radius: 50%; overflow: hidden; position: relative; box-sizing: border-box; transition: background-color 0.15s linear; -webkit-appearance: none; appearance: none; width: calc(24px + 16px); height: calc(24px + 16px); }
+
+            .shared-iconbutton-0 > i, .shared-iconbutton-0 > img, .shared-iconbutton-0 > svg, .shared-iconbutton-0 > * {
+                font-size: 24px;
+                width: 24px;
+                height: 24px;
+                display: block;
+                object-fit: contain;
+            }
+.shared-iconbutton-0:hover { background-color: rgba(0, 0, 0, 0.08); }
+.shared-iconbutton-0:active { background-color: rgba(0, 0, 0, 0.12); }
+.shared-iconbutton-0.disabled { color: rgba(0, 0, 0, 0.38); background-color: transparent; cursor: default; pointer-events: none; }
+
+                .material-icon-0 {
+                    position: relative;
+                    font-family: 'Material Symbols Rounded';
+                    font-weight: normal;
+                    font-style: normal;
+                    font-size: 24px;
+                    line-height: 1;
+                    letter-spacing: normal;
+                    text-transform: none;
+                    z-index: 100;
+                    display: inline-block;
+                    white-space: nowrap;
+                    word-wrap: normal;
+                    direction: ltr;
+                    -webkit-font-smoothing: antialiased;
+                    text-rendering: optimizeLegibility;
+                    -moz-osx-font-smoothing: grayscale;
+                    font-feature-settings: 'liga';
+                    color: inherit;
+                    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+                }
+            </style>
+    
+        <script src="qwebchannel.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                new QWebChannel(qt.webChannelTransport, (channel) => {
+                    window.pywebview = channel.objects.pywebview;
+                    console.log("PyWebChannel connected.");
+                });
+            });
+            function handleClick(name) { if(window.pywebview) window.pywebview.on_pressed_str(name, ()=>{}); }
+            function handleClickWithArgs(callback_name, ...args) {
+                if (window.pywebview) {
+                    console.log("index", args);
+                    window.pywebview.on_pressed(callback_name, ...args).then(function(response) {
+                        console.log(response);
+                    }).catch(function(error) {
+                        console.error(error);
+                    });
+                } else {
+                    console.error('pywebview is not defined');
+                }
+            }
+            function handleItemTap(name, index) { if(window.pywebview) window.pywebview.on_item_tap(name, index, ()=>{}); }
+            function handleInput(name, value) {
+                if(window.pywebview) {
+                    window.pywebview.on_input_changed(name, value, ()=>{});
+                }
+            }
+        </script>
+        <script>
+        function PythraSlider(elementId, options) {
+    // The 'this' keyword refers to the new object being created.
+    this.container = document.getElementById(elementId);
+    if (!this.container) {
+        console.error(`Slider container with ID #${elementId} not found.`);
+        return;
+    }
+
+    console.log(`✅ PythraSlider engine is initializing for #${elementId}`);
+
+    this.options = options;
+
+    // Find child elements
+    this.track = this.container.querySelector('.slider-track');
+    this.thumb = this.container.querySelector('.slider-thumb');
+    
+    // Bind 'this' context for event handlers
+    this.handleDragStart = this.handleDragStart.bind(this);
+    this.handleDragMove = this.handleDragMove.bind(this);
+    this.handleDragEnd = this.handleDragEnd.bind(this);
+
+    // Attach initial event listeners
+    this.container.addEventListener('mousedown', this.handleDragStart);
+    this.container.addEventListener('touchstart', this.handleDragStart, { passive: false }); // passive: false to allow preventDefault
+}
+
+PythraSlider.prototype.handleDragStart = function(event) {
+    event.preventDefault();
+    this.container.classList.add('active');
+    
+    document.addEventListener('mousemove', this.handleDragMove);
+    document.addEventListener('mouseup', this.handleDragEnd);
+    document.addEventListener('touchmove', this.handleDragMove);
+    document.addEventListener('touchend', this.handleDragEnd);
+
+    this.updatePosition(event);
+};
+
+PythraSlider.prototype.handleDragMove = function(event) {
+    this.updatePosition(event);
+};
+
+PythraSlider.prototype.handleDragEnd = function() {
+    this.container.classList.remove('active');
+    
+    document.removeEventListener('mousemove', this.handleDragMove);
+    document.removeEventListener('mouseup', this.handleDragEnd);
+    document.removeEventListener('touchmove', this.handleDragMove);
+    document.removeEventListener('touchend', this.handleDragEnd);
+};
+
+PythraSlider.prototype.updatePosition = function(event) {
+    if (!this.track) return;
+    const rect = this.track.getBoundingClientRect();
+    const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+    
+    let positionX = clientX - rect.left;
+    let percentage = (positionX / rect.width) * 100;
+    
+    percentage = Math.max(0, Math.min(100, percentage));
+    
+    this.container.style.setProperty('--slider-percentage', `${percentage}%`);
+    
+    const range = this.options.max - this.options.min;
+    const newValue = this.options.min + (percentage / 100) * range;
+    
+    if (window.pywebview && this.options.onChangedName) {
+        window.pywebview.on_drag_update(this.options.onChangedName, newValue);
+    }
+};
+
+PythraSlider.prototype.destroy = function() {
+    if (!this.container) return;
+    this.container.removeEventListener('mousedown', this.handleDragStart);
+    this.container.removeEventListener('touchstart', this.handleDragStart);
+    this.handleDragEnd(); 
+};
+        </script>
+        
+</head>
+<body>
+    <div id="root-container"><div id="fw_id_1" class=""><div id="fw_id_2" class="shared-container-3"><div id="fw_id_3" class="shared-center-0"><div id="fw_id_4" class="shared-stack-0"><div id="fw_id_5" class="" style="width: 30vh; height: 30vh"><div id="fw_id_6" class="shared-container-1"><div id="fw_id_7" class="" style="width: 29.4vh; height: 29.4vh"><div id="fw_id_8" class="shared-container-0"><div id="fw_id_9" class="shared-column-0"><div id="fw_id_10" class="shared-row-0"><p id="fw_id_11" class="shared-text-0" style="color: #2c2c2c; font-size: 20">Pythra</p><div id="fw_id_12" class="" style="width: 4px"></div><p id="fw_id_13" class="shared-text-1" style="color: grey; font-size: 10">GUI TOOLKIT v0.1.0</p></div><div id="fw_id_14" class="" style="height: 24px"></div><div id="fw_id_15" class="shared-row-0"><p id="fw_id_16" class="shared-text-2" style="color: #2c2c2c; font-size: 14">Count:</p><div id="fw_id_17" class="" style="width: 12px"></div><p id="fw_id_18" class="shared-text-3" style="color: #2c2c2c; font-size: 20; font-weight: bold">100000</p></div></div></div></div></div></div><div id="fw_id_19" class="" style="position: absolute; height: 30vh; width: 30vh; bottom: ; top: 24.4vh; right: ; left: "><div id="fw_id_20" class="shared-container-2"><div id="fw_id_21" class="shared-row-1"><button id="fw_id_22" class="shared-iconbutton-0 " onclick="handleClick('decrementCounter')"><i id="fw_id_23" class="material-icon-0">stat_minus_1</i></button><div id="fw_id_24" class="" style="width: 24px"></div><button id="fw_id_25" class="shared-iconbutton-0 " onclick="handleClick('incrementCounter')"><i id="fw_id_26" class="material-icon-0">stat_1</i></button></div></div></div></div></div></div></div></div>
+    <div id="overlay-container"></div>
+
+    <!-- ADD SIMPLEBAR JS -->
+    <script src="./js/scroll-bar/simplebar.min.js"></script>
+    <!-- ADD THE NEW SLIDER JS ENGINE -->
+    
+        <script type="module">
+            // Import JS modules if needed (e.g., for ClipPath)
+            // import { ... } from './js/....js';
+            // import { generateRoundedPath } from './js/pathGenerator.js';
+            // import { ResponsiveClipPath } from './js/clipPathUtils.js';
+            import { PythraSlider } from './js/slider.js';
+            import { PythraDropdown } from './js/dropdown.js';
+            // import { PythraVirtuaList } from './js/virtual_list.js';
+            
+
+            document.addEventListener('DOMContentLoaded', () => {
+                window._pythra_instances = window._pythra_instances || {};
+                try {
+                     // First, DEFINE all our JS classes and functions
+                    // js/pathGenerator.js
+
+// --- Vector Math Helper Functions ---
+const vec = (p1, p2) => ({ x: p2.x - p1.x, y: p2.y - p1.y });
+const magnitude = (v) => Math.sqrt(v.x ** 2 + v.y ** 2);
+const dot = (v1, v2) => v1.x * v2.x + v1.y * v2.y;
+const cross = (v1, v2) => v1.x * v2.y - v1.y * v2.x;
+const round = (val) => Math.round(val * 100) / 100; // Round to 2 decimal places
+
+function generateRoundedPath(points, radius) {
+    const numPoints = points.length;
+    const cornerData = [];
+
+    console.log(`>>>>>> Generator Initiated <<<<<<`)
+
+    for (let i = 0; i < numPoints; i++) {
+        const p_prev = points[(i + numPoints - 1) % numPoints];
+        const p_curr = points[i];
+        const p_next = points[(i + 1) % numPoints];
+
+        const v1 = vec(p_curr, p_prev);
+        const v2 = vec(p_curr, p_next);
+        const v1_mag = magnitude(v1);
+        const v2_mag = magnitude(v2);
+
+        if (v1_mag === 0 || v2_mag === 0) {
+            cornerData.push({ t1: p_curr, t2: p_curr, radius: 0 });
+            continue;
+        }
+
+        const angle = Math.acos(Math.max(-1, Math.min(1, dot(v1, v2) / (v1_mag * v2_mag))));
+        let tangentDist = radius / Math.tan(angle / 2);
+        tangentDist = Math.min(tangentDist, v1_mag / 2, v2_mag / 2);
+        const clampedRadius = Math.abs(tangentDist * Math.tan(angle / 2));
+
+        const t1 = { x: p_curr.x + (v1.x / v1_mag) * tangentDist, y: p_curr.y + (v1.y / v1_mag) * tangentDist };
+        const t2 = { x: p_curr.x + (v2.x / v2_mag) * tangentDist, y: p_curr.y + (v2.y / v2_mag) * tangentDist };
+
+        const sweepFlag = cross(v1, v2) < 0 ? 1 : 0;
+
+        cornerData.push({ t1, t2, radius: clampedRadius, sweepFlag });
+    }
+
+    const pathCommands = [];
+    pathCommands.push(`M ${round(cornerData[numPoints - 1].t2.x)} ${round(cornerData[numPoints - 1].t2.y)}`);
+    for (let i = 0; i < numPoints; i++) {
+        const corner = cornerData[i];
+        pathCommands.push(`L ${round(corner.t1.x)} ${round(corner.t1.y)}`);
+        pathCommands.push(`A ${round(corner.radius)} ${round(corner.radius)} 0 0 ${corner.sweepFlag} ${round(corner.t2.x)} ${round(corner.t2.y)}`);
+    }
+    pathCommands.push('Z');
+    console.log(pathCommands.join(' '));
+    return pathCommands.join(' ');
+}
+
+// clipPathUtils.js
+
+/**
+ * Parse an SVG path string containing absolute commands (M, L, A, H, V, Z),
+ * and scale coordinates from reference dimensions to target dimensions.
+ * 
+ * @param {string} pathStr - Original SVG path string (absolute commands only)
+ * @param {number} refW - reference width
+ * @param {number} refH - reference height
+ * @param {number} targetW - actual element width
+ * @param {number} targetH - actual element height
+ * @param {Object} [options] - optional settings:
+ *    - {boolean} uniformArc
+ *    - {number} decimalPlaces
+ *    - {boolean} percentOutput
+ * @returns {string} - scaled path string
+ */
+// clipPathUtils.js
+
+function scalePathAbsoluteMLA(pathStr, refW, refH, targetW, targetH, options = {}) {
+  const rw = targetW / refW;
+  const rh = targetH / refH;
+  const uniformArc = !!options.uniformArc;
+  const decimalPlaces = typeof options.decimalPlaces === 'number' ? options.decimalPlaces : null;
+  const rScale = uniformArc ? Math.min(rw, rh) : null;
+
+  const fmt = (num) => {
+    return decimalPlaces !== null
+      ? Number(num.toFixed(decimalPlaces)).toString()
+      : Number(num).toString();
+  };
+
+  // Normalize the string
+  const s = pathStr
+    .replace(/,/g, ' ')
+    .replace(/([0-9])-/g, '$1 -')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const tokenRegex = /([MLAZHV])|(-?\d*\.?\d+(?:e[-+]?\d+)?)/gi;
+  const tokens = [];
+  let match;
+  while ((match = tokenRegex.exec(s)) !== null) {
+    tokens.push(match[1] || match[2]);
+  }
+
+  const out = [];
+  let i = 0;
+  while (i < tokens.length) {
+    const cmd = tokens[i++];
+    out.push(cmd);
+
+    switch (cmd) {
+      case 'M':
+      case 'L':
+        while (i + 1 < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {
+          const x = parseFloat(tokens[i++]) * rw;
+          const y = parseFloat(tokens[i++]) * rh;
+          out.push(fmt(x), fmt(y));
+        }
+        break;
+
+      case 'A':
+        while (i + 6 < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {
+          const rx = parseFloat(tokens[i++]);
+          const ry = parseFloat(tokens[i++]);
+          const rot = tokens[i++];
+          const laf = tokens[i++];
+          const sf = tokens[i++];
+          const x = parseFloat(tokens[i++]);
+          const y = parseFloat(tokens[i++]);
+
+          out.push(
+            fmt(uniformArc ? rx * rScale : rx * rw),
+            fmt(uniformArc ? ry * rScale : ry * rh),
+            rot,
+            laf,
+            sf,
+            fmt(x * rw),
+            fmt(y * rh)
+          );
+        }
+        break;
+
+      case 'H':
+        while (i < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {
+          const x = parseFloat(tokens[i++]) * rw;
+          out.push(fmt(x));
+        }
+        break;
+
+      case 'V':
+        while (i < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {
+          const y = parseFloat(tokens[i++]) * rh;
+          out.push(fmt(y));
+        }
+        break;
+
+      case 'Z':
+        // No coordinates to scale
+        break;
+
+      default:
+        console.warn('Unsupported or unexpected token:', cmd);
+    }
+  }
+
+  return out.join(' ');
+}
+
+class ResponsiveClipPath {
+  constructor(target, originalPath, refW, refH, options = {}) {
+    this.elements = [];
+    this.orig = originalPath.trim();
+    this.refW = refW;
+    this.refH = refH;
+    this.options = options;
+    this.currentPath = "";  // ⬅️ Store last computed path string
+    this.update = this.update.bind(this);
+    this.roList = [];
+
+    if (typeof target === 'string') {
+      let selector = target;
+      if (!selector.startsWith('#') && !selector.startsWith('.')) {
+        const byId = document.getElementById(selector);
+        selector = byId ? `#${selector}` : `.${selector}`;
+      }
+      const nodeList = document.querySelectorAll(selector);
+      if (nodeList.length === 0) {
+        console.warn(`ResponsiveClipPath: no elements found for selector "${selector}"`);
+      }
+      nodeList.forEach(el => this.elements.push(el));
+    } else if (target instanceof HTMLElement) {
+      this.elements.push(target);
+    } else {
+      console.warn('ResponsiveClipPath: invalid target', target);
+    }
+
+    this.elements.forEach(el => this.initElement(el));
+  }
+
+  initElement(el) {
+    this.applyClip(el);
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(() => this.applyClip(el));
+      ro.observe(el);
+      this.roList.push({ el, ro });
+    } else {
+      window.addEventListener('resize', this.update);
+    }
+  }
+
+  applyClip(el) {
+    const rect = el.getBoundingClientRect();
+    const newPath = scalePathAbsoluteMLA(
+      this.orig,
+      this.refW,
+      this.refH,
+      rect.width,
+      rect.height,
+      this.options
+    );
+    this.currentPath = `path("${newPath}")`;  // ⬅️ Save it
+    el.style.clipPath = this.currentPath;
+    el.style.webkitClipPath = this.currentPath;
+  }
+
+  update() {
+    this.elements.forEach(el => this.applyClip(el));
+  }
+
+  disconnect() {
+    this.roList.forEach(({ el, ro }) => ro.unobserve(el));
+    this.roList = [];
+    window.removeEventListener('resize', this.update);
+  }
+
+  // ✅ Your new method
+  getResponsivePath() {
+    return this.currentPath;
+  }
+}
+
+/**
+ * PythraSlider: A client-side engine for handling slider interactions.
+ * This is now a proper JavaScript module class.
+ */
+class PythraSlider { // <-- ADD 'export' HERE
+    constructor(elementId, options) {
+        this.container = document.getElementById(elementId);
+        if (!this.container) {
+            console.error(`Slider container with ID #${elementId} not found.`);
+            return;
+        }
+
+        console.log(`✅ PythraSlider engine is initializing for #${elementId}`);
+
+        this.options = options;
+        this.dragBool = false;
+        
+        // ... THE REST OF THE FILE REMAINS EXACTLY THE SAME ...
+        this.track = this.container.querySelector('.slider-track');
+        this.thumb = this.container.querySelector('.slider-thumb');
+        
+        this.handleDragStart = this.handleDragStart.bind(this);
+        this.handleDragMove = this.handleDragMove.bind(this);
+        this.handleDragEnd = this.handleDragEnd.bind(this);
+
+        this.container.addEventListener('mousedown', this.handleDragStart);
+        this.container.addEventListener('touchstart', this.handleDragStart, { passive: false });
+    }
+
+    handleDragStart(event) {
+        event.preventDefault();
+        this.container.classList.add('active');
+        
+        document.addEventListener('mousemove', this.handleDragMove);
+        document.addEventListener('mouseup', this.handleDragEnd);
+        document.addEventListener('touchmove', this.handleDragMove);
+        document.addEventListener('touchend', this.handleDragEnd);
+
+
+        this.updatePosition(event);
+    }
+
+    handleDragMove(event) {
+        this.updatePosition(event);
+    }
+
+    handleDragEnd(event) {
+        this.container.classList.remove('active');
+        
+        document.removeEventListener('mousemove', this.handleDragMove);
+        document.removeEventListener('mouseup', this.handleDragEnd);
+        document.removeEventListener('touchmove', this.handleDragMove);
+        document.removeEventListener('touchend', this.handleDragEnd);
+        // console.log("drag ended")
+        this.dragBool = true;
+        console.log("drag ended", this.dragBool, event);
+        this.updatePosition(event);
+    }
+
+    updatePosition(event) {
+        if (!this.track) return;
+        const rect = this.track.getBoundingClientRect();
+        const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+        
+        let positionX = clientX - rect.left;
+        let percentage = (positionX / rect.width) * 100;
+        
+        percentage = Math.max(0, Math.min(100, percentage));
+        
+        this.container.style.setProperty('--slider-percentage', `${percentage}%`);
+        console.log(percentage, this.options.onDragName);
+        
+        const range = this.options.max - this.options.min;
+        const newValue = this.options.min + (percentage / 100) * range;
+        console.log(percentage, this.options.onDragName, newValue);
+        
+        if (window.pywebview && this.options.onDragName) {
+            window.pywebview.on_drag_update(this.options.onDragName, newValue, this.dragBool);
+        }
+        if (this.dragBool){
+            console.log("hasDrag: Ended")
+            this.dragBool = false
+        } else {
+            console.log("dragging")
+        }
+    }
+
+    destroy() {
+        if (!this.container) return;
+        this.container.removeEventListener('mousedown', this.handleDragStart);
+        this.container.removeEventListener('touchstart', this.handleDragStart);
+        this.handleDragEnd();
+    }
+}
+/**
+ * PythraDropdown: Client-side engine for a custom Dropdown widget.
+ *
+ * Handles toggling the dropdown menu, closing it when clicking outside,
+ * and sending the selected value back to the Python backend.
+ */
+class PythraDropdown {
+    constructor(elementId, options) {
+        this.container = document.getElementById(elementId);
+        if (!this.container) {
+            console.error(`Dropdown container with ID #${elementId} not found.`);
+            return;
+        }
+
+        console.log(`✅ PythraDropdown engine is initializing for #${elementId}`);
+
+        this.options = options;
+        this.valueContainer = this.container.querySelector('.dropdown-value-container');
+        this.menu = this.container.querySelector('.dropdown-menu');
+        this.items = this.menu.querySelectorAll('.dropdown-item');
+
+        // Bind 'this' to maintain context in event handlers
+        this.toggleMenu = this.toggleMenu.bind(this);
+        this.handleItemClick = this.handleItemClick.bind(this);
+        this.handleClickOutside = this.handleClickOutside.bind(this);
+
+        // Attach event listeners
+        this.valueContainer.addEventListener('click', this.toggleMenu);
+        this.items.forEach(item => {
+            item.addEventListener('click', this.handleItemClick);
+        });
+    }
+
+    toggleMenu(event) {
+        event.stopPropagation(); // Prevent click from bubbling to the document
+        const isCurrentlyOpen = this.container.classList.toggle('open');
+        console.log("Value container Clicked");
+        
+        if (isCurrentlyOpen) {
+            // If we just opened the menu, listen for clicks outside to close it
+            document.addEventListener('click', this.handleClickOutside);
+        } else {
+            // If we just closed it, stop listening
+            document.removeEventListener('click', this.handleClickOutside);
+        }
+    }
+
+    handleItemClick(event) {
+        const selectedValue = event.currentTarget.dataset.value;
+        const selectedLabel = event.currentTarget.textContent;
+
+        console.log("Dropdown option Clicked");
+        
+        // 1. Update the display value immediately for instant feedback
+        this.valueContainer.querySelector('span').textContent = selectedLabel;
+        
+        // 2. Send the selected *value* back to the Python backend
+        if (window.pywebview && this.options.onChangedName) {
+            window.pywebview.on_input_changed(this.options.onChangedName, selectedValue);
+        }
+        
+        // 3. Close the menu
+        this.closeMenu();
+    }
+    
+    closeMenu() {
+        if (this.container.classList.contains('open')) {
+            this.container.classList.remove('open');
+            document.removeEventListener('click', this.handleClickOutside);
+        }
+    }
+
+    handleClickOutside(event) {
+        // If the click is outside the main container, close the menu
+        if (!this.container.contains(event.target)) {
+            this.closeMenu();
+        }
+    }
+
+    destroy() {
+        // Cleanup to prevent memory leaks
+        if (!this.container) return;
+        this.valueContainer.removeEventListener('click', this.toggleMenu);
+        this.items.forEach(item => {
+            item.removeEventListener('click', this.handleItemClick);
+        });
+        document.removeEventListener('click', this.handleClickOutside);
+    }
+}
+/**
+ * PythraGestureDetector: A client-side engine for a feature-rich gesture detector.
+ *
+ * It uses Pointer Events to handle mouse and touch统一. It disambiguates between
+ * taps, double taps, long presses, and panning gestures.
+ */
+class PythraGestureDetector {
+    constructor(elementId, options) {
+        this.element = document.getElementById(elementId);
+        if (!this.element) {
+            console.error(`GestureDetector element with ID #${elementId} not found.`);
+            return;
+        }
+
+        this.options = options;
+
+        // --- Gesture State ---
+        this.lastTapTime = 0;
+        this.tapTimeout = null;
+        this.longPressTimeout = null;
+        this.isPanning = false;
+        this.panStartPoint = { x: 0, y: 0 };
+        this.panThreshold = 5; // Pixels to move before a pan is detected
+
+        // --- Bind Handlers ---
+        this.handlePointerDown = this.handlePointerDown.bind(this);
+        this.handlePointerMove = this.handlePointerMove.bind(this);
+        this.handlePointerUp = this.handlePointerUp.bind(this);
+        this.fireTap = this.fireTap.bind(this);
+        this.fireLongPress = this.fireLongPress.bind(this);
+
+        // Attach the entry-point event listener
+        this.element.addEventListener('pointerdown', this.handlePointerDown);
+    }
+
+    
+    handlePointerDown(event) {
+        // Only respond to the primary button (e.g., left mouse click)
+        if (event.button !== 0) return;
+
+        const currentTime = Date.now();
+
+        // --- Double Tap Detection ---
+        if (currentTime - this.lastTapTime < 300) { // 300ms window for double tap
+            clearTimeout(this.tapTimeout);
+            this.tapTimeout = null;
+            this.lastTapTime = 0;
+            if (this.options.onDoubleTapName) {
+                window.pywebview.on_gesture_event(this.options.onDoubleTapName, {});
+            }
+            return;
+        }
+        
+        this.lastTapTime = currentTime;
+        this.panStartPoint = { x: event.clientX, y: event.clientY };
+
+        // --- Long Press Detection ---
+        if (this.options.onLongPressName) {
+            this.longPressTimeout = setTimeout(() => this.fireLongPress(), 500); // 500ms for long press
+        }
+
+        // --- Single Tap Detection (will be fired later if not cancelled) ---
+        if (this.options.onTapName) {
+            this.tapTimeout = setTimeout(() => this.fireTap(), 300);
+        }
+
+        // Listen for move/up on the entire document for robust dragging
+        document.addEventListener('pointermove', this.handlePointerMove);
+        document.addEventListener('pointerup', this.handlePointerUp);
+        document.addEventListener('pointercancel', this.handlePointerUp); // Treat cancel like up
+    }
+
+    handlePointerMove(event) {
+        if (this.isPanning) {
+            // --- Continue Panning ---
+            const dx = event.clientX - this.panStartPoint.x;
+            const dy = event.clientY - this.panStartPoint.y;
+            if (this.options.onPanUpdateName) {
+                window.pywebview.on_gesture_event(this.options.onPanUpdateName, { dx, dy });
+            }
+        } else {
+            // --- Check if a Pan has Started ---
+            const dx = event.clientX - this.panStartPoint.x;
+            const dy = event.clientY - this.panStartPoint.y;
+            if (Math.sqrt(dx * dx + dy * dy) > this.panThreshold) {
+                this.isPanning = true;
+                // A pan gesture cancels tap and long press
+                clearTimeout(this.tapTimeout);
+                this.tapTimeout = null;
+                clearTimeout(this.longPressTimeout);
+                this.longPressTimeout = null;
+                
+                if (this.options.onPanStartName) {
+                    window.pywebview.on_gesture_event(this.options.onPanStartName, {});
+                }
+            }
+        }
+    }
+
+    handlePointerUp(event) {
+        // Clean up document-level listeners immediately
+        document.removeEventListener('pointermove', this.handlePointerMove);
+        document.removeEventListener('pointerup', this.handlePointerUp);
+        document.removeEventListener('pointercancel', this.handlePointerUp);
+
+        // Always clear a pending long press if pointer is lifted
+        clearTimeout(this.longPressTimeout);
+        this.longPressTimeout = null;
+        
+        if (this.isPanning) {
+            // --- End Panning ---
+            this.isPanning = false;
+            if (this.options.onPanEndName) {
+                window.pywebview.on_gesture_event(this.options.onPanEndName, );
+            }
+        }
+    }
+
+    fireTap() {
+        if (this.tapTimeout) { // Ensure it wasn't cancelled
+            this.tapTimeout = null;
+            if (this.options.onTapName) {
+                window.pywebview.on_gesture_event(this.options.onTapName, {});
+            }
+        }
+    }
+    
+    fireLongPress() {
+        // A long press cancels a single tap
+        clearTimeout(this.tapTimeout);
+        this.tapTimeout = null;
+        this.lastTapTime = 0; // Prevent next tap from being a double tap
+        
+        if (this.longPressTimeout) {
+            this.longPressTimeout = null;
+            if (this.options.onLongPressName) {
+                window.pywebview.on_gesture_event(this.options.onLongPressName, {});
+            }
+        }
+    }
+
+    destroy() {
+        if (!this.element) return;
+        this.element.removeEventListener('pointerdown', this.handlePointerDown);
+        this.handlePointerUp(); // Ensure document listeners are cleaned up
+        clearTimeout(this.tapTimeout);
+        clearTimeout(this.longPressTimeout);
+    }
+}
+/**
+ * PythraGradientClipPath: Client-side engine for creating an animated
+ * gradient border around a complex clip-path shape.
+ */
+
+
+// Helper function for basic vector math
+const vec_gradient_border = (p1, p2) => ({ x: p2.x - p1.x, y: p2.y - p1.y });
+const magnitude_gradient_border = (v) => Math.sqrt(v.x * v.x + v.y * v.y);
+const normalize_gradient_border = (v) => {
+    const mag = magnitude_gradient_border(v);
+    return mag > 0 ? { x: v.x / mag, y: v.y / mag } : { x: 0, y: 0 };
+};
+const dot_gradient_border = (v1, v2) => v1.x * v2.x + v1.y * v2.y;
+// const cross = (v1, v2) => v1.x * v2.y - v1.y * v2.x;
+
+
+
+/**
+ * Calculates a new set of points offset outwards from the original polygon.
+ * @param {Array<Object>} points - The original points, e.g., [{x: 0, y: 0}, ...].
+ * @param {number} offset - The distance to offset the points outwards.
+ * @returns {Array<Object>} The new, offset points.
+ */
+function offsetPoints(points, offset) {
+    const numPoints = points.length;
+    if (numPoints < 3) return points;
+
+    const offsetPoints = [];
+
+    for (let i = 0; i < numPoints; i++) {
+        const p_prev = points[(i + numPoints - 1) % numPoints];
+        const p_curr = points[i];
+        const p_next = points[(i + 1) % numPoints];
+
+        const v1 = normalize_gradient_border(vec_gradient_border(p_curr, p_prev));
+        const v2 = normalize_gradient_border(vec_gradient_border(p_curr, p_next));
+
+        // Calculate the angle bisector vector (points outwards for convex shapes)
+        const bisector = normalize_gradient_border({ x: v1.x + v2.x, y: v1.y + v2.y });
+
+        // Calculate the angle between the two edge vectors
+        const angle = Math.acos(dot_gradient_border(v1, v2));
+
+        // Use trigonometry to find the length to move along the bisector
+        // to achieve the desired perpendicular offset distance.
+        const distance = offset / Math.sin(angle / 2);
+
+        if (isNaN(distance) || !isFinite(distance)) {
+             // Handle collinear points (angle is ~PI), just move along the normal
+             const normal = { x: -v1.y, y: v1.x };
+             offsetPoints.push({ x: p_curr.x + normal.x * offset, y: p_curr.y + normal.y * offset });
+        } else {
+             offsetPoints.push({ x: p_curr.x + bisector.x * distance, y: p_curr.y + bisector.y * distance });
+        }
+    }
+    return offsetPoints;
+}
+
+
+class PythraGradientClipPath {
+    constructor(elementId, options) {
+        this.container = document.getElementById(elementId);
+        if (!this.container) {
+            console.error(`GradientClipPath container with ID #${elementId} not found.`);
+            return;
+        }
+
+        console.log(`✅ PythraGradientClipPath engine is initializing for #${elementId}`);
+        
+        // --- Setup DOM Structure ---
+        // The reconciler placed the child widget inside our container.
+        // We need to wrap it and add a background element.
+        this.backgroundEl = document.createElement('div');
+        this.backgroundEl.className = 'gradient-clip-background';
+        
+        this.contentHost = document.createElement('div');
+        this.contentHost.className = 'gradient-clip-content-host';
+
+        // Move the original child from the container into the new host
+        while (this.container.firstChild) {
+            this.contentHost.appendChild(this.container.firstChild);
+        }
+        
+        this.container.appendChild(this.backgroundEl);
+        this.container.appendChild(this.contentHost);
+        
+        // --- Generate and Apply Paths ---
+        this.options = options;
+        this.update = this.update.bind(this);
+        
+        // Use a ResizeObserver to make it fully responsive
+        this.ro = new ResizeObserver(this.update);
+        this.ro.observe(this.container);
+        
+        // Initial update
+        this.update();
+    }
+
+    update() {
+        const rect = this.container.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+
+        const { points, radius, viewBox, borderWidth } = this.options;
+        const jsPoints = points.map(p => ({ x: p[0], y: p[1] }));
+
+        // 1. Generate the inner path for the content
+        const innerPathStr = generateRoundedPath(jsPoints, radius);
+        const innerClipPath = `path("${innerPathStr}")`;
+
+        // 2. Calculate offset points and a larger radius for the outer path
+        const offset_points = offsetPoints(jsPoints, borderWidth);
+        const outerRadius = radius + borderWidth;
+        const outerPathStr = generateRoundedPath(offset_points, outerRadius);
+        const outerClipPath = `path("${outerPathStr}")`;
+
+        // 3. Apply the responsive clip-paths to the elements
+        // We don't need ResponsiveClipPath class here because we update on every resize.
+        this.contentHost.style.clipPath = innerClipPath;
+        this.contentHost.style.webkitClipPath = innerClipPath;
+        
+        this.backgroundEl.style.clipPath = outerClipPath;
+        this.backgroundEl.style.webkitClipPath = outerClipPath;
+    }
+
+    destroy() {
+        if (this.ro && this.container) {
+            this.ro.unobserve(this.container);
+        }
+    }
+}
+/**
+ * PythraVirtualList: A client-side engine for virtual scrolling. (Final Version)
+ *
+ * This engine creates its own SimpleBar instance to avoid race conditions.
+ * It handles pre-rendered initial items (HTML and CSS) for an instant first paint.
+ * It asynchronously fetches additional items from Python as the user scrolls.
+ * Most importantly, it dynamically attaches event listeners to both pre-rendered
+ * and asynchronously loaded content to ensure full interactivity.
+ */
+class PythraVirtualList {
+    constructor(elementId, options) {
+        this.container = document.getElementById(elementId);
+        if (!this.container) {
+            console.error(`VirtualList Error: Container element #${elementId} not found.`);
+            return;
+        }
+
+        console.log(`✅ PythraVirtualList engine is initializing for #${elementId}`);
+        
+        this.options = options;
+        this.simplebar = new SimpleBar(this.container, this.options.simplebarOptions || {});
+        this.scrollEl = this.simplebar.getScrollElement();
+        this.contentEl = this.simplebar.getContentElement();
+        
+        this.itemCache = {}; // Cache will ONLY store HTML strings.
+        this.visibleItemElements = [];
+
+        // Process the initialItems object from Python.
+        if (this.options.initialItems) {
+            const initialCss = new Set();
+            for (const index in this.options.initialItems) {
+                const itemData = this.options.initialItems[index];
+                // 1. Store ONLY the HTML string in the cache.
+                this.itemCache[index] = itemData.html;
+                // 2. Collect all unique CSS rules.
+                if (itemData.css) {
+                    initialCss.add(itemData.css);
+                }
+            }
+            // 3. Inject all collected CSS into the dynamic stylesheet in one go.
+            if (initialCss.size > 0) {
+                const styleSheet = document.getElementById('dynamic-styles');
+                if (styleSheet) {
+                    styleSheet.textContent += `\n${[...initialCss].join('\n')}`;
+                }
+            }
+        }
+
+        // Setup DOM for virtualization
+        this.sizer = document.createElement('div');
+        this.sizer.style.position = 'absolute';
+        this.sizer.style.top = '0';
+        this.sizer.style.left = '0';
+        this.sizer.style.width = '1px';
+        this.sizer.style.height = `${this.options.itemCount * this.options.itemExtent}px`;
+        this.contentEl.appendChild(this.sizer);
+        this.contentEl.style.position = 'relative';
+
+        this.render = this.render.bind(this);
+        this.scrollEl.addEventListener('scroll', this.render);
+        
+        this.render();
+    }
+
+    /**
+     * Scans a newly rendered HTML fragment and attaches reliable event listeners
+     * to elements that have an inline `onclick` attribute from the Python side.
+     * @param {HTMLElement} element - The container element whose children to scan (e.g., the recycled list item div).
+     */
+    attachEventListeners(element) {
+        const clickableElements = element.querySelectorAll('[onclick]');
+        clickableElements.forEach(clickable => {
+            const onclickAttr = clickable.getAttribute('onclick');
+            
+            // Regex to parse out the callback name from "handleClick('callback_name')"
+            const match = onclickAttr.match(/handleClick\('([^']+)'\)/);
+
+            if (match && match[1]) {
+                const callbackName = match[1];
+                // 1. Remove the inline attribute, as it's now redundant and less reliable.
+                clickable.removeAttribute('onclick');
+                // 2. Add a proper, trusted event listener.
+                clickable.addEventListener('click', () => {
+                    if (window.pywebview && typeof handleClick === 'function') {
+                        // 3. Call the global handleClick function that communicates with Python.
+                        handleClick(callbackName);
+                    }
+                });
+            }
+        });
+    }
+
+    render() {
+        const scrollTop = this.scrollEl.scrollTop;
+        const viewportHeight = this.scrollEl.clientHeight;
+
+        const startIndex = Math.max(0, Math.floor(scrollTop / this.options.itemExtent));
+        const endIndex = Math.min(
+            this.options.itemCount - 1,
+            Math.ceil((scrollTop + viewportHeight) / this.options.itemExtent)
+        );
+        
+        const itemsToRender = [];
+        for (let i = startIndex; i <= endIndex; i++) {
+            itemsToRender.push({ index: i, top: i * this.options.itemExtent });
+        }
+        
+        for (let i = 0; i < itemsToRender.length; i++) {
+            const item = itemsToRender[i];
+            let el = this.visibleItemElements[i];
+
+            if (!el) {
+                el = document.createElement('div');
+                el.style.position = 'absolute';
+                el.style.width = '100%';
+                el.style.height = `${this.options.itemExtent}px`;
+                el.style.left = '0';
+                this.contentEl.appendChild(el);
+                this.visibleItemElements.push(el);
+            }
+
+            el.style.transform = `translateY(${item.top}px)`;
+            
+            if (el.dataset.index !== String(item.index)) {
+                el.dataset.index = item.index;
+                
+                if (this.itemCache[item.index]) {
+                    // Item was pre-rendered or fetched before.
+                    el.innerHTML = this.itemCache[item.index];
+                    // IMPORTANT: We must re-attach listeners every time we set innerHTML.
+                    this.attachEventListeners(el);
+                } else {
+                    // Item needs to be fetched from Python.
+                    el.innerHTML = '<div>Loading...</div>';
+                    if (window.pywebview && this.options.itemBuilderName) {
+                        window.pywebview.build_list_item(this.options.itemBuilderName, item.index)
+                            .then(response => {
+                                const { html, css } = response;
+                                this.itemCache[item.index] = html;
+
+                                if (css) {
+                                    const styleSheet = document.getElementById('dynamic-styles');
+                                    if (styleSheet && !styleSheet.textContent.includes(css)) {
+                                        styleSheet.textContent += `\n${css}`;
+                                    }
+                                }
+                                
+                                if (el.dataset.index === String(item.index)) {
+                                    el.innerHTML = html;
+                                    // Attach event listeners to the newly created DOM nodes.
+                                    this.attachEventListeners(el);
+                                }
+                            })
+                            .catch(e => {
+                                console.error(`Error building virtual item ${item.index}:`, e);
+                                if (el.dataset.index === String(item.index)) {
+                                    el.innerHTML = '<div>Error</div>';
+                                }
+                            });
+                    }
+                }
+            }
+        }
+        
+        for (let i = itemsToRender.length; i < this.visibleItemElements.length; i++) {
+            this.visibleItemElements[i].style.transform = 'translateY(-9999px)';
+        }
+    }
+
+    /**
+     * Called from Python when the underlying data for the list has changed.
+     * Clears the cache and forces a re-render of all visible items.
+     */
+    refresh() {
+        console.log(`Refreshing ALL visible items for #${this.container.id}`);
+        // 1. Clear the entire HTML cache.
+        this.itemCache = {};
+        
+        // 2. Mark all currently visible DOM elements as "dirty" by resetting their data-index.
+        this.visibleItemElements.forEach(el => {
+            el.dataset.index = '-1'; // Set to an invalid index
+        });
+        
+        // 3. Trigger a render to fetch the new, updated content.
+        this.render();
+    }
+
+    /**
+     * Refreshes specific items by their indices. Highly efficient.
+     * @param {Array<number>} indices - An array of item indices to refresh.
+     */
+    refreshItems(indices) {
+        if (!Array.isArray(indices)) return;
+        console.log(`Refreshing specific items for #${this.container.id}:`, indices);
+
+        indices.forEach(index => {
+            // 1. Invalidate the cache for this specific item.
+            if (this.itemCache[index]) {
+                delete this.itemCache[index];
+            }
+            
+            // 2. Find if this item is currently visible in the DOM.
+            const visibleElement = this.visibleItemElements.find(el => el.dataset.index === String(index));
+            
+            if (visibleElement) {
+                // 3. If it's visible, mark it as dirty so the next render pass will update it.
+                visibleElement.dataset.index = '-1';
+            }
+        });
+
+        // 4. Trigger a render pass to update any newly dirtied elements.
+        this.render();
+    }
+    
+    // --- END OF NEW LOGIC ---
+
+    destroy() {
+        if (this.simplebar && typeof this.simplebar.unMount === 'function') {
+            this.simplebar.unMount();
+        }
+    }
+}
+
+                    // Then, RUN the initialization commands
+                    
+                    // Step 0: Convert Python's array-of-arrays to JS's array-of-objects
+                    const pointsForGenerator_fw_id_5 = [[0, 100], [20, 100], [20, 75], [80, 75], [80, 100], [100, 100], [100, 0], [0, 0]].map(p => ({x: p[0], y: p[1]}));
+                    
+                    // Step 1: Call generateRoundedPath with the points and radius
+                    const initialPathString_fw_id_5 = generateRoundedPath(pointsForGenerator_fw_id_5, 8);
+                    
+                    // Step 2: Feed the generated path into ResponsiveClipPath
+                    window._pythra_instances['fw_id_5'] = new ResponsiveClipPath(
+                        'fw_id_5', 
+                        initialPathString_fw_id_5, 
+                        100, 
+                        100, 
+                        { uniformArc: true, decimalPlaces: 2 }
+                    );
+                
+                    // Step 0: Convert Python's array-of-arrays to JS's array-of-objects
+                    const pointsForGenerator_fw_id_7 = [[0, 100], [18.5, 100], [18.5, 74.8], [81.5, 74.8], [81.5, 100], [100, 100], [100, 0], [0, 0]].map(p => ({x: p[0], y: p[1]}));
+                    
+                    // Step 1: Call generateRoundedPath with the points and radius
+                    const initialPathString_fw_id_7 = generateRoundedPath(pointsForGenerator_fw_id_7, 8);
+                    
+                    // Step 2: Feed the generated path into ResponsiveClipPath
+                    window._pythra_instances['fw_id_7'] = new ResponsiveClipPath(
+                        'fw_id_7', 
+                        initialPathString_fw_id_7, 
+                        100, 
+                        100, 
+                        { uniformArc: true, decimalPlaces: 2 }
+                    );
+                
+                } catch (e) {
+                    console.error("Error running Pythra initializers:", e);
+                }
+            });//end event listener
+        </script>
+        
+</body>
+</html>

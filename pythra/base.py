@@ -1,7 +1,7 @@
 # BASE.PY
 import weakref
 import uuid
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 # =============================================================================
 # KEY CLASS - The "ID Card" System for PyThra Widgets
@@ -198,7 +198,7 @@ class Widget:
         # Note: parent relationship is implicit in the tree built by State.build()
         # --- THIS IS THE FIX ---
         # Every widget, upon creation, gets a direct reference to the framework.
-        self.framework: Optional['Framework'] = self._framework_ref() if self._framework_ref else None
+        self.framework: Optional['Framework'] = self._framework_ref() if self._framework_ref else None # type: ignore
         # --- END OF FIX ---
 
     def get_unique_id(self) -> Union[Key, str]:

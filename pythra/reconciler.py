@@ -522,13 +522,20 @@ class Reconciler:
 
         # Unified callback registration
         for prop_name, callback_name_value in props.items():
-            if prop_name.endswith("Name") and callback_name_value:
+            if prop_name.endswith("Name") and callback_name_value or prop_name == 'onDragName' and callback_name_value:
                 function_prop_name = prop_name[:-4]
                 if hasattr(widget, function_prop_name):
                     callback_function = getattr(widget, function_prop_name)
                     if callable(callback_function):
                         result.registered_callbacks[callback_name_value] = callback_function
-                        # print(f"Successfully registered callback for {callback_name_value} with function: {callback_function}")
+                        # print(f"Successfully registered callback for [{callback_name_value}] with function: [{callback_function}]\n")
+                if function_prop_name == 'onDrag':
+                    callback_function = props[function_prop_name]
+                    # print(f'callback_function: {callback_function}')
+                    if callable(callback_function):
+                        result.registered_callbacks[callback_name_value] = callback_function
+                        # print(f"Successfully registered callback for [{callback_name_value}] with function: [{callback_function}]\n")
+
 
         # --- THIS IS THE NEW GENERIC INITIALIZER LOGIC ---
         # js_init_data = props.get("_js_init")
@@ -612,7 +619,7 @@ class Reconciler:
             if "width" in props:
                 inline_styles["width"] = props["width"]
             if "height" in props:
-                print(f"height: {props["height"]}")
+                # print(f"height: {props["height"]}")
                 inline_styles["height"] = props["height"]
             if "clip_path_string" in props:
                 inline_styles["clip-path"] = props["clip_path_string"]
@@ -649,7 +656,7 @@ class Reconciler:
         # --- END OF FIX ---
 
         if 'position_type' in props:
-            print("position_type:", props["position_type"])
+            # print("position_type:", props["position_type"])
             inline_styles["position"] = props["position_type"]
 
         if widget_type_name == "Positioned":

@@ -1,0 +1,124 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+}
+
+.body {
+    overflow: clip;
+    border-radius: 20px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: relative;
+}
+
+.app-bar {
+    height: 60px;
+    background-color: #6200ee;
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    position: relative;
+    transition: margin-left 0.3s, margin-right 0.3s;
+}
+
+.drawer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 250px;
+    background-color: lightblue;
+    z-index: 10;
+    transition: transform 0.3s;
+}
+
+.drawer.left {
+    left: 0;
+    transform: translateX(-100%);
+    border-right: black;
+    border-right-style: solid;
+    border-right-width: 0.3px;
+}
+
+.drawer.right {
+    right: 0;
+    transform: translateX(100%);
+    border-left: black;
+    border-left-style: solid;
+    border-left-width: 0.3px;
+}
+
+.drawer.open {
+    transform: translateX(0);
+}
+
+.content {
+    flex: 1;
+    padding: 20px;
+    background-color: #f0f0f0;
+    transition: margin-left 0.3s, margin-right 0.3s;
+    overflow-y: auto;
+}
+
+.bottom-nav {
+    height: 60px;
+    background-color: #6200ee;
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    bottom: 0px;
+    color: white;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    transition: transform 0.3s;
+}
+
+.bottom-nav.hidden {
+    transform: translateY(100%);
+}
+
+/* In web/styles.css or similar */
+
+/* The Navigator Stack container */
+.navigator-stack {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Style for all direct children (pages) of the stack */
+.navigator-stack > * {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+/* Style for pages that are NOT the top-most page */
+.navigator-stack > *:not(:last-child) {
+    /* Move old pages off-screen to the left */
+    transform: translateX(-30%);
+    pointer-events: none; /* Disable interaction with hidden pages */
+}
+
+/* Style for the top-most page (the active screen) */
+.navigator-stack > *:last-child {
+    transform: translateX(0);
+}
+
+/* We need a way to animate the entry. Let's add a temporary class. */
+/* When a new page is pushed, JS would add the 'entering' class. */
+.navigator-stack > *:last-child.entering {
+    transform: translateX(100%);
+}

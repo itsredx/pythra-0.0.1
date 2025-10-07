@@ -101,20 +101,20 @@ class Framework:
         self.config = Config(config_path=self.project_root / 'config.yaml')
 
         # STEP 3: Set up directory paths for your app
-        # web/ folder: Contains HTML, CSS, JS files for the UI
+        # render/ folder: Contains HTML, CSS, JS files for the UI
         # assets/ folder: Contains images, fonts, and other static files
-        self.web_dir = self.project_root / self.config.get('web_dir', 'web')
+        self.render_dir = self.project_root / self.config.get('render_dir', 'render')
         self.assets_dir = self.project_root / self.config.get('assets_dir', 'assets')
 
         # Create these directories if they don't exist yet
-        self.web_dir.mkdir(exist_ok=True)
+        self.render_dir.mkdir(exist_ok=True)
         self.assets_dir.mkdir(exist_ok=True)
         
         # Copy default PyThra files (CSS, JS) to your project if missing
         self._ensure_default_assets()
 
-        self.html_file_path = self.web_dir / "index.html"
-        self.css_file_path = self.web_dir / "styles.css"
+        self.html_file_path = self.render_dir / "index.html"
+        self.css_file_path = self.render_dir / "styles.css"
 
         # STEP 4: Initialize the Package/Plugin System
         # This handles loading plugins from your plugins/ folder
@@ -176,6 +176,7 @@ class Framework:
         # Tell widgets where to find the Framework instance
         Widget.set_framework(self)
         StatefulWidget.set_framework(self)
+        self._last_update_time = time.time()
         
         print("🚀 PyThra Framework | Initialization Complete! Ready to build your amazing app! 🎯")
 
@@ -205,19 +206,19 @@ class Framework:
         
         How it works:
         1. Finds the template files inside the PyThra package installation
-        2. Copies web files (JS, CSS) to your project's web/ folder
+        2. Copies web files (JS, CSS) to your project's render/ folder
         3. Copies asset files (fonts, images) to your project's assets/ folder
         4. Only copies if the files don't already exist in your project
         """
         # Find the source path inside the installed pythra package
         package_root = Path(__file__).parent
-        source_web_dir = package_root / 'web_template'
+        source_render_dir = package_root / 'web_template'
         source_assets_dir = package_root / 'assets_template'
         
         # Copy web files (js, etc.)
-        if source_web_dir.exists():
-            for item in source_web_dir.iterdir():
-                dest_item = self.web_dir / item.name
+        if source_render_dir.exists():
+            for item in source_render_dir.iterdir():
+                dest_item = self.render_dir / item.name
                 if not dest_item.exists():
                     if item.is_dir():
                         shutil.copytree(item, dest_item)
@@ -408,14 +409,14 @@ class Framework:
         """
         # --- MAPPING OF ENGINES TO FILES ---
         engine_to_file_map = {
-            'generateRoundedPath': "web/js/pathGenerator.js",
-            'ResponsiveClipPath': "web/js/clipPathUtils.js", 
-            'scalePathAbsoluteMLA': "web/js/clipPathUtils.js",
-            'PythraSlider': "web/js/slider.js",
-            'PythraDropdown': "web/js/dropdown.js",
-            'PythraGestureDetector': "web/js/gesture_detector.js",
-            'PythraGradientClipPath': "web/js/gradient_border.js",
-            'PythraVirtualList': "web/js/virtual_list.js",
+            'generateRoundedPath': "render/js/pathGenerator.js",
+            'ResponsiveClipPath': "render/js/clipPathUtils.js", 
+            'scalePathAbsoluteMLA': "render/js/clipPathUtils.js",
+            'PythraSlider': "render/js/slider.js",
+            'PythraDropdown': "render/js/dropdown.js",
+            'PythraGestureDetector': "render/js/gesture_detector.js",
+            'PythraGradientClipPath': "render/js/gradient_border.js",
+            'PythraVirtualList': "render/js/virtual_list.js",
         }
         
         # If no specific engines requested, load all (fallback for compatibility)
@@ -678,8 +679,22 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
             print("✨ PyThra Framework | UI is up-to-date - No changes needed")
 
         self._pending_state_updates.clear()
+
+        # --- FPS CALCULATION ADDED HERE ---
+         # --- CORRECTED FPS CALCULATION ---
+        end_time = time.time()
+        cycle_duration = end_time - start_time
+        
+        # Calculate potential FPS based on this cycle's duration.
+        # This reflects the performance of the update logic itself.
+        if cycle_duration > 0:
+            fps = 1.0 / cycle_duration
+        else:
+            fps = float('inf') # Practically instantaneous
+        # --- END OF FPS CALCULATION ---
+
         print(
-            f"🎉 PyThra Framework | UI Update Complete! (⏱️ {time.time() - start_time:.4f}s)"
+            f"🎉 PyThra Framework | UI Update Complete! (⏱️ {cycle_duration:.4f}s) at ({fps:.2f} FPS)"
         )
 
         # --- PROFILER REPORTING ---

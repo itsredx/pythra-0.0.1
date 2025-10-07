@@ -108,7 +108,7 @@ def create_project(project_name: str, template: str):
         (project_path / "lib").mkdir()
         (project_path / "assets").mkdir()
         (project_path / "plugins").mkdir()
-        (project_path / "web").mkdir()
+        (project_path / "render").mkdir()
         
         # Create basic files
         main_py_content = '''# Welcome to your new PyThra App!
@@ -179,7 +179,7 @@ fixed_size: false
 
 # Asset Configuration
 assets_dir: "assets"
-web_dir: "web"
+render_dir: "render"
 assets_server_port: 0  # 0 = auto-assign port
 
 # Development
@@ -216,7 +216,7 @@ A PyThra desktop application.
 - `config.yaml` - Application configuration
 - `assets/` - Images, fonts, and other resources
 - `plugins/` - Local plugins
-- `web/` - Generated web assets (auto-created)
+- `render/` - Generated web assets (auto-created)
 
 ## Package Management
 

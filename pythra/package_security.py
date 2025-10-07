@@ -8,14 +8,11 @@ This module provides:
 - Digital signatures (future)
 """
 
-import os
 import re
 import ast
 import json
-import hashlib
-import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Tuple, Any
+from typing import Dict, List, Optional, Set, Any
 import logging
 from dataclasses import dataclass
 
@@ -330,7 +327,7 @@ class PackageValidator:
                 
                 elif isinstance(node.func, ast.Attribute):
                     if (hasattr(node.func.value, 'id') and 
-                        node.func.value.id == 'os' and 
+                        node.func.value.id == 'os' and  # type: ignore
                         node.func.attr == 'system'):
                         self.issues.append(SecurityIssue(
                             severity="critical",
@@ -445,7 +442,7 @@ class PackageValidator:
 class PackageWhitelist:
     """Manages whitelist of trusted packages and authors"""
     
-    def __init__(self, whitelist_file: Path = None):
+    def __init__(self, whitelist_file: Path = None): # type: ignore
         if whitelist_file is None:
             whitelist_file = Path.home() / ".pythra" / "package_whitelist.json"
         

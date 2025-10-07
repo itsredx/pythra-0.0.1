@@ -18,9 +18,6 @@ The system automatically creates a config.yaml file in your project if one doesn
 """
 
 from __future__ import annotations
-import importlib
-import importlib.util
-import sys
 from pathlib import Path
 from typing import Any, Dict, Optional
 import yaml
@@ -44,7 +41,7 @@ DEFAULT_CONFIG = {
     'Debug': True,                      # True = show debug info, False = production mode
     
     # === FILE LOCATIONS ===
-    'web_dir': 'web',                   # Folder for HTML, CSS, JavaScript files
+    'render_dir': 'render',                   # Folder for HTML, CSS, JavaScript files
     'assets_dir': 'assets',             # Folder for images, fonts, other static files
     
     # === NETWORK SETTINGS ===

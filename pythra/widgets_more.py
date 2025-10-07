@@ -2852,7 +2852,9 @@ class ListTile(Widget):
             self.css_class = ListTile.shared_styles[self.style_key]
 
         # Combine base class with stateful classes for the current render.
-        self.current_css_class = f"{self.css_class} {'selected' if self.selected else ''} {'disabled' if not self.enabled else ''}"
+        selected_class = 'selected' if self.selected else ''
+        disabled_class = 'disabled' if not self.enabled else ''
+        self.current_css_class = f"{self.css_class} {selected_class} {disabled_class}".strip()
         # Add class to indicate if subtitle exists, for CSS styling
         if subtitle:
             self.current_css_class += " has-subtitle"
@@ -3084,6 +3086,7 @@ class Slider(Widget):
 
     def _handle_drag_update(self, new_value: float, drag_ended: bool):
         # This method remains the same
+        print(f'HANDLE DRAG TRIGGERD WITH VALUE: {new_value}')
         self.controller.isDragEnded = drag_ended
         clamped_value = max(self.min, min(self.max, new_value))
         

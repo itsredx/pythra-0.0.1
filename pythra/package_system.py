@@ -70,9 +70,9 @@ class PackageDependency:
             
         try:
             if self.constraint_type == DependencyConstraint.EXACT:
-                return semver.compare(version, self.version_constraint.lstrip("=")) == 0
+                return semver.compare(version, self.version_constraint.lstrip("=")) == 0 # pyright: ignore[reportPossiblyUnboundVariable]
             elif self.constraint_type == DependencyConstraint.COMPATIBLE:
-                return semver.satisfies(version, self.version_constraint)
+                return semver.satisfies(version, self.version_constraint) # type: ignore
             elif self.constraint_type == DependencyConstraint.GREATER:
                 return semver.compare(version, self.version_constraint.lstrip(">=")) >= 0
             elif self.constraint_type == DependencyConstraint.RANGE:

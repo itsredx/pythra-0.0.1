@@ -1,13 +1,13 @@
 # In a new file: pythra/navigation.py
-from .state import StatefulWidget, State, StatelessWidget
-from .widgets import Stack, Key
+from pythra.styles import Colors
+from .state import StatefulWidget, State
+from .widgets import Container, Key, Text
 from .base import Widget
-from typing import Callable, List, Dict, Any, Optional
-import weakref
+from typing import Callable, List, Dict
 
 class PageRoute:
     # The builder now accepts the navigator state as an argument
-    def __init__(self, builder: Callable[['NavigatorState'], Widget], name: str = None):
+    def __init__(self, builder: Callable[['NavigatorState'], Widget], name: str = ''):
         self.builder = builder
         self.name = name
         self.widget_instance = None
@@ -20,7 +20,7 @@ class PageRoute:
 
 class NavigatorState(State):
     def initState(self):
-        self.history: List[PageRoute] = [self.get_widget().initialRoute]
+        self.history: List[PageRoute] = [self.get_widget().initialRoute] # type: ignore
         
     def push(self, route: PageRoute):
         self.history.append(route)
@@ -55,7 +55,7 @@ class Navigator(StatefulWidget):
     #     # Ask the framework to find the state for us
     #     return widget.framework.find_ancestor_state_of_type(widget, NavigatorState)
 
-    def __init__(self, key: Key, initialRoute: PageRoute, routes: Dict[str, Callable[[], Widget]] = None):
+    def __init__(self, key: Key, initialRoute: PageRoute, routes: Dict[str, Callable[[], Widget]] = None): # type: ignore
         self.initialRoute = initialRoute
         self.routes = routes or {}
         super().__init__(key=key)

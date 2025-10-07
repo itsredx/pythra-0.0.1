@@ -13,9 +13,10 @@
 #
 # =============================================================================
 
-from typing import Any, Dict, List, Optional, Set, Tuple, Union, Callable
+from typing import Any, List, Optional, Callable
 import json
 import weakref
+
 
 # =============================================================================
 # TEXT EDITING CONTROLLER - The "Keyboard Manager" for Text Input
@@ -324,9 +325,9 @@ class VirtualListController:
     refresh its content when the underlying data source changes.
     """
     def __init__(self):
-        self._state: Optional['_VirtualListViewState'] = None
+        self._state: Optional['_VirtualListViewState'] = None # type: ignore
 
-    def _attach(self, state: '_VirtualListViewState'):
+    def _attach(self, state: '_VirtualListViewState'): # type: ignore
         """Internal method for the state to link itself to the controller."""
         self._state = state
 
@@ -355,9 +356,9 @@ class MarkdownEditingController:
         self.markdown = initialText
         self._listeners = []
         self._js_instance_name: Optional[str] = None
-        self._framework_ref: Optional[weakref.ref['Framework']] = None
+        self._framework_ref: Optional[weakref.ref['Framework']] = None # type: ignore
 
-    def _attach_js(self, instance_name: str, framework: 'Framework'):
+    def _attach_js(self, instance_name: str, framework: 'Framework'): # type: ignore
         self._js_instance_name = instance_name
         self._framework_ref = weakref.ref(framework)
 

@@ -106,7 +106,7 @@ project/
 ├── components/          # Reusable UI components
 ├── constants/colors.py  # Shared styling constants
 ├── assets/              # Images, fonts, static resources
-├── web/                 # Generated HTML/CSS/JS (auto-created)
+├── render/                 # Generated HTML/CSS/JS (auto-created)
 └── plugins/             # Optional plugin system
 ```
 

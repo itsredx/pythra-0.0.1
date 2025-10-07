@@ -16,15 +16,14 @@ import site
 import importlib
 import importlib.util
 from pathlib import Path
-from typing import Dict, List, Optional, Set, Any, Union, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 import logging
 from collections import defaultdict, deque
 import weakref
 
 from .package_system import (
-    PackageManifest, PackageInfo, PackageDependency, PackageType,
-    DependencyConstraint, PackageLoadError, DependencyResolutionError,
-    parse_version_constraint
+    PackageManifest, PackageInfo,PackageType,
+    PackageLoadError, DependencyResolutionError
 )
 
 
@@ -104,8 +103,8 @@ class LocalPackageSource(PackageSource):
                 f"plugin.{package_path.name}", 
                 manifest_file
             )
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
+            module = importlib.util.module_from_spec(spec) # type: ignore
+            spec.loader.exec_module(module) # type: ignore
             
             if not hasattr(module, 'PYTHRA_PLUGIN'):
                 return None
@@ -228,8 +227,8 @@ class SitePackagesSource(PackageSource):
                 description=metadata.get("Summary", "PyThra package"),
                 package_type=PackageType.WIDGET_LIBRARY,  # Default for installed packages
                 homepage=metadata.get("Home-page"),
-                author_name=metadata.get("Author"),
-                author_email=metadata.get("Author-email"),
+                author_name=metadata.get("Author"), # type: ignore
+                author_email=metadata.get("Author-email"), # type: ignore
                 license=metadata.get("License", "Unknown"),
                 tags=["installed-package"]
             )
@@ -513,7 +512,7 @@ class PackageManager:
                     manifest.name, 
                     loader=None, 
                     origin=str(package_info.path)
-                )
+                ) # type: ignore
             )
             package_module.__path__ = [str(package_info.path)]
             sys.modules[manifest.name] = package_module
@@ -554,8 +553,8 @@ class PackageManager:
             f"{package_info.manifest.name}.{module_name}",
             module_path
         )
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+        module = importlib.util.module_from_spec(spec) # type: ignore
+        spec.loader.exec_module(module) # type: ignore
         
         # Cache the module
         package_info.python_modules_cache[module_name] = module
