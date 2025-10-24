@@ -2,6 +2,9 @@ import os
 import json
 from typing import Optional, Dict, Any
 
+import markdown
+from markdownify import markdownify as md
+
 from pythra import State, Container, Key, Framework
 
 from .controller import MarkdownEditorController
@@ -10,9 +13,14 @@ framework = Framework.instance()  # Placeholder for the framework reference
 class MarkdownEditorState(State):
     def __init__(self):
         super().__init__()
-        self._content = ""
+        # --- MODIFICATION: Start with None to indicate it's not yet initialized ---
+        self._content: Optional[str] = None
         self._callback_name = None
         self._container_html_id = 'fw_id_8'  # Will store the actual framework-assigned ID
+
+        # --- NEW: State variable for toolbar visibility ---
+        self._controls_visible = True # Default to visible
+        self._toggle_controls_callback_name = None
        
     
     def _get_html_id_for_key(self, key: Key) -> str:
@@ -37,17 +45,25 @@ class MarkdownEditorState(State):
         if not widget:
             return
 
+        # --- MODIFICATION: Set initial content from the widget, but only once ---
+        if self._content is None:
+            self._content = widget.initial_content if hasattr(widget, 'initial_content') else ""
+
         # Attach controller
         if widget.controller:
             widget.controller._attach(self)
 
         # Register a callback for content-change events coming from JS
         self._callback_name = f"markdown_content_change_{widget.key.value}"
+
+        # --- NEW: Register the toggle controls callback ---
+        self._toggle_controls_callback_name = f"markdown_toggle_controls_{widget.key.value}"
         
         # Register our callbacks with the framework's API
         if framework and hasattr(framework, 'api') and framework.api:
             framework.api.register_callback(self._callback_name, self._handle_content_change)
             framework.api.register_callback('markdown_content_change_markdown_default', self._handle_content_change)
+            framework.api.register_callback(self._toggle_controls_callback_name, self._handle_toggle_controls) # Register the new handler
         else:
             print('Warning: framework.api not available; callback registration delayed')
 
@@ -119,6 +135,41 @@ class MarkdownEditorState(State):
         except Exception:
             pass
 
+    # --- NEW: Handler for the toggle event from JavaScript ---
+    def _handle_toggle_controls(self, is_visible: bool):
+        """Called by JS when the user clicks the Hide/Show Controls button."""
+        print(f"Controls visibility changed to: {is_visible}")
+        self._controls_visible = is_visible
+        # We don't call setState() here because no other part of the UI needs to know.
+        # The change is purely internal to this component's state.
+
+     # --- NEW: Implement the core logic for Markdown conversion ---
+
+    def load_from_markdown(self, markdown_text: str):
+        """
+        Converts Markdown to HTML using the 'markdown' library and updates the editor.
+        """
+        # 1. Convert the Markdown to HTML.
+        html_content = markdown.markdown(markdown_text, extensions=['fenced_code', 'tables'])
+        
+        # 2. Update the state's source of truth.
+        self._content = html_content
+        
+        # 3. Tell the framework that this state has changed and a rebuild is needed.
+        # self.setState()
+
+    def export_to_markdown(self) -> Optional[str]:
+        """
+        Converts the editor's current HTML content to Markdown using 'markdownify'.
+        """
+        # Get the current, up-to-the-second content from our state.
+        html_content = self.get_content()
+        if html_content:
+            # The 'heading_style="ATX"' option creates clean '#' style headings.
+            markdown_text = md(html_content, heading_style="ATX")
+            return markdown_text
+        return None
+
     def build(self):
         widget = self.get_widget()
         if not widget:
@@ -135,15 +186,20 @@ class MarkdownEditorState(State):
             "options": {
                 'callback': self._callback_name,
                 'instanceId': f"{widget.key.value}_PythraMarkdownEditor",
-                "showControls": True,
-                "initialContent": "<h1>Welcome!</h1><p>Start writing your document here...</p>",
+                "showControls": False,
+                # --- THE CRITICAL FIX ---
+                # Use the current content from the state, not a hardcoded string.
+                "initialContent": self._content,
+                "width": widget.width,
+                "height": widget.height,
+                "showGrid": widget.show_grid,
             },
             },
             # Add minimal editor container that our JS will enhance
-            child=Container(
-                key=Key(f"{widget.key.value}_inner"),
-                cssClass="editor-inner-container",
-                width="100%",
-                height="100%"
-            )
+            # child=Container(
+            #     key=Key(f"{widget.key.value}_inner"),
+            #     cssClass="editor-inner-container",
+            #     width="100%",
+            #     height="100%"
+            # )
         )

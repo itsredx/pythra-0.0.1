@@ -1149,16 +1149,33 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
                     
                     # We use setTimeout to ensure the element is fully in the DOM.
                     command_js += f"""
+                        console.log('Scheduling dynamic initialization of {engine_name} for {instance_name}');
                         setTimeout(() => {{
-                            if (typeof {engine_name} !== 'undefined') {{
-                                if (!window._pythra_instances['{instance_name}']) {{
-                                    console.log('Dynamically initializing {engine_name} for {instance_name}');
-                                    window._pythra_instances['{instance_name}'] = new {engine_name}('{target_id}', {options_json});
-                                }}
-                            }} else {{
-                                console.error('{engine_name} class not found. Ensure its JS file is loaded.');
-                            }}
-                        }}, 0);
+        const targetElement = document.getElementById('{target_id}');
+        const instanceExists = window._pythra_instances && window._pythra_instances['{instance_name}'];
+
+        if (targetElement && typeof {engine_name} !== 'undefined') {{
+            // --- NEW LIFECYCLE LOGIC ---
+            
+            // 1. Check if an old instance exists.
+            if (instanceExists) {{
+                // 2. If it has a destroy method, call it to clean up.
+                if (typeof window._pythra_instances['{instance_name}'].destroy === 'function') {{
+                    window._pythra_instances['{instance_name}'].destroy();
+                }}
+                // 3. Nullify the reference.
+                window._pythra_instances['{instance_name}'] = null;
+            }}
+
+            // 4. Now, create the new instance. This is safe.
+            console.log('✅ Initializing/Re-initializing JS component: {instance_name} on #{target_id}');
+            if (!window._pythra_instances) {{ window._pythra_instances = {{}}; }}
+            window._pythra_instances['{instance_name}'] = new {engine_name}(targetElement, {options_json});
+
+        }} else {{
+            console.error('Failed to initialize {instance_name}. Element "{target_id}" or class "{engine_name}" not found.');
+        }}
+    }}, 0);
                     """
                 # --- END OF GENERIC LOGIC ---
                     
@@ -1364,18 +1381,23 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
                 
                 old_class = props.get("old_shared_class") # We'll need to add this to the patch
                 new_class = value # The new shared class
+                new_classes = new_class.split(' ')
+                # print("New class: ", new_class.split(' '),)
 
-                # This JS is robust: it works even if classes are None or the same.
-                js_prop_updates.append(f"""
-                    if ("{old_class}" !== "{new_class}") {{
-                        if ("{old_class}" && {element_var}.classList.contains("{old_class}")) {{
-                            {element_var}.classList.remove("{old_class}");
+                for _class in new_classes:
+                    print("New class: ",_class) 
+
+                    # This JS is robust: it works even if classes are None or the same.
+                    js_prop_updates.append(f"""
+                        if ("{old_class}" !== "{_class}") {{
+                            if ("{old_class}" && {element_var}.classList.contains("{old_class}")) {{
+                                {element_var}.classList.remove("{old_class}");
+                            }}
+                            if ("{_class}") {{
+                                {element_var}.classList.add("{_class}");
+                            }}
                         }}
-                        if ("{new_class}") {{
-                            {element_var}.classList.add("{new_class}");
-                        }}
-                    }}
-                """)
+                    """)
             # --- END OF NEW LOGIC ---
             elif key == "src":
                 js_prop_updates.append(f"{element_var}.src = {json.dumps(value)};")

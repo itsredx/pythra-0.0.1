@@ -6,10 +6,28 @@
     "dependencies": {
         "pythra": ">=0.1.0"
     },
+    "peer_dependencies": {
+        "markdown": ">=3.0.0",
+        "markdownify": ">=0.11.0"
+    },
+    "dev_dependencies": {
+        "pytest": ">=7.0.0"
+    },
     "author": {
-        "name": "itsredx"
+        "name": "itsredx",
+        "email": "user@example.com",
+        "url": "https://github.com/itsredx"
     },
     "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/itsredx/pythra-markdown-editor",
+        "directory": "plugins/markdown"
+    },
+    "homepage": "https://github.com/itsredx/pythra-markdown-editor#readme",
+    "documentation": "https://github.com/itsredx/pythra-markdown-editor/docs",
+    "min_python_version": "0.1.0",
+    "supported_platforms": ["windows", "linux", "macos"],
     "python_modules": ["__init__", "widget", "controller", "editor_state", "style"],
     "asset_dir": "render",
     "js_modules": {

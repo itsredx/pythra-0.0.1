@@ -6,7 +6,7 @@
     <!-- ADD SIMPLEBAR CSS -->
     <link rel="stylesheet" href="./js/scroll-bar/simplebar.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1761266694">
+    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1761325888">
     <style id="dynamic-styles">
 .shared-container-3 { box-sizing: border-box; background: white; padding: 16px; width: 100vw; height: 100vh; }
 .shared-column-0 { display: flex; flex-direction: column; justify-content: flex-start; align-items: center; height: 100%; direction: ltr; }
@@ -35,17 +35,15 @@
             }
             
 
-.shared-container-2 { box-sizing: border-box; width: 100%; height: 100%; }
+.shared-container-2 { box-sizing: border-box; width: 100%; height: 70vh; }
 
-.shared-container-1 { box-sizing: border-box; width: 100%; height: 100%; }
+.editor-container { box-sizing: border-box; width: 100%; height: 70vh; }
 
-.editor-container { box-sizing: border-box; width: 100%; height: 100%; }
+.shared-container-1 { box-sizing: border-box; width: 100%; height: 70vh; }
 
-.shared-container-0 { box-sizing: border-box; width: 100%; height: 100%; }
+.editor-inner-container { box-sizing: border-box; width: 100%; height: 70vh; }
 
-.editor-inner-container { box-sizing: border-box; width: 100%; height: 100%; }
-
-.shared-container-4 { box-sizing: border-box; width: 100%; height: 79vh; }</style>
+.shared-container-0 { box-sizing: border-box; width: 100%; height: 70vh; }</style>
     
         <script src="qwebchannel.js"></script>
         <script>
@@ -93,7 +91,7 @@
     
 </head>
 <body>
-    <div id="root-container"><div id="fw_id_1" class=""><div id="fw_id_2" class="shared-container-3"><div id="fw_id_3" class="shared-column-0"><div id="fw_id_4" class="shared-row-0"><p id="fw_id_5" class="shared-text-0" style="color: black; font-size: 24; font-weight: bold">Markdown Editor</p></div><div id="fw_id_6" class="" style="height: 16px"></div><button id="fw_id_7" class="shared-elevatedbutton-0" onclick="handleClick('bold')"><p id="fw_id_8" class="shared-text-1">Bold</p></button><div id="fw_id_9" class="" style="height: 16px"></div><div id="fw_id_10" class="" style="flex-grow: 1; flex-shrink: 1; flex-basis: 0%; min-width: 100%; min-height: 0; display: flex; flex-direction: column"><div id="fw_id_11" class="shared-container-2"><div id="fw_id_12" class="shared-container-1 editor-container"><div id="fw_id_13" class="shared-container-0 editor-inner-container"><div id="fw_id_15" class="shared-container-4"><div id="fw_id_16" class="shared-container-0 editor-inner-container"></div></div></div></div></div></div></div></div></div></div>
+    <div id="root-container"><div id="fw_id_1" class=""><div id="fw_id_2" class="shared-container-3"><div id="fw_id_3" class="shared-column-0"><div id="fw_id_4" class="shared-row-0"><p id="fw_id_5" class="shared-text-0" style="color: black; font-size: 24; font-weight: bold">Markdown Editor  [Builds: 0] </p><button id="fw_id_6" class="shared-elevatedbutton-0" onclick="handleClick('increment')"><p id="fw_id_7" class="shared-text-1">increment</p></button></div><div id="fw_id_8" class="" style="height: 16px"></div><div id="fw_id_9" class="shared-row-0"><button id="fw_id_10" class="shared-elevatedbutton-0" onclick="handleClick('bold')"><p id="fw_id_11" class="shared-text-1">Bold</p></button><div id="fw_id_12" class="" style="width: 10px"></div><button id="fw_id_13" class="shared-elevatedbutton-0" onclick="handleClick('load_markdown')"><p id="fw_id_14" class="shared-text-1">Load MD</p></button><div id="fw_id_15" class="" style="width: 10px"></div><button id="fw_id_16" class="shared-elevatedbutton-0" onclick="handleClick('export_markdown')"><p id="fw_id_17" class="shared-text-1">Export MD</p></button></div><div id="fw_id_18" class="" style="height: 16px"></div><div id="fw_id_19" class="shared-container-2"><div id="fw_id_20" class="shared-container-1 editor-container"><div id="fw_id_21" class="shared-container-0 editor-inner-container"><div id="fw_id_23" class="shared-container-2"></div></div></div></div></div></div></div></div>
     <div id="overlay-container"></div>
 
     <!-- ADD SIMPLEBAR JS -->
@@ -343,6 +341,258 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
     console.error('Error loading virtual_list.js:', e);
 }
 
+// --- Injected from dropdown.js ---
+try {
+/**
+ * PythraDropdown: Client-side engine for a custom Dropdown widget.
+ *
+ * Handles toggling the dropdown menu, closing it when clicking outside,
+ * and sending the selected value back to the Python backend.
+ */
+class PythraDropdown {
+    constructor(elementId, options) {
+        this.container = document.getElementById(elementId);
+        if (!this.container) {
+            console.error(`Dropdown container with ID #${elementId} not found.`);
+            return;
+        }
+
+        console.log(`✅ PythraDropdown engine is initializing for #${elementId}`);
+
+        this.options = options;
+        this.valueContainer = this.container.querySelector('.dropdown-value-container');
+        this.menu = this.container.querySelector('.dropdown-menu');
+        this.items = this.menu.querySelectorAll('.dropdown-item');
+
+        // Bind 'this' to maintain context in event handlers
+        this.toggleMenu = this.toggleMenu.bind(this);
+        this.handleItemClick = this.handleItemClick.bind(this);
+        this.handleClickOutside = this.handleClickOutside.bind(this);
+
+        // Attach event listeners
+        this.valueContainer.addEventListener('click', this.toggleMenu);
+        this.items.forEach(item => {
+            item.addEventListener('click', this.handleItemClick);
+        });
+    }
+
+    toggleMenu(event) {
+        event.stopPropagation(); // Prevent click from bubbling to the document
+        const isCurrentlyOpen = this.container.classList.toggle('open');
+        console.log("Value container Clicked");
+        
+        if (isCurrentlyOpen) {
+            // If we just opened the menu, listen for clicks outside to close it
+            document.addEventListener('click', this.handleClickOutside);
+        } else {
+            // If we just closed it, stop listening
+            document.removeEventListener('click', this.handleClickOutside);
+        }
+    }
+
+    handleItemClick(event) {
+        const selectedValue = event.currentTarget.dataset.value;
+        const selectedLabel = event.currentTarget.textContent;
+
+        console.log("Dropdown option Clicked");
+        
+        // 1. Update the display value immediately for instant feedback
+        this.valueContainer.querySelector('span').textContent = selectedLabel;
+        
+        // 2. Send the selected *value* back to the Python backend
+        if (window.pywebview && this.options.onChangedName) {
+            window.pywebview.on_input_changed(this.options.onChangedName, selectedValue);
+        }
+        
+        // 3. Close the menu
+        this.closeMenu();
+    }
+    
+    closeMenu() {
+        if (this.container.classList.contains('open')) {
+            this.container.classList.remove('open');
+            document.removeEventListener('click', this.handleClickOutside);
+        }
+    }
+
+    handleClickOutside(event) {
+        // If the click is outside the main container, close the menu
+        if (!this.container.contains(event.target)) {
+            this.closeMenu();
+        }
+    }
+
+    destroy() {
+        // Cleanup to prevent memory leaks
+        if (!this.container) return;
+        this.valueContainer.removeEventListener('click', this.toggleMenu);
+        this.items.forEach(item => {
+            item.removeEventListener('click', this.handleItemClick);
+        });
+        document.removeEventListener('click', this.handleClickOutside);
+    }
+}
+
+// Ensure classes are available globally
+if (typeof ResponsiveClipPath !== 'undefined') window.ResponsiveClipPath = ResponsiveClipPath;
+if (typeof PythraSlider !== 'undefined') window.PythraSlider = PythraSlider;
+if (typeof PythraDropdown !== 'undefined') window.PythraDropdown = PythraDropdown;
+if (typeof PythraGestureDetector !== 'undefined') window.PythraGestureDetector = PythraGestureDetector;
+if (typeof PythraGradientClipPath !== 'undefined') window.PythraGradientClipPath = PythraGradientClipPath;
+if (typeof PythraVirtualList !== 'undefined') window.PythraVirtualList = PythraVirtualList;
+if (typeof generateRoundedPath !== 'undefined') window.generateRoundedPath = generateRoundedPath;
+if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = scalePathAbsoluteMLA;
+} catch (e) {
+    console.error('Error loading dropdown.js:', e);
+}
+
+// --- Injected from gradient_border.js ---
+try {
+/**
+ * PythraGradientClipPath: Client-side engine for creating an animated
+ * gradient border around a complex clip-path shape.
+ */
+'./pathGenerator.js';
+
+// Helper function for basic vector math
+const vec_gradient_border = (p1, p2) => ({ x: p2.x - p1.x, y: p2.y - p1.y });
+const magnitude_gradient_border = (v) => Math.sqrt(v.x * v.x + v.y * v.y);
+const normalize_gradient_border = (v) => {
+    const mag = magnitude_gradient_border(v);
+    return mag > 0 ? { x: v.x / mag, y: v.y / mag } : { x: 0, y: 0 };
+};
+const dot_gradient_border = (v1, v2) => v1.x * v2.x + v1.y * v2.y;
+// const cross = (v1, v2) => v1.x * v2.y - v1.y * v2.x;
+
+
+
+/**
+ * Calculates a new set of points offset outwards from the original polygon.
+ * @param {Array<Object>} points - The original points, e.g., [{x: 0, y: 0}, ...].
+ * @param {number} offset - The distance to offset the points outwards.
+ * @returns {Array<Object>} The new, offset points.
+ */
+function offsetPoints(points, offset) {
+    const numPoints = points.length;
+    if (numPoints < 3) return points;
+
+    const offsetPoints = [];
+
+    for (let i = 0; i < numPoints; i++) {
+        const p_prev = points[(i + numPoints - 1) % numPoints];
+        const p_curr = points[i];
+        const p_next = points[(i + 1) % numPoints];
+
+        const v1 = normalize_gradient_border(vec_gradient_border(p_curr, p_prev));
+        const v2 = normalize_gradient_border(vec_gradient_border(p_curr, p_next));
+
+        // Calculate the angle bisector vector (points outwards for convex shapes)
+        const bisector = normalize_gradient_border({ x: v1.x + v2.x, y: v1.y + v2.y });
+
+        // Calculate the angle between the two edge vectors
+        const angle = Math.acos(dot_gradient_border(v1, v2));
+
+        // Use trigonometry to find the length to move along the bisector
+        // to achieve the desired perpendicular offset distance.
+        const distance = offset / Math.sin(angle / 2);
+
+        if (isNaN(distance) || !isFinite(distance)) {
+             // Handle collinear points (angle is ~PI), just move along the normal
+             const normal = { x: -v1.y, y: v1.x };
+             offsetPoints.push({ x: p_curr.x + normal.x * offset, y: p_curr.y + normal.y * offset });
+        } else {
+             offsetPoints.push({ x: p_curr.x + bisector.x * distance, y: p_curr.y + bisector.y * distance });
+        }
+    }
+    return offsetPoints;
+}
+
+
+class PythraGradientClipPath {
+    constructor(elementId, options) {
+        this.container = document.getElementById(elementId);
+        if (!this.container) {
+            console.error(`GradientClipPath container with ID #${elementId} not found.`);
+            return;
+        }
+
+        console.log(`✅ PythraGradientClipPath engine is initializing for #${elementId}`);
+        
+        // --- Setup DOM Structure ---
+        // The reconciler placed the child widget inside our container.
+        // We need to wrap it and add a background element.
+        this.backgroundEl = document.createElement('div');
+        this.backgroundEl.className = 'gradient-clip-background';
+        
+        this.contentHost = document.createElement('div');
+        this.contentHost.className = 'gradient-clip-content-host';
+
+        // Move the original child from the container into the new host
+        while (this.container.firstChild) {
+            this.contentHost.appendChild(this.container.firstChild);
+        }
+        
+        this.container.appendChild(this.backgroundEl);
+        this.container.appendChild(this.contentHost);
+        
+        // --- Generate and Apply Paths ---
+        this.options = options;
+        this.update = this.update.bind(this);
+        
+        // Use a ResizeObserver to make it fully responsive
+        this.ro = new ResizeObserver(this.update);
+        this.ro.observe(this.container);
+        
+        // Initial update
+        this.update();
+    }
+
+    update() {
+        const rect = this.container.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+
+        const { points, radius, viewBox, borderWidth } = this.options;
+        const jsPoints = points.map(p => ({ x: p[0], y: p[1] }));
+
+        // 1. Generate the inner path for the content
+        const innerPathStr = generateRoundedPath(jsPoints, radius);
+        const innerClipPath = `path("${innerPathStr}")`;
+
+        // 2. Calculate offset points and a larger radius for the outer path
+        const offset_points = offsetPoints(jsPoints, borderWidth);
+        const outerRadius = radius + borderWidth;
+        const outerPathStr = generateRoundedPath(offset_points, outerRadius);
+        const outerClipPath = `path("${outerPathStr}")`;
+
+        // 3. Apply the responsive clip-paths to the elements
+        // We don't need ResponsiveClipPath class here because we update on every resize.
+        this.contentHost.style.clipPath = innerClipPath;
+        this.contentHost.style.webkitClipPath = innerClipPath;
+        
+        this.backgroundEl.style.clipPath = outerClipPath;
+        this.backgroundEl.style.webkitClipPath = outerClipPath;
+    }
+
+    destroy() {
+        if (this.ro && this.container) {
+            this.ro.unobserve(this.container);
+        }
+    }
+}
+
+// Ensure classes are available globally
+if (typeof ResponsiveClipPath !== 'undefined') window.ResponsiveClipPath = ResponsiveClipPath;
+if (typeof PythraSlider !== 'undefined') window.PythraSlider = PythraSlider;
+if (typeof PythraDropdown !== 'undefined') window.PythraDropdown = PythraDropdown;
+if (typeof PythraGestureDetector !== 'undefined') window.PythraGestureDetector = PythraGestureDetector;
+if (typeof PythraGradientClipPath !== 'undefined') window.PythraGradientClipPath = PythraGradientClipPath;
+if (typeof PythraVirtualList !== 'undefined') window.PythraVirtualList = PythraVirtualList;
+if (typeof generateRoundedPath !== 'undefined') window.generateRoundedPath = generateRoundedPath;
+if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = scalePathAbsoluteMLA;
+} catch (e) {
+    console.error('Error loading gradient_border.js:', e);
+}
+
 // --- Injected from gesture_detector.js ---
 try {
 /**
@@ -577,153 +827,6 @@ if (typeof generateRoundedPath !== 'undefined') window.generateRoundedPath = gen
 if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = scalePathAbsoluteMLA;
 } catch (e) {
     console.error('Error loading pathGenerator.js:', e);
-}
-
-// --- Injected from gradient_border.js ---
-try {
-/**
- * PythraGradientClipPath: Client-side engine for creating an animated
- * gradient border around a complex clip-path shape.
- */
-'./pathGenerator.js';
-
-// Helper function for basic vector math
-const vec_gradient_border = (p1, p2) => ({ x: p2.x - p1.x, y: p2.y - p1.y });
-const magnitude_gradient_border = (v) => Math.sqrt(v.x * v.x + v.y * v.y);
-const normalize_gradient_border = (v) => {
-    const mag = magnitude_gradient_border(v);
-    return mag > 0 ? { x: v.x / mag, y: v.y / mag } : { x: 0, y: 0 };
-};
-const dot_gradient_border = (v1, v2) => v1.x * v2.x + v1.y * v2.y;
-// const cross = (v1, v2) => v1.x * v2.y - v1.y * v2.x;
-
-
-
-/**
- * Calculates a new set of points offset outwards from the original polygon.
- * @param {Array<Object>} points - The original points, e.g., [{x: 0, y: 0}, ...].
- * @param {number} offset - The distance to offset the points outwards.
- * @returns {Array<Object>} The new, offset points.
- */
-function offsetPoints(points, offset) {
-    const numPoints = points.length;
-    if (numPoints < 3) return points;
-
-    const offsetPoints = [];
-
-    for (let i = 0; i < numPoints; i++) {
-        const p_prev = points[(i + numPoints - 1) % numPoints];
-        const p_curr = points[i];
-        const p_next = points[(i + 1) % numPoints];
-
-        const v1 = normalize_gradient_border(vec_gradient_border(p_curr, p_prev));
-        const v2 = normalize_gradient_border(vec_gradient_border(p_curr, p_next));
-
-        // Calculate the angle bisector vector (points outwards for convex shapes)
-        const bisector = normalize_gradient_border({ x: v1.x + v2.x, y: v1.y + v2.y });
-
-        // Calculate the angle between the two edge vectors
-        const angle = Math.acos(dot_gradient_border(v1, v2));
-
-        // Use trigonometry to find the length to move along the bisector
-        // to achieve the desired perpendicular offset distance.
-        const distance = offset / Math.sin(angle / 2);
-
-        if (isNaN(distance) || !isFinite(distance)) {
-             // Handle collinear points (angle is ~PI), just move along the normal
-             const normal = { x: -v1.y, y: v1.x };
-             offsetPoints.push({ x: p_curr.x + normal.x * offset, y: p_curr.y + normal.y * offset });
-        } else {
-             offsetPoints.push({ x: p_curr.x + bisector.x * distance, y: p_curr.y + bisector.y * distance });
-        }
-    }
-    return offsetPoints;
-}
-
-
-class PythraGradientClipPath {
-    constructor(elementId, options) {
-        this.container = document.getElementById(elementId);
-        if (!this.container) {
-            console.error(`GradientClipPath container with ID #${elementId} not found.`);
-            return;
-        }
-
-        console.log(`✅ PythraGradientClipPath engine is initializing for #${elementId}`);
-        
-        // --- Setup DOM Structure ---
-        // The reconciler placed the child widget inside our container.
-        // We need to wrap it and add a background element.
-        this.backgroundEl = document.createElement('div');
-        this.backgroundEl.className = 'gradient-clip-background';
-        
-        this.contentHost = document.createElement('div');
-        this.contentHost.className = 'gradient-clip-content-host';
-
-        // Move the original child from the container into the new host
-        while (this.container.firstChild) {
-            this.contentHost.appendChild(this.container.firstChild);
-        }
-        
-        this.container.appendChild(this.backgroundEl);
-        this.container.appendChild(this.contentHost);
-        
-        // --- Generate and Apply Paths ---
-        this.options = options;
-        this.update = this.update.bind(this);
-        
-        // Use a ResizeObserver to make it fully responsive
-        this.ro = new ResizeObserver(this.update);
-        this.ro.observe(this.container);
-        
-        // Initial update
-        this.update();
-    }
-
-    update() {
-        const rect = this.container.getBoundingClientRect();
-        if (rect.width === 0 || rect.height === 0) return;
-
-        const { points, radius, viewBox, borderWidth } = this.options;
-        const jsPoints = points.map(p => ({ x: p[0], y: p[1] }));
-
-        // 1. Generate the inner path for the content
-        const innerPathStr = generateRoundedPath(jsPoints, radius);
-        const innerClipPath = `path("${innerPathStr}")`;
-
-        // 2. Calculate offset points and a larger radius for the outer path
-        const offset_points = offsetPoints(jsPoints, borderWidth);
-        const outerRadius = radius + borderWidth;
-        const outerPathStr = generateRoundedPath(offset_points, outerRadius);
-        const outerClipPath = `path("${outerPathStr}")`;
-
-        // 3. Apply the responsive clip-paths to the elements
-        // We don't need ResponsiveClipPath class here because we update on every resize.
-        this.contentHost.style.clipPath = innerClipPath;
-        this.contentHost.style.webkitClipPath = innerClipPath;
-        
-        this.backgroundEl.style.clipPath = outerClipPath;
-        this.backgroundEl.style.webkitClipPath = outerClipPath;
-    }
-
-    destroy() {
-        if (this.ro && this.container) {
-            this.ro.unobserve(this.container);
-        }
-    }
-}
-
-// Ensure classes are available globally
-if (typeof ResponsiveClipPath !== 'undefined') window.ResponsiveClipPath = ResponsiveClipPath;
-if (typeof PythraSlider !== 'undefined') window.PythraSlider = PythraSlider;
-if (typeof PythraDropdown !== 'undefined') window.PythraDropdown = PythraDropdown;
-if (typeof PythraGestureDetector !== 'undefined') window.PythraGestureDetector = PythraGestureDetector;
-if (typeof PythraGradientClipPath !== 'undefined') window.PythraGradientClipPath = PythraGradientClipPath;
-if (typeof PythraVirtualList !== 'undefined') window.PythraVirtualList = PythraVirtualList;
-if (typeof generateRoundedPath !== 'undefined') window.generateRoundedPath = generateRoundedPath;
-if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = scalePathAbsoluteMLA;
-} catch (e) {
-    console.error('Error loading gradient_border.js:', e);
 }
 
 // --- Injected from clipPathUtils.js ---
@@ -1035,121 +1138,33 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
     console.error('Error loading slider.js:', e);
 }
 
-// --- Injected from dropdown.js ---
-try {
-/**
- * PythraDropdown: Client-side engine for a custom Dropdown widget.
- *
- * Handles toggling the dropdown menu, closing it when clicking outside,
- * and sending the selected value back to the Python backend.
- */
-class PythraDropdown {
-    constructor(elementId, options) {
-        this.container = document.getElementById(elementId);
-        if (!this.container) {
-            console.error(`Dropdown container with ID #${elementId} not found.`);
-            return;
-        }
-
-        console.log(`✅ PythraDropdown engine is initializing for #${elementId}`);
-
-        this.options = options;
-        this.valueContainer = this.container.querySelector('.dropdown-value-container');
-        this.menu = this.container.querySelector('.dropdown-menu');
-        this.items = this.menu.querySelectorAll('.dropdown-item');
-
-        // Bind 'this' to maintain context in event handlers
-        this.toggleMenu = this.toggleMenu.bind(this);
-        this.handleItemClick = this.handleItemClick.bind(this);
-        this.handleClickOutside = this.handleClickOutside.bind(this);
-
-        // Attach event listeners
-        this.valueContainer.addEventListener('click', this.toggleMenu);
-        this.items.forEach(item => {
-            item.addEventListener('click', this.handleItemClick);
-        });
-    }
-
-    toggleMenu(event) {
-        event.stopPropagation(); // Prevent click from bubbling to the document
-        const isCurrentlyOpen = this.container.classList.toggle('open');
-        console.log("Value container Clicked");
-        
-        if (isCurrentlyOpen) {
-            // If we just opened the menu, listen for clicks outside to close it
-            document.addEventListener('click', this.handleClickOutside);
-        } else {
-            // If we just closed it, stop listening
-            document.removeEventListener('click', this.handleClickOutside);
-        }
-    }
-
-    handleItemClick(event) {
-        const selectedValue = event.currentTarget.dataset.value;
-        const selectedLabel = event.currentTarget.textContent;
-
-        console.log("Dropdown option Clicked");
-        
-        // 1. Update the display value immediately for instant feedback
-        this.valueContainer.querySelector('span').textContent = selectedLabel;
-        
-        // 2. Send the selected *value* back to the Python backend
-        if (window.pywebview && this.options.onChangedName) {
-            window.pywebview.on_input_changed(this.options.onChangedName, selectedValue);
-        }
-        
-        // 3. Close the menu
-        this.closeMenu();
-    }
-    
-    closeMenu() {
-        if (this.container.classList.contains('open')) {
-            this.container.classList.remove('open');
-            document.removeEventListener('click', this.handleClickOutside);
-        }
-    }
-
-    handleClickOutside(event) {
-        // If the click is outside the main container, close the menu
-        if (!this.container.contains(event.target)) {
-            this.closeMenu();
-        }
-    }
-
-    destroy() {
-        // Cleanup to prevent memory leaks
-        if (!this.container) return;
-        this.valueContainer.removeEventListener('click', this.toggleMenu);
-        this.items.forEach(item => {
-            item.removeEventListener('click', this.handleItemClick);
-        });
-        document.removeEventListener('click', this.handleClickOutside);
-    }
-}
-
-// Ensure classes are available globally
-if (typeof ResponsiveClipPath !== 'undefined') window.ResponsiveClipPath = ResponsiveClipPath;
-if (typeof PythraSlider !== 'undefined') window.PythraSlider = PythraSlider;
-if (typeof PythraDropdown !== 'undefined') window.PythraDropdown = PythraDropdown;
-if (typeof PythraGestureDetector !== 'undefined') window.PythraGestureDetector = PythraGestureDetector;
-if (typeof PythraGradientClipPath !== 'undefined') window.PythraGradientClipPath = PythraGradientClipPath;
-if (typeof PythraVirtualList !== 'undefined') window.PythraVirtualList = PythraVirtualList;
-if (typeof generateRoundedPath !== 'undefined') window.generateRoundedPath = generateRoundedPath;
-if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = scalePathAbsoluteMLA;
-} catch (e) {
-    console.error('Error loading dropdown.js:', e);
-}
-
 // --- Injected Plugin 'pythra-markdown-editor': editor.js ---
 try {
-// PythraMarkdownEditor - A full-featured, self-contained WYSIWYG Editor Engine
+// PythraMarkdownEditor - A full-featured, self-contained, and memory-safe WYSIWYG Editor Engine
 class PythraMarkdownEditor {
-    constructor(element, options = {}) {
-        this.container = element;
+    constructor(elementOrId, options = {}) {
+        if (typeof elementOrId === 'string') {
+            this.container = document.getElementById(elementOrId);
+            if (!this.container) {
+                console.error(`PythraMarkdownEditor Error: Container with ID '${elementOrId}' not found.`);
+                return;
+            }
+        } else {
+            this.container = elementOrId;
+        }
+
         this.options = options;
         this.options.showControls = this.options.showControls ?? true;
         this.editorElement = null;
         this._changeTimer = null;
+        this._changeHandler = null;
+        this._feedbackHandler = null;
+        this.options.showGrid = this.options.showGrid ?? false;
+
+        if (this.container) {
+            this.container.style.width = this.options.width || '100%';
+            this.container.style.height = this.options.height || 'auto';
+        }
 
         if (!window._pythraEditorStylesInjected) {
             this.injectStyles();
@@ -1160,37 +1175,76 @@ class PythraMarkdownEditor {
     }
 
     init() {
-        this.container.innerHTML = '';
+        let controlPanel = this.container.querySelector('.control-panel');
+        let editorEl = this.container.querySelector('[contenteditable="true"]');
+
         this.container.classList.add('pythra-editor-wrapper');
 
         if (this.options.showControls) {
-            const toggleBtn = document.createElement('button');
-            toggleBtn.id = `toggleControls_${this.options.instanceId || ''}`;
-            toggleBtn.className = 'pythra-toggle-button';
-            toggleBtn.textContent = 'Hide Controls';
-            this.container.appendChild(toggleBtn);
-
-            const controlPanel = this.createControlPanel();
-            this.container.appendChild(controlPanel);
-
-            toggleBtn.addEventListener('click', () => {
-                const isHidden = controlPanel.classList.toggle('hidden');
+            let toggleBtn = this.container.querySelector('.pythra-toggle-button');
+            if (!controlPanel) {
+                toggleBtn = document.createElement('button');
+                toggleBtn.id = `toggleControls_${this.options.instanceId || ''}`;
+                toggleBtn.className = 'pythra-toggle-button';
+                // Prepend the button so it's always at the top
+                this.container.prepend(toggleBtn);
+                
+                controlPanel = this.createControlPanel();
+                // Insert after the toggle button
+                toggleBtn.insertAdjacentElement('afterend', controlPanel);
+            }
+            
+            // --- THIS IS THE FINAL FIX FOR PRESERVING HIDDEN STATE ---
+            if (this.options.controlsInitiallyHidden && !controlPanel.classList.contains('hidden')) {
+                controlPanel.classList.add('hidden');
+            } else if (!this.options.controlsInitiallyHidden && controlPanel.classList.contains('hidden')) {
+                controlPanel.classList.remove('hidden');
+            }
+            
+            if (toggleBtn) {
+                const isHidden = controlPanel.classList.contains('hidden');
                 toggleBtn.textContent = isHidden ? 'Show Controls' : 'Hide Controls';
-            });
+                toggleBtn.onclick = () => {
+                    const isNowHidden = controlPanel.classList.toggle('hidden');
+                    toggleBtn.textContent = isNowHidden ? 'Show Controls' : 'Hide Controls';
+                    if (typeof handleInput === 'function' && this.options.onToggleControlsCallback) {
+                        handleInput(this.options.onToggleControlsCallback, !isNowHidden);
+                    }
+                };
+            }
+        } else if (controlPanel) {
+            const toggleBtn = this.container.querySelector('.pythra-toggle-button');
+            if (toggleBtn) toggleBtn.remove();
+            controlPanel.remove();
         }
 
-        const editorEl = document.createElement('div');
-        editorEl.id = this.options.instanceId ? `editor_${this.options.instanceId}` : 'editor';
-        editorEl.contentEditable = true;
-        this.container.appendChild(editorEl);
+        if (!editorEl) {
+            editorEl = document.createElement('div');
+            editorEl.id = this.options.instanceId ? `editor_${this.options.instanceId}` : 'editor';
+            editorEl.contentEditable = true;
+            this.container.appendChild(editorEl);
+        }
         this.editorElement = editorEl;
 
-        if (this.options.initialContent) {
+        if (this.options.initialContent && this.editorElement.innerHTML !== this.options.initialContent) {
             this.editorElement.innerHTML = this.options.initialContent;
         }
 
+        // --- NEW: Apply the grid class based on the option ---
+        if (this.editorElement) {
+            if (this.options.showGrid) {
+                this.editorElement.classList.add('grid-background');
+            } else {
+                this.editorElement.classList.remove('grid-background');
+            }
+        }
+        // --- END NEW LOGIC ---
+
         this._setupChangeHandler();
         this._setupVisualFeedbackHandlers();
+
+        if (this.imageResizer) this.imageResizer.destroy();
+        this.imageResizer = new PythraImageResizer(this.editorElement);
     }
 
     createControlPanel() {
@@ -1224,16 +1278,28 @@ class PythraMarkdownEditor {
         group3.appendChild(this.createColorPicker());
         group3.appendChild(this.createFontSelector());
         panel.appendChild(group3);
+        
+        const group4 = document.createElement('div');
+        group4.className = 'control-group';
+        const insertImageBtn = this.createButton('insertImage', '🖼️', 'Insert Image');
+        insertImageBtn.onclick = () => {
+            const url = prompt("Enter the image URL:");
+            if (url) {
+                this.execCommand('insertImage', url);
+            }
+        };
+        group4.appendChild(insertImageBtn);
+        panel.appendChild(group4);
 
         return panel;
     }
-    
+
     createButton(command, label, title, value = null, id = null) {
         const button = document.createElement('button');
         if (id) button.id = id;
         button.title = title;
         button.innerHTML = label;
-        button.onclick = () => window.executeCommand(command, value, this.editorElement);
+        button.onclick = () => this.execCommand(command, value);
         return button;
     }
 
@@ -1241,80 +1307,46 @@ class PythraMarkdownEditor {
         const input = document.createElement('input');
         input.type = 'color';
         input.title = 'Font Color';
-        input.oninput = (e) => window.executeCommand('foreColor', e.target.value, this.editorElement);
+        input.oninput = (e) => this.execCommand('foreColor', e.target.value);
         return input;
     }
 
     createFontSelector() {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'font-selector-wrapper';
-
         const select = document.createElement('select');
         select.title = 'Font Family';
-        select.onchange = (e) => window.executeCommand('fontName', e.target.value, this.editorElement);
-        
-        const systemFontStack = `-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`;
-        const defaultFonts = [
-            { val: systemFontStack, label: 'System Default' },
-            { val: 'Arial, sans-serif', label: 'Arial' },
-            { val: 'Verdana, sans-serif', label: 'Verdana' },
-            { val: "'Times New Roman', serif", label: 'Times New Roman' },
-            { val: 'Georgia, serif', label: 'Georgia' },
-            { val: "'Courier New', monospace", label: 'Courier New' },
-        ];
-        
-        defaultFonts.forEach(font => select.add(new Option(font.label, font.val)));
-        wrapper.appendChild(select);
-        
-        // --- NEW: Add a button to load system fonts ---
-        if ('queryLocalFonts' in window) {
-            const loadFontsBtn = this.createButton(null, '&#x1F5D8;', 'Load System Fonts');
-            loadFontsBtn.style.padding = '0.5rem';
-            loadFontsBtn.onclick = async () => {
-                try {
-                    const availableFonts = await window.queryLocalFonts();
-                    // Clear existing options except the default
-                    select.innerHTML = '';
-                    select.add(new Option('System Default', systemFontStack));
+        select.onchange = (e) => this.execCommand('fontName', e.target.value);
 
-                    // Use a Set to avoid duplicate font names
-                    const fontNames = new Set();
-                    for (const fontData of availableFonts) {
-                        fontNames.add(fontData.family);
-                    }
-
-                    // Populate the dropdown
-                    for (const name of [...fontNames].sort()) {
-                        select.add(new Option(name, name));
-                    }
-                    loadFontsBtn.style.display = 'none'; // Hide button after success
-                } catch (err) {
-                    console.error('Font access denied or failed.', err);
-                    loadFontsBtn.title = 'Font access was denied.';
-                    loadFontsBtn.disabled = true;
-                }
-            };
-            wrapper.appendChild(loadFontsBtn);
-        }
-
-        return wrapper;
+        const fontsToUse = (this.options.fontList && Array.isArray(this.options.fontList) && this.options.fontList.length > 0)
+            ? this.options.fontList
+            : [ 
+                { val: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif', label: 'System Default' },
+                { val: 'Arial, sans-serif', label: 'Arial' },
+                { val: "'Times New Roman', serif", label: 'Times New Roman' },
+              ];
+        
+        fontsToUse.forEach(font => select.add(new Option(font.label, font.val)));
+        return select;
     }
 
     _setupChangeHandler() {
-        this.editorElement.addEventListener('input', () => {
+        if (!this.editorElement) return;
+        this._changeHandler = () => {
             clearTimeout(this._changeTimer);
             this._changeTimer = setTimeout(() => {
                 const content = this.editorElement.innerHTML;
-                if (window.pywebview && this.options.callback) {
-                    window.pywebview.on_input_changed(this.options.callback, content);
+                if (typeof handleInput === 'function' && this.options.callback) {
+                    handleInput(this.options.callback, content);
                 }
             }, 180);
-        });
+        };
+        this.editorElement.addEventListener('input', this._changeHandler);
     }
 
     _setupVisualFeedbackHandlers() {
+        if (!this.editorElement) return;
+        this._feedbackHandler = () => this.updateButtonStates();
         ['keyup', 'mouseup', 'focus', 'click'].forEach(eventType => {
-            this.editorElement.addEventListener(eventType, () => this.updateButtonStates());
+            this.editorElement.addEventListener(eventType, this._feedbackHandler);
         });
     }
 
@@ -1324,7 +1356,7 @@ class PythraMarkdownEditor {
             if (!button) return;
             try {
                 button.classList.toggle('active', document.queryCommandState(command));
-            } catch (e) {}
+            } catch (e) { /* This can safely fail if editor is not focused */ }
         });
     }
     
@@ -1333,51 +1365,198 @@ class PythraMarkdownEditor {
         style.id = 'pythra-editor-styles';
         style.textContent = `
             :root{--pe-color-primary:#007aff;--pe-color-primary-dark:#005bb5;--pe-color-surface:#ffffff;--pe-color-border:#dee2e6;--pe-color-text:#212529;--pe-color-text-muted:#6c757d;--pe-font-stack:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--pe-border-radius:6px;}
-            .pythra-editor-wrapper{max-width:100%;margin:2rem auto;background:var(--pe-color-surface);border:1px solid var(--pe-color-border);border-radius:var(--pe-border-radius);box-shadow:0 4px 12px rgba(0,0,0,0.05);}
-            .pythra-editor-wrapper [contenteditable]{font-family:var(--pe-font-stack);min-height:100%;border-top:1px solid var(--pe-color-border);padding:1.5rem;line-height:1.7;outline:none;transition:border-color 0.2s ease,box-shadow 0.2s ease}
+            .pythra-editor-wrapper{box-sizing:border-box;display:flex;flex-direction:column;background:var(--pe-color-surface);border:1px solid var(--pe-color-border);border-radius:var(--pe-border-radius);box-shadow:0 4px 12px rgba(0,0,0,0.05);}
+            .pythra-editor-wrapper [contenteditable]{font-family:var(--pe-font-stack);flex-grow:1;min-height:150px;border-top:1px solid var(--pe-color-border);padding:1.5rem;line-height:1.7;outline:none;overflow-y:auto;}
             .pythra-editor-wrapper [contenteditable]:focus{border-color:var(--pe-color-primary) !important;box-shadow:0 0 0 3px rgba(0,122,255,0.25)}
             .pythra-editor-wrapper [contenteditable]:empty:before{content:"Start writing...";color:var(--pe-color-text-muted);font-style:italic}
-            .pythra-editor-wrapper .pythra-toggle-button{width:calc(100% + 2px);margin:-1px -1px 0 -1px;padding:0.75rem;font-size:1rem;font-weight:600;color:white;background-color:var(--pe-color-primary);border:none;border-radius:var(--pe-border-radius) var(--pe-border-radius) 0 0;cursor:pointer;transition:background-color 0.2s ease;}
+            .pythra-editor-wrapper .pythra-toggle-button{flex-shrink:0;width:100%;padding:0.75rem;font-size:1rem;font-weight:600;color:white;background-color:var(--pe-color-primary);border:none;border-radius:var(--pe-border-radius) var(--pe-border-radius) 0 0;cursor:pointer;transition:background-color 0.2s ease;}
             .pythra-editor-wrapper .pythra-toggle-button:hover{background-color:var(--pe-color-primary-dark)}
-            .control-panel{background:#f1f3f5;padding:1rem;display:flex;flex-direction:column;gap:1rem;transition:all 0.3s ease-in-out;max-height:1000px;opacity:1;overflow:hidden;}
-            .control-panel.hidden{max-height:0;padding-top:0;padding-bottom:0;margin-top:-1px;opacity:0;border:1px solid transparent}
+            .control-panel{flex-shrink:0;background:#f1f3f5;padding:1rem;display:flex;flex-direction:column;gap:1rem;transition:all 0.3s ease-in-out;max-height:1000px;opacity:1;overflow:hidden;}
+            .control-panel.hidden{max-height:0;padding-top:0;padding-bottom:0;opacity:0;}
             .control-group{display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center}
             .control-panel button,.control-panel select,.control-panel input[type="color"]{font-family:var(--pe-font-stack);font-size:0.9rem;padding:0.5rem 0.75rem;background:var(--pe-color-surface);border:1px solid var(--pe-color-border);border-radius:var(--pe-border-radius);cursor:pointer;transition:background-color 0.2s ease,border-color 0.2s ease, box-shadow 0.2s ease;}
             .control-panel button:hover,.control-panel select:hover{background:#e9ecef}
             .control-panel button.active{background-color:var(--pe-color-primary);color:white;border-color:var(--pe-color-primary-dark)}
-            // .control-panel select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.5rem center;background-size:1em;padding-right:2rem;}
-            // .control-panel select:focus{border-color:var(--pe-color-primary);box-shadow:0 0 0 3px rgba(0,122,255,0.25);background-color:var(--pe-color-surface);}
+            .control-panel select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.5rem center;background-size:1em;padding-right:2rem;}
+            .control-panel select:focus{border-color:var(--pe-color-primary);box-shadow:0 0 0 3px rgba(0,122,255,0.25);background-color:var(--pe-color-surface);}
             .control-panel input[type="color"]{padding:0.25rem;height:38px;min-width:40px;border:1px solid var(--pe-color-border);background:transparent}
-            .font-selector-wrapper{display:flex;gap:0.5rem;align-items:center;}
-            .pythra-editor-wrapper [contenteditable] h1,h2,h3,h4,h5,p,ul,ol{margin:1em 0}
-            .pythra-editor-wrapper [contenteditable] ul,.pythra-editor-wrapper [contenteditable] ol{padding-left:2em}
+            .pythra-image-resizer-wrapper{position:absolute;border:2px solid var(--pe-color-primary);pointer-events:none;}
+            .pythra-resize-handle{position:absolute;width:10px;height:10px;background-color:var(--pe-color-primary);border:1px solid white;border-radius:50%;pointer-events:auto;}
+            .pythra-resize-handle.top-left{top:-6px;left:-6px;cursor:nwse-resize;}
+            .pythra-resize-handle.top-right{top:-6px;right:-6px;cursor:nesw-resize;}
+            .pythra-resize-handle.bottom-left{bottom:-6px;left:-6px;cursor:nesw-resize;}
+            .pythra-resize-handle.bottom-right{bottom:-6px;right:-6px;cursor:nwse-resize;}
+            /* --- NEW: CSS for the dotted grid background --- */
+            .pythra-editor-wrapper [contenteditable].grid-background {
+                /* Creates a repeating pattern of dots */
+                background-image: radial-gradient(circle, #D3D3D3 1px, rgba(0,0,0,0) 1px);
+                background-size: 20px 20px; /* Adjust these values to change dot spacing */
+            }
         `;
         document.head.appendChild(style);
     }
     
+    execCommand(command, value = null) {
+        if (!command) return;
+        try {
+            document.execCommand(command, false, value);
+        } catch (err) {
+            console.error(`Error executing command '${command}':`, err);
+        }
+        this.editorElement.focus();
+        this.updateButtonStates();
+    }
+
     setContent(html) { if (this.editorElement) this.editorElement.innerHTML = html; }
     getContent() { return this.editorElement ? this.editorElement.innerHTML : ''; }
     focus() { if (this.editorElement) this.editorElement.focus(); }
+
+    destroy() {
+        console.log(`🔥 Destroying PythraMarkdownEditor instance: ${this.options.instanceId}`);
+        
+        if (this.editorElement && this._changeHandler) {
+            this.editorElement.removeEventListener('input', this._changeHandler);
+        }
+        if (this.editorElement && this._feedbackHandler) {
+            ['keyup', 'mouseup', 'focus', 'click'].forEach(eventType => {
+                this.editorElement.removeEventListener(eventType, this._feedbackHandler);
+            });
+        }
+        
+        if (this.imageResizer) {
+            this.imageResizer.destroy();
+        }
+
+        clearTimeout(this._changeTimer);
+    }
 }
 
-// Expose the class globally
 window.PythraMarkdownEditor = PythraMarkdownEditor;
 
-// --- Global Helper Functions ---
-window.executeCommand = (command, value = null, editorToFocus) => {
-    if (!command) return;
+document.addEventListener("DOMContentLoaded", () => {
     try {
-        document.execCommand(command, false, value);
-    } catch (err) {
-        console.error(`Error executing command '${command}':`, err);
+        document.execCommand("styleWithCSS", false, true);
+    } catch (e) {
+        console.warn("styleWithCSS is not supported by this browser.");
     }
-    if (editorToFocus) editorToFocus.focus();
-};
-
-document.addEventListener('DOMContentLoaded', () => {
-    try { document.execCommand('styleWithCSS', false, true); } 
-    catch (e) { console.warn('styleWithCSS is not supported by this browser.'); }
 });
+
+class PythraImageResizer {
+    constructor(editorElement) {
+        this.editor = editorElement;
+        this.selectedImage = null;
+        this.wrapper = null;
+        this.handles = [];
+
+        this.handleClick = this.handleClick.bind(this);
+        this.handleMouseDown = this.handleMouseDown.bind(this);
+        this.handleMouseMove = this.handleMouseMove.bind(this);
+        this.handleMouseUp = this.handleMouseUp.bind(this);
+        
+        this.editor.addEventListener('click', this.handleClick);
+    }
+
+    handleClick(e) {
+        const target = e.target;
+        if (target.tagName === 'IMG') {
+            if (this.selectedImage !== target) {
+                this.selectImage(target);
+            }
+        } else if (this.selectedImage) {
+            this.deselectImage();
+        }
+    }
+    
+    selectImage(img) {
+        this.deselectImage();
+
+        this.selectedImage = img;
+        
+        this.wrapper = document.createElement('div');
+        this.wrapper.className = 'pythra-image-resizer-wrapper';
+        // Append to editor's parent to avoid contenteditable issues
+        this.editor.parentNode.appendChild(this.wrapper);
+        this.positionWrapper();
+        
+        const handlePositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+        handlePositions.forEach(pos => {
+            const handle = document.createElement('div');
+            handle.className = `pythra-resize-handle ${pos}`;
+            handle.dataset.position = pos;
+            this.wrapper.appendChild(handle);
+            handle.addEventListener('mousedown', this.handleMouseDown);
+        });
+    }
+    
+    deselectImage() {
+        if (this.wrapper) {
+            this.wrapper.remove();
+            this.wrapper = null;
+        }
+        this.selectedImage = null;
+    }
+    
+    positionWrapper() {
+        if (!this.selectedImage || !this.wrapper) return;
+        
+        // This needs to be relative to the parent of the editor now
+        const editorParent = this.editor.parentNode;
+        this.editor.parentNode.style.position = this.editor.parentNode.style.position || 'relative';
+
+        const imgRect = this.selectedImage.getBoundingClientRect();
+        const parentRect = editorParent.getBoundingClientRect();
+        
+        this.wrapper.style.top = `${imgRect.top - parentRect.top}px`;
+        this.wrapper.style.left = `${imgRect.left - parentRect.left}px`;
+        this.wrapper.style.width = `${imgRect.width}px`;
+        this.wrapper.style.height = `${imgRect.height}px`;
+    }
+
+    handleMouseDown(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        this.startRect = this.selectedImage.getBoundingClientRect();
+        this.startPos = { x: e.clientX, y: e.clientY };
+        this.handlePosition = e.target.dataset.position;
+
+        document.addEventListener('mousemove', this.handleMouseMove);
+        document.addEventListener('mouseup', this.handleMouseUp);
+    }
+    
+    handleMouseMove(e) {
+        if (!this.startRect) return;
+
+        const dx = e.clientX - this.startPos.x;
+        const dy = e.clientY - this.startPos.y;
+
+        let newWidth = this.startRect.width;
+        
+        if (this.handlePosition.includes('right')) {
+            newWidth += dx;
+        } else if (this.handlePosition.includes('left')) {
+            newWidth -= dx;
+        }
+
+        this.selectedImage.style.width = `${Math.max(20, newWidth)}px`;
+        this.selectedImage.style.height = 'auto';
+        
+        this.positionWrapper();
+    }
+
+    handleMouseUp() {
+        document.removeEventListener('mousemove', this.handleMouseMove);
+        document.removeEventListener('mouseup', this.handleMouseUp);
+        this.startRect = null;
+        
+        this.editor.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
+    }
+
+    destroy() {
+        this.editor.removeEventListener('click', this.handleClick);
+        this.deselectImage();
+    }
+}
 } catch (e) {
     console.error('Error loading plugin pythra-markdown-editor - editor.js:', e);
 }
@@ -1398,8 +1577,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                         waitForAndInit('PythraMarkdownEditor', () => {
                             window._pythra_instances['markdown_editor_PythraMarkdownEditor'] = new PythraMarkdownEditor(
-                                document.getElementById('fw_id_15'),
-                                {"callback": "markdown_content_change_markdown_editor", "instanceId": "markdown_editor_PythraMarkdownEditor", "showControls": true, "initialContent": "<h1>Welcome!</h1><p>Start writing your document here...</p>"}
+                                document.getElementById('fw_id_23'),
+                                {"callback": "markdown_content_change_markdown_editor", "instanceId": "markdown_editor_PythraMarkdownEditor", "showControls": false, "initialContent": "<h1>Welcome!</h1><p>Start writing your document here...</p>", "width": "100%", "height": "70vh", "showGrid": true}
                             );
                             
                         });
