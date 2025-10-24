@@ -63,9 +63,14 @@ import html
 import json
 from typing import Any, Dict, List, Optional, Tuple, Union, Callable, Literal
 from dataclasses import dataclass, field
+from collections import defaultdict
+# near top imports if not already present
+# from collections import defaultdict
+
 
 from .widgets import Scrollbar
 from .state import StatefulWidget
+from .base import Widget, Key
 
 # It's good practice to import from your own project modules for type hints.
 from typing import TYPE_CHECKING
@@ -141,6 +146,9 @@ class Reconciler:
     def __init__(self):
         self.context_maps: Dict[str, Dict[Union[Key, str], NodeData]] = {"main": {}}
         self.id_generator = IDGenerator()
+        self._external_js_init_queue: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
+        self._registered_js_initializers: Dict[str, Dict[str, Dict[str, Any]]] = defaultdict(dict)
+
         print("Reconciler Initialized")
 
     def get_map_for_context(self, context_key: str) -> Dict[Union[Key, str], NodeData]:
@@ -198,6 +206,14 @@ class Reconciler:
                     if state: state.dispose()
                 if data.get("html_id"):
                     result.patches.append(Patch(action="REMOVE", html_id=data["html_id"], data={}))
+
+        # --- Inject any external JS initializers queued by register_js_initializer ---
+        queued = self._external_js_init_queue.get("main", [])  # change context if you pass context
+        if queued:
+            # copy them so the result owns its copy
+            result.js_initializers.extend([dict(q) for q in queued])
+            # clear the queue for that context after pushing to result
+            self._external_js_init_queue["main"].clear()
 
         return result
 
@@ -412,8 +428,11 @@ class Reconciler:
             # We don't need the html_id here, as the framework will have it
             # when it processes the initializer list.
             result.js_initializers.append({
-                "widget_key": widget.get_unique_id(), # Use the widget's key for stable reference
-                "data": js_init_data
+                "widget_key": new_widget.get_unique_id(), # Use the widget's key for stable reference
+                "data": js_init_data,
+                "type": js_init_data['engine'],
+                "target_id": html_id,
+                "before_id": old_id,
             })
         # --- END OF NEW LOGIC ---
         
@@ -755,3 +774,65 @@ class Reconciler:
                     continue
                 changes[key] = new_val
         return changes if changes else None
+
+    def register_js_initializer(self, initializer: Dict[str, Any], context_key: str = "main") -> str:
+        """
+        Register an external JS initializer to be emitted on the next reconcile call.
+
+        Example usage:
+            self.framework.reconciler.register_js_initializer({
+                'type': 'PythraMarkdownEditor',
+                'targetId': self._container_html_id or 'fw_id_8',
+                'options': {'callback': self._callback_name, 'instanceId': instance_id}
+            })
+
+        Returns:
+            initializer_id (str): an opaque id for this registered initializer.
+        """
+        if not isinstance(initializer, dict):
+            raise TypeError("initializer must be a dict")
+
+        # Normalize common key names
+        init = dict(initializer)  # shallow copy to avoid mutating caller object
+        # Accept both camelCase and snake_case for target id
+        if "targetId" in init:
+            init["target_id"] = init.pop("targetId")
+        elif "target_id" not in init:
+            # we allow missing target_id (some init types may set target later) but warn
+            # raise ValueError("initializer must include 'targetId' or 'target_id'")
+            init.setdefault("target_id", None)
+
+        # Validate 'type'
+        if "type" not in init or not init["type"]:
+            raise ValueError("initializer must include a non-empty 'type' field")
+
+        # Ensure options key exists
+        init.setdefault("options", {})
+
+        # Generate stable initializer id
+        initializer_id = f"js_init_{uuid.uuid4().hex[:8]}"
+        init["_id"] = initializer_id
+        init["_registered_at"] = True
+
+        # Save into per-context registry and queue
+        self._registered_js_initializers[context_key][initializer_id] = init
+        self._external_js_init_queue[context_key].append(init)
+
+        print(f"Registered JS initializer [{initializer_id}] for context [{context_key}]: {init}")
+
+        # Return the id so the caller can reference or cancel later
+        return initializer_id
+
+    def unregister_js_initializer(self, initializer_id: str, context_key: str = "main") -> bool:
+        """
+        Unregister a previously registered initializer. Returns True if removed.
+        """
+        if initializer_id in self._registered_js_initializers.get(context_key, {}):
+            # remove from registry
+            del self._registered_js_initializers[context_key][initializer_id]
+            # remove from queue if present
+            q = self._external_js_init_queue.get(context_key, [])
+            self._external_js_init_queue[context_key] = [i for i in q if i.get("_id") != initializer_id]
+            return True
+        return False
+

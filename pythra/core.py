@@ -368,6 +368,20 @@ class Framework:
             fixed_size = fixed_size,
         )
 
+        # If any plugins or states queued injections while the window was not
+        # yet created, flush and execute them now. This avoids AttributeError
+        # caused by calling evaluate_js on a None window.
+        pending_injections = getattr(self, '_pending_window_injections', None)
+        if pending_injections:
+            print(f"🔁 PyThra Framework | Executing {len(pending_injections)} deferred window injections")
+            for inj in pending_injections:
+                try:
+                    inj()
+                except Exception as e:
+                    print('Error running deferred injection:', e)
+            # Clear the list so they don't run again
+            self._pending_window_injections = []
+
         # 9. Start the application event loop.
         print("🎆 PyThra Framework | Starting application event loop...")
         webwidget.start(window=self.window, debug=bool(self.config.get("Debug", False)))
@@ -1127,6 +1141,7 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
                 # --- GENERIC JS INITIALIZER FOR BOTH INSERT AND REPLACE ---
                 js_init_data = props.get("_js_init")
                 if js_init_data and isinstance(js_init_data, dict):
+                    print("js_init_data: ", js_init_data)
                     engine_name = js_init_data.get("engine")
                     instance_name = js_init_data.get("instance_name")
                     options = js_init_data.get("options", {})
@@ -1491,16 +1506,40 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
             # --- NEW: Generic JS Initializer ---
             js_init_data = props.get("_js_init")
             if js_init_data:
+                # print("js_init_data:: ", js_init_data)
                 engine_name = js_init_data.get("engine")
                 instance_name = js_init_data.get("instance_name")
                 options = js_init_data.get("options", {})
                 
                 # Find the module path from the plugin manifest
                 js_module_info = self._find_js_module(engine_name)
-                if js_module_info:
-                    imports.add(f"import {{ {engine_name} }} from '{js_module_info['path']}';")
+                path_js = "C:\\Users\\SMILETECH COMPUTERS\\Documents\\pythra-toolkit\\plugins\\markdown\\render\\editor.js"
+                # print("js_module_info: ", js_module_info)
+                if path_js:
+                    imports.add(f"import {{ {engine_name} }} from '{path_js}';")
+                    
                     options_json = json.dumps(options)
-                    js_commands.append(f"window._pythra_instances['{instance_name}'] = new {engine_name}('{html_id}', {options_json});")
+                    js_commands.append(f"""
+                    function waitForAndInit(className, initCallback) {{
+                            const interval = setInterval(() => {{
+                                // Check if the class is now available on the window object
+                                if (typeof window[className] === 'function') {{
+                                    clearInterval(interval); // Stop checking
+                                    console.log(`Class ${{className}} is defined. Initializing...`);
+                                    initCallback(); // Run the initialization code
+                                }} else {{
+                                    console.log(`Waiting for class ${{className}}...`);
+                                }}
+                            }}, 100); // Check every 100ms
+                        }}
+                        waitForAndInit('{engine_name}', () => {{
+                            window._pythra_instances['{instance_name}'] = new {engine_name}(
+                                document.getElementById('{html_id}'),
+                                {options_json}
+                            );
+                            
+                        }});
+                        """)
                 else:
                     print(f"⚠️ Warning: JS engine '{engine_name}' not found in any plugin manifest.")
             # --- END OF NEW LOGIC ---
@@ -1575,6 +1614,7 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
         # --- END OF NEW LOGIC ---
         # Your initializer logic for ClipPath etc. goes here if needed
         for init in result.js_initializers:
+            # print("init:: ", init)
             # --- ADD THIS BLOCK FOR SIMPLEBAR ---
             if init["type"] == "SimpleBar":
                 target_id = init["target_id"]
@@ -1696,8 +1736,10 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
 
     # Helper method to find JS modules from discovered plugins
     def _find_js_module(self, engine_name: str) -> Optional[Dict]:
+        print("Plugins: ", self.plugins)
         for plugin_name, plugin_info in self.plugins.items():
             modules = plugin_info.get("js_modules", {})
+            print("modules: ", modules)
             if engine_name in modules:
                 return {
                     "plugin": plugin_name,

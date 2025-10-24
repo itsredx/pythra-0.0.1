@@ -1,0 +1,6 @@
+setup.py
+pythra_markdown_editor.egg-info/PKG-INFO
+pythra_markdown_editor.egg-info/SOURCES.txt
+pythra_markdown_editor.egg-info/dependency_links.txt
+pythra_markdown_editor.egg-info/requires.txt
+pythra_markdown_editor.egg-info/top_level.txt

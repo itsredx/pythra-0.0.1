@@ -1,0 +1,20 @@
+{
+    "name": "pythra-markdown-editor",
+    "version": "1.0.0",
+    "description": "A WYSIWYG Markdown editor plugin for Pythra",
+    "package_type": "plugin",
+    "dependencies": {
+        "pythra": ">=0.1.0"
+    },
+    "author": {
+        "name": "itsredx"
+    },
+    "license": "MIT",
+    "python_modules": ["__init__", "widget", "controller", "editor_state", "style"],
+    "asset_dir": "render",
+    "js_modules": {
+        "editor": "editor.js"
+    },
+    "css_files": ["styles.css"],
+    "tags": ["editor", "markdown", "wysiwyg"]
+}

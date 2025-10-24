@@ -1,0 +1,9 @@
+Metadata-Version: 2.4
+Name: pythra-markdown-editor
+Version: 1.0.0
+Summary: A WYSIWYG Markdown editor plugin for Pythra
+Author: itsredx
+Requires-Dist: pythra>=0.1.0
+Dynamic: author
+Dynamic: requires-dist
+Dynamic: summary

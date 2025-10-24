@@ -2,108 +2,50 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My New Pythra App</title>
+    <title>Markdown Editor Test</title>
     <!-- ADD SIMPLEBAR CSS -->
     <link rel="stylesheet" href="./js/scroll-bar/simplebar.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1759656393">
+    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1761266694">
     <style id="dynamic-styles">
-.shared-container-3 { box-sizing: border-box; background: black; width: 100vw; height: 100vh; }
-.shared-center-0 { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;  }
-.shared-stack-0 { position: relative; display: grid; width: fit-content; height: fit-content; justify-items: start; align-items: start; direction: ltr;  }
-.shared-stack-0 > * { grid-area: 1 / 1; }
-
-                    @property --gradient-angle-shared-container-1 {
-                        syntax: '<angle>';
-                        initial-value: 0deg;
-                        inherits: false;
-                    }
-                    
-
-                    @keyframes bgRotate-shared-container-1 {
-                        0% { --gradient-angle-shared-container-1: 0deg; }
-                        100% { --gradient-angle-shared-container-1: 360deg; }
-                    }
-                    
-.shared-container-1 { box-sizing: border-box; background: repeating-conic-gradient(from var(--gradient-angle-shared-container-1), red, yellow, green, blue, red); animation: bgRotate-shared-container-1 4s linear infinite; padding: 2px; width: 30vh; height: 30vh; }
-
-.shared-container-0 { box-sizing: border-box; background: white; padding: 12px; height: 100%; }
+.shared-container-3 { box-sizing: border-box; background: white; padding: 16px; width: 100vw; height: 100vh; }
 .shared-column-0 { display: flex; flex-direction: column; justify-content: flex-start; align-items: center; height: 100%; direction: ltr; }
-.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: flex-end; width: 100%; direction: ltr; }
+.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }
 
             .shared-text-0 {
                 margin: 0; /* Reset default paragraph margin */
                 padding: 0;
-                color: black; font-size: 20px;
+                color: black; font-size: 24px; font-weight: bold;
                 
                 
             }
             
+.shared-elevatedbutton-0 { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; margin: 4px; border: none; border-radius: 20px; background-color: blue; color: white; cursor: pointer; text-align: center; text-decoration: none; outline: none; box-sizing: border-box; overflow: hidden; position: relative; transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s linear; -webkit-appearance: none; -moz-appearance: none; appearance: none; box-shadow: 0px 1.0px 2.0px 0px rgba(0,0,0,0.15), 0px 2.0px 4.0px 1px rgba(0,0,0,0.10); }
+.shared-elevatedbutton-0:hover { box-shadow: 0px 1.5px 3.0px 0px rgba(0,0,0,0.18), 0px 3.0px 6.0px 1px rgba(0,0,0,0.13); /* Add background overlay? */ }
+.shared-elevatedbutton-0:active { box-shadow: none; /* Add background overlay? */ }
+.shared-elevatedbutton-0.disabled { background-color: rgba(0, 0, 0, 0.12); color: rgba(0, 0, 0, 0.38); box-shadow: none; cursor: default; pointer-events: none; }
+
 
             .shared-text-1 {
                 margin: 0; /* Reset default paragraph margin */
                 padding: 0;
-                color: grey; font-size: 10px;
                 
-                
-            }
-            
-
-            .shared-text-2 {
-                margin: 0; /* Reset default paragraph margin */
-                padding: 0;
-                color: black; font-size: 14px;
                 
                 
             }
             
 
-            .shared-text-3 {
-                margin: 0; /* Reset default paragraph margin */
-                padding: 0;
-                color: black; font-size: 20px; font-weight: bold;
-                
-                
-            }
-            
+.shared-container-2 { box-sizing: border-box; width: 100%; height: 100%; }
 
-.shared-container-2 { box-sizing: border-box; }
-.shared-row-1 { display: flex; flex-direction: row; justify-content: center; align-items: center; width: 100%; direction: ltr; }
-.shared-iconbutton-0 { display: inline-flex; align-items: center; justify-content: center; padding: 8px; margin: 0; border: none; background-color: None; color: None; cursor: pointer; outline: none; border-radius: 50%; overflow: hidden; position: relative; box-sizing: border-box; transition: background-color 0.15s linear; -webkit-appearance: none; appearance: none; width: calc(24px + 16px); height: calc(24px + 16px); }
+.shared-container-1 { box-sizing: border-box; width: 100%; height: 100%; }
 
-            .shared-iconbutton-0 > i, .shared-iconbutton-0 > img, .shared-iconbutton-0 > svg, .shared-iconbutton-0 > * {
-                font-size: 24px;
-                width: 24px;
-                height: 24px;
-                display: block;
-                object-fit: contain;
-            }
-.shared-iconbutton-0:hover { background-color: rgba(0, 0, 0, 0.08); }
-.shared-iconbutton-0:active { background-color: rgba(0, 0, 0, 0.12); }
-.shared-iconbutton-0.disabled { color: rgba(0, 0, 0, 0.38); background-color: transparent; cursor: default; pointer-events: none; }
+.editor-container { box-sizing: border-box; width: 100%; height: 100%; }
 
-                .material-icon-0 {
-                    position: relative;
-                    font-family: 'Material Symbols Rounded';
-                    font-weight: normal;
-                    font-style: normal;
-                    font-size: 24px;
-                    line-height: 1;
-                    letter-spacing: normal;
-                    text-transform: none;
-                    z-index: 100;
-                    display: inline-block;
-                    white-space: nowrap;
-                    word-wrap: normal;
-                    direction: ltr;
-                    -webkit-font-smoothing: antialiased;
-                    text-rendering: optimizeLegibility;
-                    -moz-osx-font-smoothing: grayscale;
-                    font-feature-settings: 'liga';
-                    color: inherit;
-                    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-                }
-            </style>
+.shared-container-0 { box-sizing: border-box; width: 100%; height: 100%; }
+
+.editor-inner-container { box-sizing: border-box; width: 100%; height: 100%; }
+
+.shared-container-4 { box-sizing: border-box; width: 100%; height: 79vh; }</style>
     
         <script src="qwebchannel.js"></script>
         <script>
@@ -151,7 +93,7 @@
     
 </head>
 <body>
-    <div id="root-container"><div id="fw_id_1" class=""><div id="fw_id_2" class="shared-container-3"><div id="fw_id_3" class="shared-center-0"><div id="fw_id_4" class="shared-stack-0"><div id="fw_id_5" class="" style="width: 30vh; height: 30vh"><div id="fw_id_6" class="shared-container-1"><div id="fw_id_7" class="" style="width: 29.4vh; height: 29.4vh"><div id="fw_id_8" class="shared-container-0"><div id="fw_id_9" class="shared-column-0"><div id="fw_id_10" class="shared-row-0"><p id="fw_id_11" class="shared-text-0" style="color: black; font-size: 20">Pythra</p><div id="fw_id_12" class="" style="width: 4px"></div><p id="fw_id_13" class="shared-text-1" style="color: grey; font-size: 10">GUI TOOLKIT v0.1.0</p></div><div id="fw_id_14" class="" style="height: 24px"></div><div id="fw_id_15" class="shared-row-0"><p id="fw_id_16" class="shared-text-2" style="color: black; font-size: 14">Count:</p><div id="fw_id_17" class="" style="width: 12px"></div><p id="fw_id_18" class="shared-text-3" style="color: black; font-size: 20; font-weight: bold">0</p></div></div></div></div></div></div><div id="fw_id_19" class="" style="position: absolute; height: 30vh; width: 30vh; bottom: ; top: 24.4vh; right: ; left: "><div id="fw_id_20" class="shared-container-2"><div id="fw_id_21" class="shared-row-1"><button id="fw_id_22" class="shared-iconbutton-0" onclick="handleClick('decrementCounter')"><i id="fw_id_23" class="material-icon-0">stat_minus_1</i></button><div id="fw_id_24" class="" style="width: 24px"></div><button id="fw_id_25" class="shared-iconbutton-0" onclick="handleClick('incrementCounter')"><i id="fw_id_26" class="material-icon-0">stat_1</i></button></div></div></div></div></div></div></div></div>
+    <div id="root-container"><div id="fw_id_1" class=""><div id="fw_id_2" class="shared-container-3"><div id="fw_id_3" class="shared-column-0"><div id="fw_id_4" class="shared-row-0"><p id="fw_id_5" class="shared-text-0" style="color: black; font-size: 24; font-weight: bold">Markdown Editor</p></div><div id="fw_id_6" class="" style="height: 16px"></div><button id="fw_id_7" class="shared-elevatedbutton-0" onclick="handleClick('bold')"><p id="fw_id_8" class="shared-text-1">Bold</p></button><div id="fw_id_9" class="" style="height: 16px"></div><div id="fw_id_10" class="" style="flex-grow: 1; flex-shrink: 1; flex-basis: 0%; min-width: 100%; min-height: 0; display: flex; flex-direction: column"><div id="fw_id_11" class="shared-container-2"><div id="fw_id_12" class="shared-container-1 editor-container"><div id="fw_id_13" class="shared-container-0 editor-inner-container"><div id="fw_id_15" class="shared-container-4"><div id="fw_id_16" class="shared-container-0 editor-inner-container"></div></div></div></div></div></div></div></div></div></div>
     <div id="overlay-container"></div>
 
     <!-- ADD SIMPLEBAR JS -->
@@ -163,424 +105,7 @@
                 window._pythra_instances = window._pythra_instances || {};
                 try {
                     // First, DEFINE all our JS classes and functions
-                    // --- Injected from gradient_border.js ---
-try {
-/**
- * PythraGradientClipPath: Client-side engine for creating an animated
- * gradient border around a complex clip-path shape.
- */
-'./pathGenerator.js';
-
-// Helper function for basic vector math
-const vec_gradient_border = (p1, p2) => ({ x: p2.x - p1.x, y: p2.y - p1.y });
-const magnitude_gradient_border = (v) => Math.sqrt(v.x * v.x + v.y * v.y);
-const normalize_gradient_border = (v) => {
-    const mag = magnitude_gradient_border(v);
-    return mag > 0 ? { x: v.x / mag, y: v.y / mag } : { x: 0, y: 0 };
-};
-const dot_gradient_border = (v1, v2) => v1.x * v2.x + v1.y * v2.y;
-// const cross = (v1, v2) => v1.x * v2.y - v1.y * v2.x;
-
-
-
-/**
- * Calculates a new set of points offset outwards from the original polygon.
- * @param {Array<Object>} points - The original points, e.g., [{x: 0, y: 0}, ...].
- * @param {number} offset - The distance to offset the points outwards.
- * @returns {Array<Object>} The new, offset points.
- */
-function offsetPoints(points, offset) {
-    const numPoints = points.length;
-    if (numPoints < 3) return points;
-
-    const offsetPoints = [];
-
-    for (let i = 0; i < numPoints; i++) {
-        const p_prev = points[(i + numPoints - 1) % numPoints];
-        const p_curr = points[i];
-        const p_next = points[(i + 1) % numPoints];
-
-        const v1 = normalize_gradient_border(vec_gradient_border(p_curr, p_prev));
-        const v2 = normalize_gradient_border(vec_gradient_border(p_curr, p_next));
-
-        // Calculate the angle bisector vector (points outwards for convex shapes)
-        const bisector = normalize_gradient_border({ x: v1.x + v2.x, y: v1.y + v2.y });
-
-        // Calculate the angle between the two edge vectors
-        const angle = Math.acos(dot_gradient_border(v1, v2));
-
-        // Use trigonometry to find the length to move along the bisector
-        // to achieve the desired perpendicular offset distance.
-        const distance = offset / Math.sin(angle / 2);
-
-        if (isNaN(distance) || !isFinite(distance)) {
-             // Handle collinear points (angle is ~PI), just move along the normal
-             const normal = { x: -v1.y, y: v1.x };
-             offsetPoints.push({ x: p_curr.x + normal.x * offset, y: p_curr.y + normal.y * offset });
-        } else {
-             offsetPoints.push({ x: p_curr.x + bisector.x * distance, y: p_curr.y + bisector.y * distance });
-        }
-    }
-    return offsetPoints;
-}
-
-
-class PythraGradientClipPath {
-    constructor(elementId, options) {
-        this.container = document.getElementById(elementId);
-        if (!this.container) {
-            console.error(`GradientClipPath container with ID #${elementId} not found.`);
-            return;
-        }
-
-        console.log(`✅ PythraGradientClipPath engine is initializing for #${elementId}`);
-        
-        // --- Setup DOM Structure ---
-        // The reconciler placed the child widget inside our container.
-        // We need to wrap it and add a background element.
-        this.backgroundEl = document.createElement('div');
-        this.backgroundEl.className = 'gradient-clip-background';
-        
-        this.contentHost = document.createElement('div');
-        this.contentHost.className = 'gradient-clip-content-host';
-
-        // Move the original child from the container into the new host
-        while (this.container.firstChild) {
-            this.contentHost.appendChild(this.container.firstChild);
-        }
-        
-        this.container.appendChild(this.backgroundEl);
-        this.container.appendChild(this.contentHost);
-        
-        // --- Generate and Apply Paths ---
-        this.options = options;
-        this.update = this.update.bind(this);
-        
-        // Use a ResizeObserver to make it fully responsive
-        this.ro = new ResizeObserver(this.update);
-        this.ro.observe(this.container);
-        
-        // Initial update
-        this.update();
-    }
-
-    update() {
-        const rect = this.container.getBoundingClientRect();
-        if (rect.width === 0 || rect.height === 0) return;
-
-        const { points, radius, viewBox, borderWidth } = this.options;
-        const jsPoints = points.map(p => ({ x: p[0], y: p[1] }));
-
-        // 1. Generate the inner path for the content
-        const innerPathStr = generateRoundedPath(jsPoints, radius);
-        const innerClipPath = `path("${innerPathStr}")`;
-
-        // 2. Calculate offset points and a larger radius for the outer path
-        const offset_points = offsetPoints(jsPoints, borderWidth);
-        const outerRadius = radius + borderWidth;
-        const outerPathStr = generateRoundedPath(offset_points, outerRadius);
-        const outerClipPath = `path("${outerPathStr}")`;
-
-        // 3. Apply the responsive clip-paths to the elements
-        // We don't need ResponsiveClipPath class here because we update on every resize.
-        this.contentHost.style.clipPath = innerClipPath;
-        this.contentHost.style.webkitClipPath = innerClipPath;
-        
-        this.backgroundEl.style.clipPath = outerClipPath;
-        this.backgroundEl.style.webkitClipPath = outerClipPath;
-    }
-
-    destroy() {
-        if (this.ro && this.container) {
-            this.ro.unobserve(this.container);
-        }
-    }
-}
-
-// Ensure classes are available globally
-if (typeof ResponsiveClipPath !== 'undefined') window.ResponsiveClipPath = ResponsiveClipPath;
-if (typeof PythraSlider !== 'undefined') window.PythraSlider = PythraSlider;
-if (typeof PythraDropdown !== 'undefined') window.PythraDropdown = PythraDropdown;
-if (typeof PythraGestureDetector !== 'undefined') window.PythraGestureDetector = PythraGestureDetector;
-if (typeof PythraGradientClipPath !== 'undefined') window.PythraGradientClipPath = PythraGradientClipPath;
-if (typeof PythraVirtualList !== 'undefined') window.PythraVirtualList = PythraVirtualList;
-if (typeof generateRoundedPath !== 'undefined') window.generateRoundedPath = generateRoundedPath;
-if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = scalePathAbsoluteMLA;
-} catch (e) {
-    console.error('Error loading gradient_border.js:', e);
-}
-
-// --- Injected from pathGenerator.js ---
-try {
-// js/pathGenerator.js
-
-// --- Vector Math Helper Functions ---
-const vec = (p1, p2) => ({ x: p2.x - p1.x, y: p2.y - p1.y });
-const magnitude = (v) => Math.sqrt(v.x ** 2 + v.y ** 2);
-const dot = (v1, v2) => v1.x * v2.x + v1.y * v2.y;
-const cross = (v1, v2) => v1.x * v2.y - v1.y * v2.x;
-const round = (val) => Math.round(val * 100) / 100; // Round to 2 decimal places
-
-function generateRoundedPath(points, radius) {
-    const numPoints = points.length;
-    const cornerData = [];
-
-    console.log(`>>>>>> Generator Initiated <<<<<<`)
-
-    for (let i = 0; i < numPoints; i++) {
-        const p_prev = points[(i + numPoints - 1) % numPoints];
-        const p_curr = points[i];
-        const p_next = points[(i + 1) % numPoints];
-
-        const v1 = vec(p_curr, p_prev);
-        const v2 = vec(p_curr, p_next);
-        const v1_mag = magnitude(v1);
-        const v2_mag = magnitude(v2);
-
-        if (v1_mag === 0 || v2_mag === 0) {
-            cornerData.push({ t1: p_curr, t2: p_curr, radius: 0 });
-            continue;
-        }
-
-        const angle = Math.acos(Math.max(-1, Math.min(1, dot(v1, v2) / (v1_mag * v2_mag))));
-        let tangentDist = radius / Math.tan(angle / 2);
-        tangentDist = Math.min(tangentDist, v1_mag / 2, v2_mag / 2);
-        const clampedRadius = Math.abs(tangentDist * Math.tan(angle / 2));
-
-        const t1 = { x: p_curr.x + (v1.x / v1_mag) * tangentDist, y: p_curr.y + (v1.y / v1_mag) * tangentDist };
-        const t2 = { x: p_curr.x + (v2.x / v2_mag) * tangentDist, y: p_curr.y + (v2.y / v2_mag) * tangentDist };
-
-        const sweepFlag = cross(v1, v2) < 0 ? 1 : 0;
-
-        cornerData.push({ t1, t2, radius: clampedRadius, sweepFlag });
-    }
-
-    const pathCommands = [];
-    pathCommands.push(`M ${round(cornerData[numPoints - 1].t2.x)} ${round(cornerData[numPoints - 1].t2.y)}`);
-    for (let i = 0; i < numPoints; i++) {
-        const corner = cornerData[i];
-        pathCommands.push(`L ${round(corner.t1.x)} ${round(corner.t1.y)}`);
-        pathCommands.push(`A ${round(corner.radius)} ${round(corner.radius)} 0 0 ${corner.sweepFlag} ${round(corner.t2.x)} ${round(corner.t2.y)}`);
-    }
-    pathCommands.push('Z');
-    console.log(pathCommands.join(' '));
-    return pathCommands.join(' ');
-}
-
-
-// Ensure classes are available globally
-if (typeof ResponsiveClipPath !== 'undefined') window.ResponsiveClipPath = ResponsiveClipPath;
-if (typeof PythraSlider !== 'undefined') window.PythraSlider = PythraSlider;
-if (typeof PythraDropdown !== 'undefined') window.PythraDropdown = PythraDropdown;
-if (typeof PythraGestureDetector !== 'undefined') window.PythraGestureDetector = PythraGestureDetector;
-if (typeof PythraGradientClipPath !== 'undefined') window.PythraGradientClipPath = PythraGradientClipPath;
-if (typeof PythraVirtualList !== 'undefined') window.PythraVirtualList = PythraVirtualList;
-if (typeof generateRoundedPath !== 'undefined') window.generateRoundedPath = generateRoundedPath;
-if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = scalePathAbsoluteMLA;
-} catch (e) {
-    console.error('Error loading pathGenerator.js:', e);
-}
-
-// --- Injected from clipPathUtils.js ---
-try {
-// clipPathUtils.js
-
-/**
- * Parse an SVG path string containing absolute commands (M, L, A, H, V, Z),
- * and scale coordinates from reference dimensions to target dimensions.
- * 
- * @param {string} pathStr - Original SVG path string (absolute commands only)
- * @param {number} refW - reference width
- * @param {number} refH - reference height
- * @param {number} targetW - actual element width
- * @param {number} targetH - actual element height
- * @param {Object} [options] - optional settings:
- *    - {boolean} uniformArc
- *    - {number} decimalPlaces
- *    - {boolean} percentOutput
- * @returns {string} - scaled path string
- */
-// clipPathUtils.js
-
-function scalePathAbsoluteMLA(pathStr, refW, refH, targetW, targetH, options = {}) {
-  const rw = targetW / refW;
-  const rh = targetH / refH;
-  const uniformArc = !!options.uniformArc;
-  const decimalPlaces = typeof options.decimalPlaces === 'number' ? options.decimalPlaces : null;
-  const rScale = uniformArc ? Math.min(rw, rh) : null;
-
-  const fmt = (num) => {
-    return decimalPlaces !== null
-      ? Number(num.toFixed(decimalPlaces)).toString()
-      : Number(num).toString();
-  };
-
-  // Normalize the string
-  const s = pathStr
-    .replace(/,/g, ' ')
-    .replace(/([0-9])-/g, '$1 -')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  const tokenRegex = /([MLAZHV])|(-?\d*\.?\d+(?:e[-+]?\d+)?)/gi;
-  const tokens = [];
-  let match;
-  while ((match = tokenRegex.exec(s)) !== null) {
-    tokens.push(match[1] || match[2]);
-  }
-
-  const out = [];
-  let i = 0;
-  while (i < tokens.length) {
-    const cmd = tokens[i++];
-    out.push(cmd);
-
-    switch (cmd) {
-      case 'M':
-      case 'L':
-        while (i + 1 < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {
-          const x = parseFloat(tokens[i++]) * rw;
-          const y = parseFloat(tokens[i++]) * rh;
-          out.push(fmt(x), fmt(y));
-        }
-        break;
-
-      case 'A':
-        while (i + 6 < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {
-          const rx = parseFloat(tokens[i++]);
-          const ry = parseFloat(tokens[i++]);
-          const rot = tokens[i++];
-          const laf = tokens[i++];
-          const sf = tokens[i++];
-          const x = parseFloat(tokens[i++]);
-          const y = parseFloat(tokens[i++]);
-
-          out.push(
-            fmt(uniformArc ? rx * rScale : rx * rw),
-            fmt(uniformArc ? ry * rScale : ry * rh),
-            rot,
-            laf,
-            sf,
-            fmt(x * rw),
-            fmt(y * rh)
-          );
-        }
-        break;
-
-      case 'H':
-        while (i < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {
-          const x = parseFloat(tokens[i++]) * rw;
-          out.push(fmt(x));
-        }
-        break;
-
-      case 'V':
-        while (i < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {
-          const y = parseFloat(tokens[i++]) * rh;
-          out.push(fmt(y));
-        }
-        break;
-
-      case 'Z':
-        // No coordinates to scale
-        break;
-
-      default:
-        console.warn('Unsupported or unexpected token:', cmd);
-    }
-  }
-
-  return out.join(' ');
-}
-
-class ResponsiveClipPath {
-  constructor(target, originalPath, refW, refH, options = {}) {
-    this.elements = [];
-    this.orig = originalPath.trim();
-    this.refW = refW;
-    this.refH = refH;
-    this.options = options;
-    this.currentPath = "";  // ⬅️ Store last computed path string
-    this.update = this.update.bind(this);
-    this.roList = [];
-
-    if (typeof target === 'string') {
-      let selector = target;
-      if (!selector.startsWith('#') && !selector.startsWith('.')) {
-        const byId = document.getElementById(selector);
-        selector = byId ? `#${selector}` : `.${selector}`;
-      }
-      const nodeList = document.querySelectorAll(selector);
-      if (nodeList.length === 0) {
-        console.warn(`ResponsiveClipPath: no elements found for selector "${selector}"`);
-      }
-      nodeList.forEach(el => this.elements.push(el));
-    } else if (target instanceof HTMLElement) {
-      this.elements.push(target);
-    } else {
-      console.warn('ResponsiveClipPath: invalid target', target);
-    }
-
-    this.elements.forEach(el => this.initElement(el));
-  }
-
-  initElement(el) {
-    this.applyClip(el);
-    if (window.ResizeObserver) {
-      const ro = new ResizeObserver(() => this.applyClip(el));
-      ro.observe(el);
-      this.roList.push({ el, ro });
-    } else {
-      window.addEventListener('resize', this.update);
-    }
-  }
-
-  applyClip(el) {
-    const rect = el.getBoundingClientRect();
-    const newPath = scalePathAbsoluteMLA(
-      this.orig,
-      this.refW,
-      this.refH,
-      rect.width,
-      rect.height,
-      this.options
-    );
-    this.currentPath = `path("${newPath}")`;  // ⬅️ Save it
-    el.style.clipPath = this.currentPath;
-    el.style.webkitClipPath = this.currentPath;
-  }
-
-  update() {
-    this.elements.forEach(el => this.applyClip(el));
-  }
-
-  disconnect() {
-    this.roList.forEach(({ el, ro }) => ro.unobserve(el));
-    this.roList = [];
-    window.removeEventListener('resize', this.update);
-  }
-
-  // ✅ Your new method
-  getResponsivePath() {
-    return this.currentPath;
-  }
-}
-
-
-// Ensure classes are available globally
-if (typeof ResponsiveClipPath !== 'undefined') window.ResponsiveClipPath = ResponsiveClipPath;
-if (typeof PythraSlider !== 'undefined') window.PythraSlider = PythraSlider;
-if (typeof PythraDropdown !== 'undefined') window.PythraDropdown = PythraDropdown;
-if (typeof PythraGestureDetector !== 'undefined') window.PythraGestureDetector = PythraGestureDetector;
-if (typeof PythraGradientClipPath !== 'undefined') window.PythraGradientClipPath = PythraGradientClipPath;
-if (typeof PythraVirtualList !== 'undefined') window.PythraVirtualList = PythraVirtualList;
-if (typeof generateRoundedPath !== 'undefined') window.generateRoundedPath = generateRoundedPath;
-if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = scalePathAbsoluteMLA;
-} catch (e) {
-    console.error('Error loading clipPathUtils.js:', e);
-}
-
-// --- Injected from virtual_list.js ---
+                    // --- Injected from virtual_list.js ---
 try {
 /**
  * PythraVirtualList: A client-side engine for virtual scrolling. (Final Version)
@@ -983,95 +508,208 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
     console.error('Error loading gesture_detector.js:', e);
 }
 
-// --- Injected from dropdown.js ---
+// --- Injected from pathGenerator.js ---
+try {
+// js/pathGenerator.js
+
+// --- Vector Math Helper Functions ---
+const vec = (p1, p2) => ({ x: p2.x - p1.x, y: p2.y - p1.y });
+const magnitude = (v) => Math.sqrt(v.x ** 2 + v.y ** 2);
+const dot = (v1, v2) => v1.x * v2.x + v1.y * v2.y;
+const cross = (v1, v2) => v1.x * v2.y - v1.y * v2.x;
+const round = (val) => Math.round(val * 100) / 100; // Round to 2 decimal places
+
+function generateRoundedPath(points, radius) {
+    const numPoints = points.length;
+    const cornerData = [];
+
+    console.log(`>>>>>> Generator Initiated <<<<<<`)
+
+    for (let i = 0; i < numPoints; i++) {
+        const p_prev = points[(i + numPoints - 1) % numPoints];
+        const p_curr = points[i];
+        const p_next = points[(i + 1) % numPoints];
+
+        const v1 = vec(p_curr, p_prev);
+        const v2 = vec(p_curr, p_next);
+        const v1_mag = magnitude(v1);
+        const v2_mag = magnitude(v2);
+
+        if (v1_mag === 0 || v2_mag === 0) {
+            cornerData.push({ t1: p_curr, t2: p_curr, radius: 0 });
+            continue;
+        }
+
+        const angle = Math.acos(Math.max(-1, Math.min(1, dot(v1, v2) / (v1_mag * v2_mag))));
+        let tangentDist = radius / Math.tan(angle / 2);
+        tangentDist = Math.min(tangentDist, v1_mag / 2, v2_mag / 2);
+        const clampedRadius = Math.abs(tangentDist * Math.tan(angle / 2));
+
+        const t1 = { x: p_curr.x + (v1.x / v1_mag) * tangentDist, y: p_curr.y + (v1.y / v1_mag) * tangentDist };
+        const t2 = { x: p_curr.x + (v2.x / v2_mag) * tangentDist, y: p_curr.y + (v2.y / v2_mag) * tangentDist };
+
+        const sweepFlag = cross(v1, v2) < 0 ? 1 : 0;
+
+        cornerData.push({ t1, t2, radius: clampedRadius, sweepFlag });
+    }
+
+    const pathCommands = [];
+    pathCommands.push(`M ${round(cornerData[numPoints - 1].t2.x)} ${round(cornerData[numPoints - 1].t2.y)}`);
+    for (let i = 0; i < numPoints; i++) {
+        const corner = cornerData[i];
+        pathCommands.push(`L ${round(corner.t1.x)} ${round(corner.t1.y)}`);
+        pathCommands.push(`A ${round(corner.radius)} ${round(corner.radius)} 0 0 ${corner.sweepFlag} ${round(corner.t2.x)} ${round(corner.t2.y)}`);
+    }
+    pathCommands.push('Z');
+    console.log(pathCommands.join(' '));
+    return pathCommands.join(' ');
+}
+
+
+// Ensure classes are available globally
+if (typeof ResponsiveClipPath !== 'undefined') window.ResponsiveClipPath = ResponsiveClipPath;
+if (typeof PythraSlider !== 'undefined') window.PythraSlider = PythraSlider;
+if (typeof PythraDropdown !== 'undefined') window.PythraDropdown = PythraDropdown;
+if (typeof PythraGestureDetector !== 'undefined') window.PythraGestureDetector = PythraGestureDetector;
+if (typeof PythraGradientClipPath !== 'undefined') window.PythraGradientClipPath = PythraGradientClipPath;
+if (typeof PythraVirtualList !== 'undefined') window.PythraVirtualList = PythraVirtualList;
+if (typeof generateRoundedPath !== 'undefined') window.generateRoundedPath = generateRoundedPath;
+if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = scalePathAbsoluteMLA;
+} catch (e) {
+    console.error('Error loading pathGenerator.js:', e);
+}
+
+// --- Injected from gradient_border.js ---
 try {
 /**
- * PythraDropdown: Client-side engine for a custom Dropdown widget.
- *
- * Handles toggling the dropdown menu, closing it when clicking outside,
- * and sending the selected value back to the Python backend.
+ * PythraGradientClipPath: Client-side engine for creating an animated
+ * gradient border around a complex clip-path shape.
  */
-class PythraDropdown {
+'./pathGenerator.js';
+
+// Helper function for basic vector math
+const vec_gradient_border = (p1, p2) => ({ x: p2.x - p1.x, y: p2.y - p1.y });
+const magnitude_gradient_border = (v) => Math.sqrt(v.x * v.x + v.y * v.y);
+const normalize_gradient_border = (v) => {
+    const mag = magnitude_gradient_border(v);
+    return mag > 0 ? { x: v.x / mag, y: v.y / mag } : { x: 0, y: 0 };
+};
+const dot_gradient_border = (v1, v2) => v1.x * v2.x + v1.y * v2.y;
+// const cross = (v1, v2) => v1.x * v2.y - v1.y * v2.x;
+
+
+
+/**
+ * Calculates a new set of points offset outwards from the original polygon.
+ * @param {Array<Object>} points - The original points, e.g., [{x: 0, y: 0}, ...].
+ * @param {number} offset - The distance to offset the points outwards.
+ * @returns {Array<Object>} The new, offset points.
+ */
+function offsetPoints(points, offset) {
+    const numPoints = points.length;
+    if (numPoints < 3) return points;
+
+    const offsetPoints = [];
+
+    for (let i = 0; i < numPoints; i++) {
+        const p_prev = points[(i + numPoints - 1) % numPoints];
+        const p_curr = points[i];
+        const p_next = points[(i + 1) % numPoints];
+
+        const v1 = normalize_gradient_border(vec_gradient_border(p_curr, p_prev));
+        const v2 = normalize_gradient_border(vec_gradient_border(p_curr, p_next));
+
+        // Calculate the angle bisector vector (points outwards for convex shapes)
+        const bisector = normalize_gradient_border({ x: v1.x + v2.x, y: v1.y + v2.y });
+
+        // Calculate the angle between the two edge vectors
+        const angle = Math.acos(dot_gradient_border(v1, v2));
+
+        // Use trigonometry to find the length to move along the bisector
+        // to achieve the desired perpendicular offset distance.
+        const distance = offset / Math.sin(angle / 2);
+
+        if (isNaN(distance) || !isFinite(distance)) {
+             // Handle collinear points (angle is ~PI), just move along the normal
+             const normal = { x: -v1.y, y: v1.x };
+             offsetPoints.push({ x: p_curr.x + normal.x * offset, y: p_curr.y + normal.y * offset });
+        } else {
+             offsetPoints.push({ x: p_curr.x + bisector.x * distance, y: p_curr.y + bisector.y * distance });
+        }
+    }
+    return offsetPoints;
+}
+
+
+class PythraGradientClipPath {
     constructor(elementId, options) {
         this.container = document.getElementById(elementId);
         if (!this.container) {
-            console.error(`Dropdown container with ID #${elementId} not found.`);
+            console.error(`GradientClipPath container with ID #${elementId} not found.`);
             return;
         }
 
-        console.log(`✅ PythraDropdown engine is initializing for #${elementId}`);
+        console.log(`✅ PythraGradientClipPath engine is initializing for #${elementId}`);
+        
+        // --- Setup DOM Structure ---
+        // The reconciler placed the child widget inside our container.
+        // We need to wrap it and add a background element.
+        this.backgroundEl = document.createElement('div');
+        this.backgroundEl.className = 'gradient-clip-background';
+        
+        this.contentHost = document.createElement('div');
+        this.contentHost.className = 'gradient-clip-content-host';
 
+        // Move the original child from the container into the new host
+        while (this.container.firstChild) {
+            this.contentHost.appendChild(this.container.firstChild);
+        }
+        
+        this.container.appendChild(this.backgroundEl);
+        this.container.appendChild(this.contentHost);
+        
+        // --- Generate and Apply Paths ---
         this.options = options;
-        this.valueContainer = this.container.querySelector('.dropdown-value-container');
-        this.menu = this.container.querySelector('.dropdown-menu');
-        this.items = this.menu.querySelectorAll('.dropdown-item');
-
-        // Bind 'this' to maintain context in event handlers
-        this.toggleMenu = this.toggleMenu.bind(this);
-        this.handleItemClick = this.handleItemClick.bind(this);
-        this.handleClickOutside = this.handleClickOutside.bind(this);
-
-        // Attach event listeners
-        this.valueContainer.addEventListener('click', this.toggleMenu);
-        this.items.forEach(item => {
-            item.addEventListener('click', this.handleItemClick);
-        });
+        this.update = this.update.bind(this);
+        
+        // Use a ResizeObserver to make it fully responsive
+        this.ro = new ResizeObserver(this.update);
+        this.ro.observe(this.container);
+        
+        // Initial update
+        this.update();
     }
 
-    toggleMenu(event) {
-        event.stopPropagation(); // Prevent click from bubbling to the document
-        const isCurrentlyOpen = this.container.classList.toggle('open');
-        console.log("Value container Clicked");
-        
-        if (isCurrentlyOpen) {
-            // If we just opened the menu, listen for clicks outside to close it
-            document.addEventListener('click', this.handleClickOutside);
-        } else {
-            // If we just closed it, stop listening
-            document.removeEventListener('click', this.handleClickOutside);
-        }
-    }
+    update() {
+        const rect = this.container.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
 
-    handleItemClick(event) {
-        const selectedValue = event.currentTarget.dataset.value;
-        const selectedLabel = event.currentTarget.textContent;
+        const { points, radius, viewBox, borderWidth } = this.options;
+        const jsPoints = points.map(p => ({ x: p[0], y: p[1] }));
 
-        console.log("Dropdown option Clicked");
-        
-        // 1. Update the display value immediately for instant feedback
-        this.valueContainer.querySelector('span').textContent = selectedLabel;
-        
-        // 2. Send the selected *value* back to the Python backend
-        if (window.pywebview && this.options.onChangedName) {
-            window.pywebview.on_input_changed(this.options.onChangedName, selectedValue);
-        }
-        
-        // 3. Close the menu
-        this.closeMenu();
-    }
-    
-    closeMenu() {
-        if (this.container.classList.contains('open')) {
-            this.container.classList.remove('open');
-            document.removeEventListener('click', this.handleClickOutside);
-        }
-    }
+        // 1. Generate the inner path for the content
+        const innerPathStr = generateRoundedPath(jsPoints, radius);
+        const innerClipPath = `path("${innerPathStr}")`;
 
-    handleClickOutside(event) {
-        // If the click is outside the main container, close the menu
-        if (!this.container.contains(event.target)) {
-            this.closeMenu();
-        }
+        // 2. Calculate offset points and a larger radius for the outer path
+        const offset_points = offsetPoints(jsPoints, borderWidth);
+        const outerRadius = radius + borderWidth;
+        const outerPathStr = generateRoundedPath(offset_points, outerRadius);
+        const outerClipPath = `path("${outerPathStr}")`;
+
+        // 3. Apply the responsive clip-paths to the elements
+        // We don't need ResponsiveClipPath class here because we update on every resize.
+        this.contentHost.style.clipPath = innerClipPath;
+        this.contentHost.style.webkitClipPath = innerClipPath;
+        
+        this.backgroundEl.style.clipPath = outerClipPath;
+        this.backgroundEl.style.webkitClipPath = outerClipPath;
     }
 
     destroy() {
-        // Cleanup to prevent memory leaks
-        if (!this.container) return;
-        this.valueContainer.removeEventListener('click', this.toggleMenu);
-        this.items.forEach(item => {
-            item.removeEventListener('click', this.handleItemClick);
-        });
-        document.removeEventListener('click', this.handleClickOutside);
+        if (this.ro && this.container) {
+            this.ro.unobserve(this.container);
+        }
     }
 }
 
@@ -1085,7 +723,206 @@ if (typeof PythraVirtualList !== 'undefined') window.PythraVirtualList = PythraV
 if (typeof generateRoundedPath !== 'undefined') window.generateRoundedPath = generateRoundedPath;
 if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = scalePathAbsoluteMLA;
 } catch (e) {
-    console.error('Error loading dropdown.js:', e);
+    console.error('Error loading gradient_border.js:', e);
+}
+
+// --- Injected from clipPathUtils.js ---
+try {
+// clipPathUtils.js
+
+/**
+ * Parse an SVG path string containing absolute commands (M, L, A, H, V, Z),
+ * and scale coordinates from reference dimensions to target dimensions.
+ * 
+ * @param {string} pathStr - Original SVG path string (absolute commands only)
+ * @param {number} refW - reference width
+ * @param {number} refH - reference height
+ * @param {number} targetW - actual element width
+ * @param {number} targetH - actual element height
+ * @param {Object} [options] - optional settings:
+ *    - {boolean} uniformArc
+ *    - {number} decimalPlaces
+ *    - {boolean} percentOutput
+ * @returns {string} - scaled path string
+ */
+// clipPathUtils.js
+
+function scalePathAbsoluteMLA(pathStr, refW, refH, targetW, targetH, options = {}) {
+  const rw = targetW / refW;
+  const rh = targetH / refH;
+  const uniformArc = !!options.uniformArc;
+  const decimalPlaces = typeof options.decimalPlaces === 'number' ? options.decimalPlaces : null;
+  const rScale = uniformArc ? Math.min(rw, rh) : null;
+
+  const fmt = (num) => {
+    return decimalPlaces !== null
+      ? Number(num.toFixed(decimalPlaces)).toString()
+      : Number(num).toString();
+  };
+
+  // Normalize the string
+  const s = pathStr
+    .replace(/,/g, ' ')
+    .replace(/([0-9])-/g, '$1 -')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const tokenRegex = /([MLAZHV])|(-?\d*\.?\d+(?:e[-+]?\d+)?)/gi;
+  const tokens = [];
+  let match;
+  while ((match = tokenRegex.exec(s)) !== null) {
+    tokens.push(match[1] || match[2]);
+  }
+
+  const out = [];
+  let i = 0;
+  while (i < tokens.length) {
+    const cmd = tokens[i++];
+    out.push(cmd);
+
+    switch (cmd) {
+      case 'M':
+      case 'L':
+        while (i + 1 < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {
+          const x = parseFloat(tokens[i++]) * rw;
+          const y = parseFloat(tokens[i++]) * rh;
+          out.push(fmt(x), fmt(y));
+        }
+        break;
+
+      case 'A':
+        while (i + 6 < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {
+          const rx = parseFloat(tokens[i++]);
+          const ry = parseFloat(tokens[i++]);
+          const rot = tokens[i++];
+          const laf = tokens[i++];
+          const sf = tokens[i++];
+          const x = parseFloat(tokens[i++]);
+          const y = parseFloat(tokens[i++]);
+
+          out.push(
+            fmt(uniformArc ? rx * rScale : rx * rw),
+            fmt(uniformArc ? ry * rScale : ry * rh),
+            rot,
+            laf,
+            sf,
+            fmt(x * rw),
+            fmt(y * rh)
+          );
+        }
+        break;
+
+      case 'H':
+        while (i < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {
+          const x = parseFloat(tokens[i++]) * rw;
+          out.push(fmt(x));
+        }
+        break;
+
+      case 'V':
+        while (i < tokens.length && !/^[MLAZHV]$/.test(tokens[i])) {
+          const y = parseFloat(tokens[i++]) * rh;
+          out.push(fmt(y));
+        }
+        break;
+
+      case 'Z':
+        // No coordinates to scale
+        break;
+
+      default:
+        console.warn('Unsupported or unexpected token:', cmd);
+    }
+  }
+
+  return out.join(' ');
+}
+
+class ResponsiveClipPath {
+  constructor(target, originalPath, refW, refH, options = {}) {
+    this.elements = [];
+    this.orig = originalPath.trim();
+    this.refW = refW;
+    this.refH = refH;
+    this.options = options;
+    this.currentPath = "";  // ⬅️ Store last computed path string
+    this.update = this.update.bind(this);
+    this.roList = [];
+
+    if (typeof target === 'string') {
+      let selector = target;
+      if (!selector.startsWith('#') && !selector.startsWith('.')) {
+        const byId = document.getElementById(selector);
+        selector = byId ? `#${selector}` : `.${selector}`;
+      }
+      const nodeList = document.querySelectorAll(selector);
+      if (nodeList.length === 0) {
+        console.warn(`ResponsiveClipPath: no elements found for selector "${selector}"`);
+      }
+      nodeList.forEach(el => this.elements.push(el));
+    } else if (target instanceof HTMLElement) {
+      this.elements.push(target);
+    } else {
+      console.warn('ResponsiveClipPath: invalid target', target);
+    }
+
+    this.elements.forEach(el => this.initElement(el));
+  }
+
+  initElement(el) {
+    this.applyClip(el);
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(() => this.applyClip(el));
+      ro.observe(el);
+      this.roList.push({ el, ro });
+    } else {
+      window.addEventListener('resize', this.update);
+    }
+  }
+
+  applyClip(el) {
+    const rect = el.getBoundingClientRect();
+    const newPath = scalePathAbsoluteMLA(
+      this.orig,
+      this.refW,
+      this.refH,
+      rect.width,
+      rect.height,
+      this.options
+    );
+    this.currentPath = `path("${newPath}")`;  // ⬅️ Save it
+    el.style.clipPath = this.currentPath;
+    el.style.webkitClipPath = this.currentPath;
+  }
+
+  update() {
+    this.elements.forEach(el => this.applyClip(el));
+  }
+
+  disconnect() {
+    this.roList.forEach(({ el, ro }) => ro.unobserve(el));
+    this.roList = [];
+    window.removeEventListener('resize', this.update);
+  }
+
+  // ✅ Your new method
+  getResponsivePath() {
+    return this.currentPath;
+  }
+}
+
+
+// Ensure classes are available globally
+if (typeof ResponsiveClipPath !== 'undefined') window.ResponsiveClipPath = ResponsiveClipPath;
+if (typeof PythraSlider !== 'undefined') window.PythraSlider = PythraSlider;
+if (typeof PythraDropdown !== 'undefined') window.PythraDropdown = PythraDropdown;
+if (typeof PythraGestureDetector !== 'undefined') window.PythraGestureDetector = PythraGestureDetector;
+if (typeof PythraGradientClipPath !== 'undefined') window.PythraGradientClipPath = PythraGradientClipPath;
+if (typeof PythraVirtualList !== 'undefined') window.PythraVirtualList = PythraVirtualList;
+if (typeof generateRoundedPath !== 'undefined') window.generateRoundedPath = generateRoundedPath;
+if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = scalePathAbsoluteMLA;
+} catch (e) {
+    console.error('Error loading clipPathUtils.js:', e);
 }
 
 // --- Injected from slider.js ---
@@ -1197,39 +1034,376 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
 } catch (e) {
     console.error('Error loading slider.js:', e);
 }
+
+// --- Injected from dropdown.js ---
+try {
+/**
+ * PythraDropdown: Client-side engine for a custom Dropdown widget.
+ *
+ * Handles toggling the dropdown menu, closing it when clicking outside,
+ * and sending the selected value back to the Python backend.
+ */
+class PythraDropdown {
+    constructor(elementId, options) {
+        this.container = document.getElementById(elementId);
+        if (!this.container) {
+            console.error(`Dropdown container with ID #${elementId} not found.`);
+            return;
+        }
+
+        console.log(`✅ PythraDropdown engine is initializing for #${elementId}`);
+
+        this.options = options;
+        this.valueContainer = this.container.querySelector('.dropdown-value-container');
+        this.menu = this.container.querySelector('.dropdown-menu');
+        this.items = this.menu.querySelectorAll('.dropdown-item');
+
+        // Bind 'this' to maintain context in event handlers
+        this.toggleMenu = this.toggleMenu.bind(this);
+        this.handleItemClick = this.handleItemClick.bind(this);
+        this.handleClickOutside = this.handleClickOutside.bind(this);
+
+        // Attach event listeners
+        this.valueContainer.addEventListener('click', this.toggleMenu);
+        this.items.forEach(item => {
+            item.addEventListener('click', this.handleItemClick);
+        });
+    }
+
+    toggleMenu(event) {
+        event.stopPropagation(); // Prevent click from bubbling to the document
+        const isCurrentlyOpen = this.container.classList.toggle('open');
+        console.log("Value container Clicked");
+        
+        if (isCurrentlyOpen) {
+            // If we just opened the menu, listen for clicks outside to close it
+            document.addEventListener('click', this.handleClickOutside);
+        } else {
+            // If we just closed it, stop listening
+            document.removeEventListener('click', this.handleClickOutside);
+        }
+    }
+
+    handleItemClick(event) {
+        const selectedValue = event.currentTarget.dataset.value;
+        const selectedLabel = event.currentTarget.textContent;
+
+        console.log("Dropdown option Clicked");
+        
+        // 1. Update the display value immediately for instant feedback
+        this.valueContainer.querySelector('span').textContent = selectedLabel;
+        
+        // 2. Send the selected *value* back to the Python backend
+        if (window.pywebview && this.options.onChangedName) {
+            window.pywebview.on_input_changed(this.options.onChangedName, selectedValue);
+        }
+        
+        // 3. Close the menu
+        this.closeMenu();
+    }
+    
+    closeMenu() {
+        if (this.container.classList.contains('open')) {
+            this.container.classList.remove('open');
+            document.removeEventListener('click', this.handleClickOutside);
+        }
+    }
+
+    handleClickOutside(event) {
+        // If the click is outside the main container, close the menu
+        if (!this.container.contains(event.target)) {
+            this.closeMenu();
+        }
+    }
+
+    destroy() {
+        // Cleanup to prevent memory leaks
+        if (!this.container) return;
+        this.valueContainer.removeEventListener('click', this.toggleMenu);
+        this.items.forEach(item => {
+            item.removeEventListener('click', this.handleItemClick);
+        });
+        document.removeEventListener('click', this.handleClickOutside);
+    }
+}
+
+// Ensure classes are available globally
+if (typeof ResponsiveClipPath !== 'undefined') window.ResponsiveClipPath = ResponsiveClipPath;
+if (typeof PythraSlider !== 'undefined') window.PythraSlider = PythraSlider;
+if (typeof PythraDropdown !== 'undefined') window.PythraDropdown = PythraDropdown;
+if (typeof PythraGestureDetector !== 'undefined') window.PythraGestureDetector = PythraGestureDetector;
+if (typeof PythraGradientClipPath !== 'undefined') window.PythraGradientClipPath = PythraGradientClipPath;
+if (typeof PythraVirtualList !== 'undefined') window.PythraVirtualList = PythraVirtualList;
+if (typeof generateRoundedPath !== 'undefined') window.generateRoundedPath = generateRoundedPath;
+if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = scalePathAbsoluteMLA;
+} catch (e) {
+    console.error('Error loading dropdown.js:', e);
+}
+
+// --- Injected Plugin 'pythra-markdown-editor': editor.js ---
+try {
+// PythraMarkdownEditor - A full-featured, self-contained WYSIWYG Editor Engine
+class PythraMarkdownEditor {
+    constructor(element, options = {}) {
+        this.container = element;
+        this.options = options;
+        this.options.showControls = this.options.showControls ?? true;
+        this.editorElement = null;
+        this._changeTimer = null;
+
+        if (!window._pythraEditorStylesInjected) {
+            this.injectStyles();
+            window._pythraEditorStylesInjected = true;
+        }
+
+        this.init();
+    }
+
+    init() {
+        this.container.innerHTML = '';
+        this.container.classList.add('pythra-editor-wrapper');
+
+        if (this.options.showControls) {
+            const toggleBtn = document.createElement('button');
+            toggleBtn.id = `toggleControls_${this.options.instanceId || ''}`;
+            toggleBtn.className = 'pythra-toggle-button';
+            toggleBtn.textContent = 'Hide Controls';
+            this.container.appendChild(toggleBtn);
+
+            const controlPanel = this.createControlPanel();
+            this.container.appendChild(controlPanel);
+
+            toggleBtn.addEventListener('click', () => {
+                const isHidden = controlPanel.classList.toggle('hidden');
+                toggleBtn.textContent = isHidden ? 'Show Controls' : 'Hide Controls';
+            });
+        }
+
+        const editorEl = document.createElement('div');
+        editorEl.id = this.options.instanceId ? `editor_${this.options.instanceId}` : 'editor';
+        editorEl.contentEditable = true;
+        this.container.appendChild(editorEl);
+        this.editorElement = editorEl;
+
+        if (this.options.initialContent) {
+            this.editorElement.innerHTML = this.options.initialContent;
+        }
+
+        this._setupChangeHandler();
+        this._setupVisualFeedbackHandlers();
+    }
+
+    createControlPanel() {
+        const panel = document.createElement('div');
+        panel.id = `controlPanel_${this.options.instanceId || ''}`;
+        panel.className = 'control-panel';
+
+        const group1 = document.createElement('div');
+        group1.className = 'control-group';
+        [
+            { cmd: 'formatBlock', val: 'H1', title: 'Heading 1', label: 'H1' },
+            { cmd: 'formatBlock', val: 'H2', title: 'Heading 2', label: 'H2' },
+            { cmd: 'formatBlock', val: 'P', title: 'Paragraph', label: 'P' },
+            { cmd: 'insertUnorderedList', title: 'Unordered List', label: 'UL' },
+            { cmd: 'insertOrderedList', title: 'Ordered List', label: 'OL' },
+        ].forEach(c => group1.appendChild(this.createButton(c.cmd, c.label, c.title, c.val)));
+        panel.appendChild(group1);
+
+        const group2 = document.createElement('div');
+        group2.className = 'control-group';
+        [
+            { id: `btn-bold_${this.options.instanceId}`, cmd: 'bold', title: 'Bold', label: '<b>B</b>' },
+            { id: `btn-italic_${this.options.instanceId}`, cmd: 'italic', title: 'Italic', label: '<i>I</i>' },
+            { id: `btn-underline_${this.options.instanceId}`, cmd: 'underline', title: 'Underline', label: '<u>U</u>' },
+            { id: `btn-strikeThrough_${this.options.instanceId}`, cmd: 'strikeThrough', title: 'Strikethrough', label: '<s>S</s>' },
+        ].forEach(c => group2.appendChild(this.createButton(c.cmd, c.label, c.title, null, c.id)));
+        panel.appendChild(group2);
+
+        const group3 = document.createElement('div');
+        group3.className = 'control-group';
+        group3.appendChild(this.createColorPicker());
+        group3.appendChild(this.createFontSelector());
+        panel.appendChild(group3);
+
+        return panel;
+    }
+    
+    createButton(command, label, title, value = null, id = null) {
+        const button = document.createElement('button');
+        if (id) button.id = id;
+        button.title = title;
+        button.innerHTML = label;
+        button.onclick = () => window.executeCommand(command, value, this.editorElement);
+        return button;
+    }
+
+    createColorPicker() {
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.title = 'Font Color';
+        input.oninput = (e) => window.executeCommand('foreColor', e.target.value, this.editorElement);
+        return input;
+    }
+
+    createFontSelector() {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'font-selector-wrapper';
+
+        const select = document.createElement('select');
+        select.title = 'Font Family';
+        select.onchange = (e) => window.executeCommand('fontName', e.target.value, this.editorElement);
+        
+        const systemFontStack = `-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif`;
+        const defaultFonts = [
+            { val: systemFontStack, label: 'System Default' },
+            { val: 'Arial, sans-serif', label: 'Arial' },
+            { val: 'Verdana, sans-serif', label: 'Verdana' },
+            { val: "'Times New Roman', serif", label: 'Times New Roman' },
+            { val: 'Georgia, serif', label: 'Georgia' },
+            { val: "'Courier New', monospace", label: 'Courier New' },
+        ];
+        
+        defaultFonts.forEach(font => select.add(new Option(font.label, font.val)));
+        wrapper.appendChild(select);
+        
+        // --- NEW: Add a button to load system fonts ---
+        if ('queryLocalFonts' in window) {
+            const loadFontsBtn = this.createButton(null, '&#x1F5D8;', 'Load System Fonts');
+            loadFontsBtn.style.padding = '0.5rem';
+            loadFontsBtn.onclick = async () => {
+                try {
+                    const availableFonts = await window.queryLocalFonts();
+                    // Clear existing options except the default
+                    select.innerHTML = '';
+                    select.add(new Option('System Default', systemFontStack));
+
+                    // Use a Set to avoid duplicate font names
+                    const fontNames = new Set();
+                    for (const fontData of availableFonts) {
+                        fontNames.add(fontData.family);
+                    }
+
+                    // Populate the dropdown
+                    for (const name of [...fontNames].sort()) {
+                        select.add(new Option(name, name));
+                    }
+                    loadFontsBtn.style.display = 'none'; // Hide button after success
+                } catch (err) {
+                    console.error('Font access denied or failed.', err);
+                    loadFontsBtn.title = 'Font access was denied.';
+                    loadFontsBtn.disabled = true;
+                }
+            };
+            wrapper.appendChild(loadFontsBtn);
+        }
+
+        return wrapper;
+    }
+
+    _setupChangeHandler() {
+        this.editorElement.addEventListener('input', () => {
+            clearTimeout(this._changeTimer);
+            this._changeTimer = setTimeout(() => {
+                const content = this.editorElement.innerHTML;
+                if (window.pywebview && this.options.callback) {
+                    window.pywebview.on_input_changed(this.options.callback, content);
+                }
+            }, 180);
+        });
+    }
+
+    _setupVisualFeedbackHandlers() {
+        ['keyup', 'mouseup', 'focus', 'click'].forEach(eventType => {
+            this.editorElement.addEventListener(eventType, () => this.updateButtonStates());
+        });
+    }
+
+    updateButtonStates() {
+        ['bold', 'italic', 'underline', 'strikeThrough'].forEach(command => {
+            const button = document.getElementById(`btn-${command}_${this.options.instanceId}`);
+            if (!button) return;
+            try {
+                button.classList.toggle('active', document.queryCommandState(command));
+            } catch (e) {}
+        });
+    }
+    
+    injectStyles() {
+        const style = document.createElement('style');
+        style.id = 'pythra-editor-styles';
+        style.textContent = `
+            :root{--pe-color-primary:#007aff;--pe-color-primary-dark:#005bb5;--pe-color-surface:#ffffff;--pe-color-border:#dee2e6;--pe-color-text:#212529;--pe-color-text-muted:#6c757d;--pe-font-stack:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--pe-border-radius:6px;}
+            .pythra-editor-wrapper{max-width:100%;margin:2rem auto;background:var(--pe-color-surface);border:1px solid var(--pe-color-border);border-radius:var(--pe-border-radius);box-shadow:0 4px 12px rgba(0,0,0,0.05);}
+            .pythra-editor-wrapper [contenteditable]{font-family:var(--pe-font-stack);min-height:100%;border-top:1px solid var(--pe-color-border);padding:1.5rem;line-height:1.7;outline:none;transition:border-color 0.2s ease,box-shadow 0.2s ease}
+            .pythra-editor-wrapper [contenteditable]:focus{border-color:var(--pe-color-primary) !important;box-shadow:0 0 0 3px rgba(0,122,255,0.25)}
+            .pythra-editor-wrapper [contenteditable]:empty:before{content:"Start writing...";color:var(--pe-color-text-muted);font-style:italic}
+            .pythra-editor-wrapper .pythra-toggle-button{width:calc(100% + 2px);margin:-1px -1px 0 -1px;padding:0.75rem;font-size:1rem;font-weight:600;color:white;background-color:var(--pe-color-primary);border:none;border-radius:var(--pe-border-radius) var(--pe-border-radius) 0 0;cursor:pointer;transition:background-color 0.2s ease;}
+            .pythra-editor-wrapper .pythra-toggle-button:hover{background-color:var(--pe-color-primary-dark)}
+            .control-panel{background:#f1f3f5;padding:1rem;display:flex;flex-direction:column;gap:1rem;transition:all 0.3s ease-in-out;max-height:1000px;opacity:1;overflow:hidden;}
+            .control-panel.hidden{max-height:0;padding-top:0;padding-bottom:0;margin-top:-1px;opacity:0;border:1px solid transparent}
+            .control-group{display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center}
+            .control-panel button,.control-panel select,.control-panel input[type="color"]{font-family:var(--pe-font-stack);font-size:0.9rem;padding:0.5rem 0.75rem;background:var(--pe-color-surface);border:1px solid var(--pe-color-border);border-radius:var(--pe-border-radius);cursor:pointer;transition:background-color 0.2s ease,border-color 0.2s ease, box-shadow 0.2s ease;}
+            .control-panel button:hover,.control-panel select:hover{background:#e9ecef}
+            .control-panel button.active{background-color:var(--pe-color-primary);color:white;border-color:var(--pe-color-primary-dark)}
+            // .control-panel select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.5rem center;background-size:1em;padding-right:2rem;}
+            // .control-panel select:focus{border-color:var(--pe-color-primary);box-shadow:0 0 0 3px rgba(0,122,255,0.25);background-color:var(--pe-color-surface);}
+            .control-panel input[type="color"]{padding:0.25rem;height:38px;min-width:40px;border:1px solid var(--pe-color-border);background:transparent}
+            .font-selector-wrapper{display:flex;gap:0.5rem;align-items:center;}
+            .pythra-editor-wrapper [contenteditable] h1,h2,h3,h4,h5,p,ul,ol{margin:1em 0}
+            .pythra-editor-wrapper [contenteditable] ul,.pythra-editor-wrapper [contenteditable] ol{padding-left:2em}
+        `;
+        document.head.appendChild(style);
+    }
+    
+    setContent(html) { if (this.editorElement) this.editorElement.innerHTML = html; }
+    getContent() { return this.editorElement ? this.editorElement.innerHTML : ''; }
+    focus() { if (this.editorElement) this.editorElement.focus(); }
+}
+
+// Expose the class globally
+window.PythraMarkdownEditor = PythraMarkdownEditor;
+
+// --- Global Helper Functions ---
+window.executeCommand = (command, value = null, editorToFocus) => {
+    if (!command) return;
+    try {
+        document.execCommand(command, false, value);
+    } catch (err) {
+        console.error(`Error executing command '${command}':`, err);
+    }
+    if (editorToFocus) editorToFocus.focus();
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    try { document.execCommand('styleWithCSS', false, true); } 
+    catch (e) { console.warn('styleWithCSS is not supported by this browser.'); }
+});
+} catch (e) {
+    console.error('Error loading plugin pythra-markdown-editor - editor.js:', e);
+}
                     
                     // Then, RUN the initialization commands that were generated
                     
-                    // Step 0: Convert Python's array-of-arrays to JS's array-of-objects
-                    const pointsForGenerator_fw_id_5 = [[0, 100], [20, 100], [20, 75], [80, 75], [80, 100], [100, 100], [100, 0], [0, 0]].map(p => ({x: p[0], y: p[1]}));
-                    
-                    // Step 1: Call generateRoundedPath with the points and radius
-                    const initialPathString_fw_id_5 = window.generateRoundedPath(pointsForGenerator_fw_id_5, 8);
-                    
-                    // Step 2: Feed the generated path into ResponsiveClipPath
-                    window._pythra_instances['fw_id_5'] = new window.ResponsiveClipPath(
-                        'fw_id_5', 
-                        initialPathString_fw_id_5, 
-                        100, 
-                        100, 
-                        { uniformArc: true, decimalPlaces: 2 }
-                    );
-                
-                    // Step 0: Convert Python's array-of-arrays to JS's array-of-objects
-                    const pointsForGenerator_fw_id_7 = [[0, 100], [18.5, 100], [18.5, 74.8], [81.5, 74.8], [81.5, 100], [100, 100], [100, 0], [0, 0]].map(p => ({x: p[0], y: p[1]}));
-                    
-                    // Step 1: Call generateRoundedPath with the points and radius
-                    const initialPathString_fw_id_7 = window.generateRoundedPath(pointsForGenerator_fw_id_7, 8);
-                    
-                    // Step 2: Feed the generated path into ResponsiveClipPath
-                    window._pythra_instances['fw_id_7'] = new window.ResponsiveClipPath(
-                        'fw_id_7', 
-                        initialPathString_fw_id_7, 
-                        100, 
-                        100, 
-                        { uniformArc: true, decimalPlaces: 2 }
-                    );
-                
+                    function waitForAndInit(className, initCallback) {
+                            const interval = setInterval(() => {
+                                // Check if the class is now available on the window object
+                                if (typeof window[className] === 'function') {
+                                    clearInterval(interval); // Stop checking
+                                    console.log(`Class ${className} is defined. Initializing...`);
+                                    initCallback(); // Run the initialization code
+                                } else {
+                                    console.log(`Waiting for class ${className}...`);
+                                }
+                            }, 100); // Check every 100ms
+                        }
+                        waitForAndInit('PythraMarkdownEditor', () => {
+                            window._pythra_instances['markdown_editor_PythraMarkdownEditor'] = new PythraMarkdownEditor(
+                                document.getElementById('fw_id_15'),
+                                {"callback": "markdown_content_change_markdown_editor", "instanceId": "markdown_editor_PythraMarkdownEditor", "showControls": true, "initialContent": "<h1>Welcome!</h1><p>Start writing your document here...</p>"}
+                            );
+                            
+                        });
+                        
 
                 } catch (e) {
                     console.error("Error running Pythra initializers:", e);

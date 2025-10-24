@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Vanilla WYSIWYG Editor</title>
+
+  <!-- Link external stylesheet -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <body data-pythra-instance-id="markdown_default" data-callback-name="markdown_content_change_markdown_default">
+  <style id="dynamic-styles"></style>
+  <div class="editor-container">
+    <button id="toggleControls">Hide Controls</button>
+
+    <div id="controlPanel" class="control-panel">
+      <div class="control-group">
+        <button onclick="executeCommand('formatBlock', 'H1')" title="Heading 1">H1</button>
+        <button onclick="executeCommand('formatBlock', 'H2')" title="Heading 2">H2</button>
+        <button onclick="executeCommand('formatBlock', 'H3')" title="Heading 3">H3</button>
+        <button onclick="executeCommand('formatBlock', 'H4')" title="Heading 4">H4</button>
+        <button onclick="executeCommand('formatBlock', 'H5')" title="Heading 5">H5</button>
+        <button onclick="executeCommand('formatBlock', 'P')" title="Paragraph">P</button>
+        <button onclick="executeCommand('insertUnorderedList')" title="Unordered List">UL</button>
+        <button onclick="executeCommand('insertOrderedList')" title="Ordered List">OL</button>
+      </div>
+
+      <div class="control-group">
+        <button id="btn-bold" onclick="executeCommand('bold')" title="Bold"><b>B</b></button>
+        <button id="btn-italic" onclick="executeCommand('italic')" title="Italic"><i>I</i></button>
+        <button id="btn-underline" onclick="executeCommand('underline')" title="Underline"><u>U</u></button>
+        <button id="btn-strikeThrough" onclick="executeCommand('strikeThrough')" title="Strikethrough"><s>S</s></button>
+      </div>
+
+      <div class="control-group">
+        <label for="fontColor" class="visually-hidden">Font Color</label>
+        <input type="color" id="fontColor" title="Font Color" oninput="executeCommand('foreColor', this.value)">
+
+        <label for="fontFamily" class="visually-hidden">Font Family</label>
+        <select id="fontFamily" onchange="executeCommand('fontName', this.value)" title="Font Family">
+          <option value="system-ui" selected>System Default</option>
+          <option value="Arial, sans-serif">Arial</option>
+          <option value="Verdana, sans-serif">Verdana</option>
+          <option value="'Times New Roman', serif">Times New Roman</option>
+          <option value="Georgia, serif">Georgia</option>
+          <option value="'Courier New', monospace">Courier New</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="editor" contenteditable="true">
+      <h1>Hello, Vanilla Editor!</h1>
+      <p>This is a <b>WYSIWYG editor</b> built from <i>scratch</i> using <u>only</u> HTML, CSS, and JavaScript. No frameworks or libraries allowed. Type here to begin...</p>
+      <ul>
+        <li>It uses <code>contenteditable</code>.</li>
+        <li>It's driven by <code>document.execCommand()</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Link external script -->
+  <script src="editor.js" defer></script>
+</body>
+</html>

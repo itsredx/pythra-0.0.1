@@ -151,7 +151,11 @@ class Container(Widget):
                  clipBehavior: Optional[ClipBehavior] = None,
                  visible: bool = True,
                  gradient: Optional[GradientTheme] = None,
-                 zAxisIndex: int = 0): # <-- NEW PARAMETER
+                 zAxisIndex: int = 0,
+                 cssClass: Optional[Union[str, List[str]]] = None,
+                 js_init = {},
+                 ):
+                  # <-- NEW PARAMETER
 
         super().__init__(key=key, children=[child] if child else [])
 
@@ -167,14 +171,18 @@ class Container(Widget):
         self.clipBehavior = clipBehavior
         self.visible = visible
         self.gradient = gradient
-        self.zAxisIndex = zAxisIndex # <-- STORE IT
+        self.zAxisIndex = zAxisIndex
+        self.js_init = js_init
+        
+        # Handle cssClass parameter - convert to list if string
+        self.cssClass = cssClass if isinstance(cssClass, list) else [cssClass] if cssClass else []
 
         # --- UPDATED CSS Class Management ---
-        # The style key now includes the gradient theme.
+        # The style key includes gradient theme and cssClass.
         self.style_key = tuple(make_hashable(prop) for prop in (
             self.padding, self.color, self.decoration, self.width, self.height,
             self.constraints, self.margin, self.transform, self.alignment,
-            self.clipBehavior, self.gradient, self.zAxisIndex # <-- ADD GRADIENT TO KEY
+            self.clipBehavior, self.gradient, self.zAxisIndex, tuple(sorted(self.cssClass))
         ))
 
         if self.style_key not in Container.shared_styles:
@@ -184,21 +192,19 @@ class Container(Widget):
             self.css_class = Container.shared_styles[self.style_key]
 
     def render_props(self) -> Dict[str, Any]:
-        # This method remains the same, as all styling is baked into the CSS class.
         instance_styles = {}
         
         if not self.visible:
-            # print("Container self.visible: ", self.visible)
             instance_styles['display'] = 'none'
-            # instance_styles['visibility'] = 'hidden'
-        # else: instance_styles['display'] = 'block'
-        
-        # We can remove 'display: block' as the CSS rule will handle it.
-        # This makes the props cleaner.
+
+        # Combine the shared CSS class with any custom classes
+        css_classes = [self.css_class] + [cls for cls in self.cssClass if cls]
+        css_class = ' '.join(filter(None, css_classes))
 
         return {
-            'css_class': self.css_class,
-            'style': instance_styles #if not self.visible else {}
+            'css_class': css_class,
+            'style': instance_styles,
+            '_js_init': self.js_init
         }
 
     def get_required_css_classes(self) -> Set[str]:
@@ -210,10 +216,10 @@ class Container(Widget):
         Static method updated to generate CSS for solid colors OR animated gradients.
         """
         try:
-            # 1. Unpack the style_key tuple, now with the gradient at the end.
+            # 1. Unpack the style_key tuple, now with cssClass at the end
             (padding_tuple, color, decoration_tuple, width, height,
              constraints_tuple, margin_tuple, transform, alignment_tuple,
-             clipBehavior, gradient_tuple, z_axis_index) = style_key
+             clipBehavior, gradient_tuple, z_axis_index, css_classes_tuple) = style_key
 
             styles = ["box-sizing: border-box;"]
             extra_rules = [] # For storing @keyframes
@@ -3227,7 +3233,7 @@ class _VirtualListViewState(State):
             width=widget.width, # type: ignore
             height=widget.height, # type: ignore
             theme=widget.theme, # type: ignore
-            child=Container(key=Key(f"{widget.key.value}_content"), alignment=Alignment.center), # type: ignore
+            child=Container(key=Key(f"{widget.key.value}_content"), alignment=Alignment.center()), # type: ignore
             virtualization_options=self._virtualization_options
         )
 
@@ -4256,7 +4262,7 @@ class Expanded(Widget):
                 'flexShrink': 1, # Allow shrinking by default
                 'flexBasis': '0%', # Start from a basis of 0 to allow full growth
                 # The following are crucial for flex children to have a "world" to expand into
-                'minWidth': 0,
+                'minWidth': '100%',
                 'minHeight': 0,
                 # Ensure the expanded container can itself be a flex container for its child
                 'display': 'flex',
