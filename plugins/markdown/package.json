@@ -31,7 +31,7 @@
     "python_modules": ["__init__", "widget", "controller", "editor_state", "style"],
     "asset_dir": "render",
     "js_modules": {
-        "editor": "editor.js"
+        "PythraMarkdownEditor": "editor.js"
     },
     "css_files": ["styles.css"],
     "tags": ["editor", "markdown", "wysiwyg"]

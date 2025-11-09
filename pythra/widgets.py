@@ -616,6 +616,8 @@ class TextButton(Widget):
             # M3 Text Buttons often use Primary color for text
             fg_color = getattr(style_obj, 'foregroundColor', Colors.primary or '#6750A4')
             bg_color = getattr(style_obj, 'backgroundColor', 'transparent') # Usually transparent
+            hv_color = getattr(style_obj, 'hoverColor', 'rgba(0, 0, 0, 0.08)')
+            ac_color = getattr(style_obj, 'activeColor', 'rgba(0, 0, 0, 0.12)')
             padding_obj = getattr(style_obj, 'padding', EdgeInsets.symmetric(horizontal=12)) # M3 has specific padding
             # print("Padding: ", style_obj.padding)
             text_style_obj = getattr(style_obj, 'textStyle', None) # Get text style if provided
@@ -654,8 +656,8 @@ class TextButton(Widget):
 
             # --- State Styles ---
             # M3 uses semi-transparent state layers matching the text color
-            hover_bg_color = Colors.rgba(0,0,0,0.08) # Fallback dark overlay
-            active_bg_color = Colors.rgba(0,0,0,0.12) # Fallback dark overlay
+            hover_bg_color = hv_color if hv_color else Colors.rgba(0,0,0,0.08) # Fallback dark overlay
+            active_bg_color = ac_color if ac_color else Colors.rgba(0,0,0,0.12) # Fallback dark overlay
             try: # Try to make overlay from foreground color
                  # Basic check: Assume hex format #RRGGBB
                  if fg_color and fg_color.startswith('#') and len(fg_color) == 7:
@@ -663,8 +665,8 @@ class TextButton(Widget):
                      hover_bg_color = Colors.rgba(r, g, b, 0.50) # 8% opacity overlay
                      active_bg_color = Colors.rgba(r, g, b, 0.00) # 12% opacity overlay
             except: pass # Ignore errors, use fallback
-
-            hover_rule = f".{css_class}:hover {{ background-color: transparent; color: red; }}"
+  
+            hover_rule = f".{css_class}:hover {{ background-color: {hover_bg_color};}}"
             active_rule = f".{css_class}:active {{ background-color: {active_bg_color}; }}"
 
             # Disabled state
@@ -772,6 +774,7 @@ class ElevatedButton(Widget):
                  onPressed: Optional[Callable] = None,
                  onPressedName: Optional[str] = None,
                  style: Optional[ButtonStyle] = None,
+                 tooltip: Optional[str] = None,
                  callbackArgs: Optional[List] = None):
 
         super().__init__(key=key, children=[child])
@@ -780,6 +783,7 @@ class ElevatedButton(Widget):
         self.onPressed = onPressed
         self.onPressed_id = onPressedName if onPressedName else (onPressed.__name__ if onPressed else None)
         self.callbackArgs = callbackArgs
+        self.tooltip = tooltip
 
         self.style = style or ButtonStyle( # Provide some sensible defaults for ElevatedButton
              backgroundColor=Colors.blue, # Example default
@@ -810,6 +814,7 @@ class ElevatedButton(Widget):
         props = {
             # 'style_details': self.style.to_dict(), # Or specific props if needed
             'css_class': self.css_class,
+            'tooltip': self.tooltip,
             'onPressedName': self.onPressed_id,
             'onPressedArgs': self.callbackArgs if self.callbackArgs else [],
         }
@@ -829,7 +834,7 @@ class ElevatedButton(Widget):
             # This order MUST match the order defined in ButtonStyle.to_tuple()
             # or the output of make_hashable(ButtonStyle(...))
             try:
-                (bgColor, fgColor, disBgColor, disFgColor, shadowColor, elevation,
+                (bgColor, fgColor, disBgColor, disFgColor, shadowColor, hoverColor, activeColor, elevation,
                  padding_tuple, margin_tuple, minSize_tuple, maxSize_tuple, side_tuple, shape_repr,
                  textStyle_tuple, alignment_tuple) = style_key
             except (ValueError, TypeError) as unpack_error:
@@ -840,6 +845,7 @@ class ElevatedButton(Widget):
                  padding_tuple, minSize_tuple, maxSize_tuple, side_tuple, shape_repr = (None,) * 5
                  textStyle_tuple, alignment_tuple, shadowColor, disBgColor, disFgColor = (None,) * 5
 
+            # print("hoverColor: ", f"{'background-color: ' + str(hoverColor) + ';' if hoverColor else ''}" if hoverColor else None)
 
             # --- Base Button Styles ---
             base_styles_dict = {
@@ -957,10 +963,14 @@ class ElevatedButton(Widget):
                   h_shadow1 = f"0px {h_offset_y * 0.5}px {h_blur * 0.5}px {h_spread}px rgba(0,0,0,0.18)"
                   h_shadow2 = f"0px {h_offset_y}px {h_blur}px {h_spread+1}px rgba(0,0,0,0.13)"
                   hover_shadow_str = f"box-shadow: {h_shadow1}, {h_shadow2};"
-            hover_rule = f".{css_class}:hover {{ {hover_shadow_str} /* Add background overlay? */ }}"
+            hover_rule = f""".{css_class}:hover {{ 
+                {hover_shadow_str} 
+                {'background-color: ' + str(hoverColor) + ';' if hoverColor else ''}
+                /* Add background overlay? */ 
+                }}"""
 
             # Active state (M3: Lower/remove elevation)
-            active_rule = f".{css_class}:active {{ box-shadow: none; /* Add background overlay? */ }}"
+            active_rule = f".{css_class}:active {{ box-shadow: none; background-color: {activeColor if activeColor else 'rgba(0, 0, 0, 0.12)'} }}"
 
             # Disabled state (Handled by adding .disabled class)
             disabled_bg = disBgColor or Colors.rgba(0,0,0,0.12) # M3 Disabled container approx
@@ -1077,7 +1087,8 @@ class IconButton(Widget):
                  iconSize: Optional[int] = 24,  # Default M3 icon size
                  style: Optional[ButtonStyle] = None,
                  tooltip: Optional[str] = None,
-                 enabled: bool = True):
+                 enabled: bool = True,
+                 cssClass: Optional[str] = ''):
 
         super().__init__(key=key, children=[icon])
         self.icon = icon
@@ -1091,6 +1102,7 @@ class IconButton(Widget):
         self.iconSize = iconSize
         self.tooltip = tooltip
         self.enabled = enabled
+        self.cssClass = cssClass
 
         # --- CSS Class Management ---
         # 1. Create a unique, hashable key from the ButtonStyle and iconSize.
@@ -1108,7 +1120,7 @@ class IconButton(Widget):
 
         # Dynamically add stateful classes for the current render
         disabled_class = 'disabled' if not self.enabled else ''
-        self.current_css_class = f"{self.css_class} {disabled_class}".strip()
+        self.current_css_class = f"{self.css_class} {self.cssClass} {disabled_class}".strip()
 
     def render_props(self) -> Dict[str, Any]:
         """Return properties for diffing by the Reconciler."""
@@ -1147,6 +1159,8 @@ class IconButton(Widget):
             padding_obj = getattr(style_obj, 'padding', default_padding)
             bg_color = getattr(style_obj, 'backgroundColor', 'transparent')
             fg_color = getattr(style_obj, 'foregroundColor', 'inherit') # Default to inherit color
+            hv_color = getattr(style_obj, 'hoverColor', 'rgba(0, 0, 0, 0.08)')
+            ac_color = getattr(style_obj, 'activeColor', 'rgba(0, 0, 0, 0.12)')
             border_obj = getattr(style_obj, 'side', None)
             shape_obj = getattr(style_obj, 'shape', None)
 
@@ -1182,10 +1196,14 @@ class IconButton(Widget):
                 if shorthand != 'none': base_styles['border'] = shorthand
             
             if shape_obj:
+                # print("Shape obj value: ", BorderRadius(*shape_obj).to_css_value())
                 if isinstance(shape_obj, BorderRadius):
+                    # print("Shape obj value: ", shape_obj.to_css_value())
                     base_styles['border-radius'] = shape_obj.to_css_value()
                 elif isinstance(shape_obj, (int, float)):
                     base_styles['border-radius'] = f"{max(0.0, shape_obj)}px"
+                elif isinstance(shape_obj, tuple):
+                    base_styles['border-radius'] = BorderRadius(*shape_obj).to_css_value()
 
             # Assemble the main rule string
             main_rule_str = ' '.join(f'{k}: {v};' for k, v in base_styles.items())
@@ -1212,14 +1230,15 @@ class IconButton(Widget):
                      active_bg_color = f'rgba({r}, {g}, {b}, 0.12)'
                  except ValueError: pass # Keep defaults if hex parse fails
 
-            hover_rule = f".{css_class.rstrip()}:hover {{ background-color: {hover_bg_color}; }}"
+            hover_rule = f".{css_class.rstrip()}:hover {{ background-color: {hv_color if hv_color else hover_bg_color}; }}"
             active_rule = f".{css_class.rstrip()}:active {{ background-color: {active_bg_color}; }}"
+            active_rule_mod = f".{css_class.rstrip()}.active {{ background-color: {ac_color if ac_color else active_bg_color}; }}"
 
             # Disabled state (applied via .disabled class by reconciler)
-            disabled_color = 'rgba(0, 0, 0, 0.38)' # M3 disabled content color
+            disabled_color = 'rgba(0, 0, 0, 0.38)' # M3 disabled content color .active {}
             disabled_rule = f".{css_class.rstrip()}.disabled {{ color: {disabled_color}; background-color: transparent; cursor: default; pointer-events: none; }}"
 
-            return "\n".join([main_rule, icon_rule, hover_rule, active_rule, disabled_rule])
+            return "\n".join([main_rule, icon_rule, hover_rule, active_rule, active_rule_mod, disabled_rule])
 
         except Exception as e:
             import traceback
@@ -1387,7 +1406,7 @@ class FloatingActionButton(Widget):
             # Assuming style_key = make_hashable(self.style) which produces a tuple:
             try:
                 # Example unpack based on assumed ButtonStyle.to_tuple() order
-                (bgColor, fgColor, disBgColor, disFgColor, shadowColor, elevation,
+                (bgColor, fgColor, disBgColor, disFgColor, shadowColor, hoverColor, elevation,
                  padding_tuple, minSize_tuple, maxSize_tuple, side_tuple, shape_repr,
                  textStyle_tuple, alignment_tuple) = style_key
                 style_reconstructed = True
@@ -1446,7 +1465,9 @@ class FloatingActionButton(Widget):
                  # Override shape if provided in key
                  if shape_repr:
                      if isinstance(shape_repr, tuple) and len(shape_repr) == 4:
-                          try: shape_obj = BorderRadius(*shape_repr); base_styles_dict['border-radius'] = shape_obj.to_css_value()
+                          try: 
+                            shape_obj = BorderRadius(*shape_repr) 
+                            base_styles_dict['border-radius'] = shape_obj.to_css_value()
                           except: pass
                      elif isinstance(shape_repr, (int, float)): base_styles_dict['border-radius'] = f"{max(0.0, shape_repr)}px"
                  # Note: width/height overrides are less common for standard FAB, but could be added if needed
@@ -1505,7 +1526,8 @@ class FloatingActionButton(Widget):
             hover_rule = f".{css_class}:hover {{ {hover_shadow_str} }}"
 
             # Active: Usually slight transform or minimal shadow change
-            active_rule = f".{css_class}:active {{ transform: scale(0.98); /* Example subtle press */ }}"
+            ac_color = f"background-color: {hoverColor};" if hoverColor else ''
+            active_rule = f".{css_class}:active {{ transform: scale(0.98); {ac_color}/* Example subtle press */ }}"
 
             # Disabled state (add .disabled class)
             disabled_bg = disBgColor or Colors.rgba(0,0,0,0.12) # type: ignore # M3 Disabled container approx
@@ -1985,7 +2007,9 @@ class Scrollbar(Widget):
         # --- THIS IS THE CHANGE ---
         # Only initialize SimpleBar OR VirtualList, not both.
         # VirtualList will now handle the SimpleBar initialization internally.
+        print("virtualization_options: ", self.virtualization_options)
         if self.virtualization_options:
+            
             props['init_virtual_list'] = True
             props['virtual_list_options'] = self.virtualization_options
             # Pass simplebar options inside the vlist options
@@ -2954,7 +2978,8 @@ class Icon(Widget):
                  fill: bool = False,
                  weight: Optional[int] = 400, # Range 100-700
                  grade: Optional[int] = 0,   # Range -50-200
-                 optical_size: Optional[int] = 24
+                 optical_size: Optional[int] = 24,
+                 cssClass: Optional[str] = '',
                 ):
 
         super().__init__(key=key, children=[])
@@ -2969,16 +2994,19 @@ class Icon(Widget):
         self.weight = weight
         self.grade = grade
         self.optical_size = optical_size
+        self.cssClass = cssClass
+
+        is_color_static = not bool(self.cssClass)
 
         # The style key now includes all font variation settings
         self.style_key = (
             self.icon.fontFamily,
             self.size,
-            self.color,
             self.fill,
             self.weight,
             self.grade,
-            self.optical_size
+            self.optical_size,
+            self.color if is_color_static else None, # Include color only if static
         )
 
         if self.style_key not in Icon.shared_styles:
@@ -2987,12 +3015,17 @@ class Icon(Widget):
         else:
             self.css_class = Icon.shared_styles[self.style_key]
 
+        self.current_css_class = f"{self.css_class} {self.cssClass}".strip()        
+
     def render_props(self) -> Dict[str, Any]:
         """Return properties for diffing. The icon name is now the text content."""
-        return {
-            'css_class': self.css_class,
-            'data': self.icon.name # The text content of the <span>
+        props = {
+            'css_class': self.current_css_class,
+            'data': self.icon.name, # The text content of the <span>
         }
+        if self.cssClass:
+            props['color'] = self.color
+        return props
 
     def get_required_css_classes(self) -> Set[str]:
         return {self.css_class}
@@ -3009,10 +3042,15 @@ class Icon(Widget):
     def generate_css_rule(style_key: Tuple, css_class: str) -> str:
         """Generates the CSS including the powerful font-variation-settings."""
         try:
-            (fontFamily, size, color, fill, weight, grade, optical_size) = style_key
+            (fontFamily, size, fill, weight, grade, optical_size, static_color) = style_key
 
             # This is the magic property for variable fonts
             font_variation_settings = f"'FILL' {1 if fill else 0}, 'wght' {weight}, 'GRAD' {grade}, 'opsz' {optical_size}"
+
+            # --- THE FIX ---
+            # Only include the color property in the CSS rule if it was passed in the key.
+            color_rule = f"color: {static_color or 'inherit'};" if static_color is not None else ""
+
 
             return f"""
                 .{css_class} {{
@@ -3021,6 +3059,7 @@ class Icon(Widget):
                     font-weight: normal;
                     font-style: normal;
                     font-size: {size}px;
+                    {color_rule}
                     line-height: 1;
                     letter-spacing: normal;
                     text-transform: none;
@@ -3033,7 +3072,6 @@ class Icon(Widget):
                     text-rendering: optimizeLegibility;
                     -moz-osx-font-smoothing: grayscale;
                     font-feature-settings: 'liga';
-                    color: {color or 'inherit'};
                     font-variation-settings: {font_variation_settings};
                 }}
             """
@@ -3222,10 +3260,13 @@ class _VirtualListViewState(State):
         """
         Builds the Scrollbar using the options generated during initState.
         """
+        # print("virtualization_options: ", self._virtualization_options)
         widget = self.get_widget()
         if not widget:
+            print('!!widget is not found!! vlist')
             # Return a placeholder if the widget is somehow gone
             return Container(width=0, height=0)
+
 
         # The options are now guaranteed to exist because initState ran first.
         return Scrollbar(

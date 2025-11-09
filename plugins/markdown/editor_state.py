@@ -1,3 +1,4 @@
+# plugins/markdown/editor_state.py`
 import os
 import json
 from typing import Optional, Dict, Any
@@ -8,6 +9,7 @@ from markdownify import markdownify as md
 from pythra import State, Container, Key, Framework
 
 from .controller import MarkdownEditorController
+from .style import EditorStyle
 
 framework = Framework.instance()  # Placeholder for the framework reference
 class MarkdownEditorState(State):
@@ -86,14 +88,16 @@ class MarkdownEditorState(State):
         
         js = f"""
             (function(){{
-                var editable = document.querySelector('.editor-inner-container');
-                if(editable) {{
                     try {{
-                        document.execCommand('{command}', false, {val_js});
+                        document.execCommand('{command}', false, `{val_js}`);
+                        if ('{command}' === 'fontName') {{
+                            var ret = document.execCommand('{command}', false, {val_js});
+                            console.log('Executing command: ', '{command}', false, {val_js}, `with return: ${{ret}}`);
+                        }}
+                        
                     }} catch(e) {{
                         console.warn('Editor command failed:', e);
                     }}
-                }}
             }})()
         """
         window_id = getattr(self, '_window_id', framework.id)
@@ -170,10 +174,48 @@ class MarkdownEditorState(State):
             return markdown_text
         return None
 
+    def replace_selection_from_markdown(self, markdown_text: str):
+        """
+        Converts Markdown to HTML and sends a command to the browser to
+        replace the current selection with the new HTML.
+        """
+        if not framework or not framework.window:
+            return
+
+        # 1. Convert the incoming Markdown to HTML, just like in load_from_markdown.
+        html_content = markdown.markdown(markdown_text, extensions=['fenced_code', 'tables'])
+        
+        # --- THIS IS THE FIX ---
+        # 2. Append an "escape hatch" paragraph.
+        #    The <br> tag is crucial for some browsers to recognize the empty
+        #    paragraph as a valid cursor position.
+        html_with_escape_hatch = f"{html_content}<p><br></p>"
+        
+        # 3. Safely escape the combined HTML for injection.
+        html_js = json.dumps(html_with_escape_hatch)
+        
+        # 4. Construct the JavaScript command. 'insertHTML' is the key.
+        #    It's a standard browser command for rich text editing.
+        js_command = f"""
+            (function(){{
+                try {{
+                    document.execCommand('insertHTML', false, {html_js});
+                }} catch(e) {{
+                    console.warn('Failed to replace selection with HTML:', e);
+                }}
+            }})()
+        """
+        
+        # 4. Send the command to the browser.
+        window_id = getattr(self, '_window_id', framework.id)
+        framework.window.evaluate_js(window_id, js_command)
+
     def build(self):
         widget = self.get_widget()
         if not widget:
             return Container(width=0, height=0)
+
+        style = widget.style if widget.style else EditorStyle() # Use default style if none provided
             
         # Container that will be initialized by our JS engine
         return Container(
@@ -181,25 +223,17 @@ class MarkdownEditorState(State):
             width=widget.width,
             height=widget.height,
             js_init={
-            "engine": "PythraMarkdownEditor",
-            "instance_name" : f"{widget.key.value}_PythraMarkdownEditor",
-            "options": {
-                'callback': self._callback_name,
-                'instanceId': f"{widget.key.value}_PythraMarkdownEditor",
-                "showControls": False,
-                # --- THE CRITICAL FIX ---
-                # Use the current content from the state, not a hardcoded string.
-                "initialContent": self._content,
-                "width": widget.width,
-                "height": widget.height,
-                "showGrid": widget.show_grid,
+                "engine": "PythraMarkdownEditor",
+                "instance_name": f"{widget.key.value}_PythraMarkdownEditor",
+                "options": {
+                    'callback': self._callback_name,
+                    'instanceId': f"{widget.key.value}_PythraMarkdownEditor",
+                    "showControls": widget.show_controls,
+                    "initialContent": self._content,
+                    "width": widget.width,
+                    "height": widget.height,
+                    "showGrid": widget.show_grid, # Was "shoe_grid"
+                    "style": style.to_dict(),  # Pass the complete style configuration
+                },
             },
-            },
-            # Add minimal editor container that our JS will enhance
-            # child=Container(
-            #     key=Key(f"{widget.key.value}_inner"),
-            #     cssClass="editor-inner-container",
-            #     width="100%",
-            #     height="100%"
-            # )
         )

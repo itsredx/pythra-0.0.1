@@ -520,7 +520,7 @@ class PackageManager:
             # Load Python modules
             if manifest.python_modules:
                 for module_name in manifest.python_modules:
-                    print(f"Module name: {module_name}")
+                    # print(f"Module name: {module_name}")
                     try:
                         self._load_python_module(package_info, module_name)
                         print(f"✅ Module name: {module_name} Loaded")
@@ -556,11 +556,19 @@ class PackageManager:
         module = importlib.util.module_from_spec(spec) # type: ignore
         spec.loader.exec_module(module) # type: ignore
         
-        # Cache the module
+                # Cache the module
         package_info.python_modules_cache[module_name] = module
         
         # Add to sys.modules for future imports
         sys.modules[f"{package_info.manifest.name}.{module_name}"] = module
+        
+        # If this is a widget or plugin module, ensure it has access to the framework
+        framework = self._framework_ref() if self._framework_ref else None
+        if framework and hasattr(module, 'register_with_framework'):
+            try:
+                module.register_with_framework(framework)
+            except Exception as e:
+                logger.warning(f"Failed to register module {module_name} with framework: {e}")    
     
     def _cache_js_modules(self, package_info: PackageInfo):
         """Cache JavaScript modules paths for framework"""

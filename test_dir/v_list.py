@@ -32,7 +32,49 @@ from pythra import (
     SizedBox,
     Expanded,
 )
+import json
+from matplotlib import font_manager
 
+def get_system_fonts_as_json():
+    """
+    Finds all unique system font families and formats them into a JSON string
+    suitable for a dropdown, with common fonts placed at the top.
+    
+    Returns:
+        str: A JSON string representing a list of font dictionaries.
+    """
+    
+    # 1. Define a list of common, high-priority fonts.
+    # The "System Default" uses a robust CSS font stack.
+    default_fonts = [
+        { "label": "System Default", "val": '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' },
+        { "label": "Arial", "val": "Arial, sans-serif" },
+        { "label": "Verdana", "val": "Verdana, sans-serif" },
+        { "label": "Times New Roman", "val": "'Times New Roman', serif" },
+        { "label": "Georgia", "val": "Georgia, serif" },
+        { "label": "Courier New", "val": "'Courier New', monospace" },
+    ]
+    
+    # 2. Get all unique font family names from the system.
+    # We use a set to automatically handle duplicates.
+    try:
+        font_paths = font_manager.findSystemFonts(fontpaths=None, fontext='ttf')
+        font_names = sorted({font_manager.FontProperties(fname=fname).get_name() for fname in font_paths})
+    except Exception as e:
+        print(f"Warning: Could not get system fonts. Falling back to defaults. Error: {e}")
+        font_names = []
+
+    # 3. Combine the lists.
+    # Start with our defaults, then add unique system fonts that aren't already in the default list.
+    final_font_list = list(default_fonts)
+    default_labels = {font['label'] for font in default_fonts}
+    
+    for name in font_names:
+        if name not in default_labels:
+            final_font_list.append({"label": name, "val": name})
+            
+    # 4. Convert the final list to a JSON string.
+    return json.dumps(final_font_list, indent=2)
 # --- Application-specific Data ---
 
 # A simple data store to hold the checked state for our 10,000 items.
@@ -44,6 +86,11 @@ checked_items: Set[int] = set()
 # Creating a stateless widget for the list item is good practice.
 # It keeps the main build method clean.
 
+formatted_fonts_json = get_system_fonts_as_json()
+# print(json.loads(formatted_fonts_json))
+labels = []
+for font in json.loads(formatted_fonts_json):
+    labels.append(font['label'])
 
 # In v_list.py
 
@@ -70,35 +117,72 @@ class MyListItemState(State):
         self.index = widget.index
         self.on_checked = widget.on_checked
         self.is_checked = self.index in checked_items
+        self.parent_key = widget.key.value
 
         
 
     def build(self) -> Widget:
+        item = labels[self.index]
         # A standard ListTile containing a Checkbox and Text.
         return Container(
-            key=Key(f"item_{self.index}"),
-            margin=EdgeInsets.symmetric(horizontal=16, vertical=10),
-            padding=EdgeInsets.symmetric(horizontal=16),
-            height=50, 
-            alignment=Alignment.center,
-            color=(
-                Colors.rgba(103, 80, 164, 0.1)
-                if self.is_checked
-                else Colors.transparent
-            ),  # A light purple
-            child=Row(
-                crossAxisAlignment=CrossAxisAlignment.CENTER,
-                children=[
-                    Checkbox(
-                        key=Key(f"cb_{self.index}_checkbox"),
-                        value=self.is_checked,
-                        onChanged=self.on_checked,
-                    ),
-                    SizedBox(key=Key(f"cb_{self.index}_sizedbox"), width=16),
-                    Text(f"List Item Number {self.index + 1}"),
-                ],
-            ),
-        )
+                                # height=self.theme.dropdownHeight,
+                                padding=EdgeInsets.symmetric(horizontal=16)
+                                or EdgeInsets.symmetric(horizontal=12, vertical=8),
+                                color=(
+                                    Colors.rgba(103, 80, 164, 0.1)
+                                    if item == self.is_checked
+                                    else Colors.transparent
+                                ),
+                                width="100%",
+                                decoration=BoxDecoration(
+                                    borderRadius=BorderRadius.circular(4),
+                                ),
+                                key=Key(f"dropdown_item_{item}_padding_{self.parent_key}"),
+                                child=ListTile(
+                                    key=Key(f"dropdown_item_{item}_{self.parent_key}"),
+                                    title=Text(
+                                        item,
+                                        key=Key(
+                                            f"dropdown_item_title_{item}_{self.parent_key}"
+                                        ),
+                                        style=TextStyle(
+                                            color=Colors.black
+                                        ),
+                                    ),
+                                    onTap=self.on_checked,
+                                    onTapName=f"item_tap_callback_{id(self.is_checked)}",
+                                    onTapArg=[item],
+                                    selected=item == self.is_checked,
+                                    selectedTileColor=Colors.rgba(103, 80, 164, 0.1),
+                                    contentPadding=EdgeInsets.symmetric(
+                                        horizontal=12, vertical=8
+                                    ),
+                                ),
+                            )
+        # Container(
+        #     key=Key(f"item_{self.index}"),
+        #     margin=EdgeInsets.symmetric(horizontal=16, vertical=10),
+        #     padding=EdgeInsets.symmetric(horizontal=16),
+        #     height=50, 
+        #     alignment=Alignment.center(),
+        #     color=(
+        #         Colors.rgba(103, 80, 164, 0.1)
+        #         if self.is_checked
+        #         else Colors.transparent
+        #     ),  # A light purple
+        #     child=Row(
+        #         crossAxisAlignment=CrossAxisAlignment.CENTER,
+        #         children=[
+        #             Checkbox(
+        #                 key=Key(f"cb_{self.index}_checkbox"),
+        #                 value=self.is_checked,
+        #                 onChanged=self.on_checked,
+        #             ),
+        #             SizedBox(key=Key(f"cb_{self.index}_sizedbox"), width=16),
+        #             Text(f"List Item Number {self.index + 1}"),
+        #         ],
+        #     ),
+        # )
 
 
 class MyListItem(StatefulWidget):
@@ -123,7 +207,7 @@ class MyListItem(StatefulWidget):
 class VirtualListTestState(State):
     def __init__(self):
         """Initialize the application state."""
-        self.item_count = 400000
+        self.item_count = len(labels)
         checked_items.add(0)
         # This will be initialized in initState
         self.itemBuilder = None

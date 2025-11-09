@@ -1,3 +1,4 @@
+# plugins/markdown/controller.py
 from typing import Optional
 
 class MarkdownEditorController:
@@ -220,3 +221,19 @@ class MarkdownEditorController:
         if self._state_ref:
             return self._state_ref.export_to_markdown()
         return None
+
+     # --- ADD THIS NEW METHOD AT THE END OF THE CLASS ---
+
+    def replace_selection_from_markdown(self, markdown_text: str):
+        """
+        Converts a Markdown string to HTML and replaces the currently selected
+        text in the editor with the result. If no text is selected, it inserts
+        the content at the cursor position. This is a direct UI command.
+
+        **WARNING:** `setState()` should **ABSOLUTELY NOT** be called after this
+        method. The editor's `onChange` event will automatically handle state
+        synchronization after the browser's DOM is updated.
+        :param markdown_text: The Markdown content to insert/replace.
+        """
+        if self._state_ref:
+            self._state_ref.replace_selection_from_markdown(markdown_text)

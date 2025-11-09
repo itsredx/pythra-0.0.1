@@ -12,7 +12,7 @@ window = create_window(
                 window_id="main_window",
                 html_file="C:/Users/SMILETECH COMPUTERS/Documents/pythra_0.0.2_new_state/pythra/window/ind.html",
                 js_api=api,
-                frameless=True, maximized=False, fixed_size=True)
+                frameless=False, maximized=True, fixed_size=False)
 # Create API instance and register callbacks
 
 api.register_callback("close", window.close_window)

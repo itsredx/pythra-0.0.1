@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DerivedDropdown Test</title>
+    <!-- ADD SIMPLEBAR CSS -->
+    <link rel="stylesheet" href="./js/scroll-bar/simplebar.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1761478344">
+    <style id="dynamic-styles">
+.shared-container-0 { box-sizing: border-box; padding: 32px; display: flex; justify-content: center; align-items: flex-start; }
+.shared-column-0 { display: flex; flex-direction: column; justify-content: flex-start; align-items: flex-start; height: 100%; direction: ltr; }
+
+            .shared-text-0 {
+                margin: 0; /* Reset default paragraph margin */
+                padding: 0;
+                font-size: 16px;
+                
+                
+            }
+            
+
+.shared-container-3 { box-sizing: border-box; }
+.shared-stack-0 { position: relative; display: grid; width: fit-content; height: fit-content; justify-items: start; align-items: start; direction: ltr;  }
+.shared-stack-0 > * { grid-area: 1 / 1; }
+.shared-textbutton-0 { display: inline-flex; align-items: center; justify-content: center; border: none; cursor: pointer; text-align: center; text-decoration: none; outline: none; min-width: 48px; box-sizing: border-box; position: relative; overflow: hidden; transition: background-color 0.15s linear; -webkit-appearance: none; -moz-appearance: none; appearance: none; padding: 0px; border: none; border-radius: 8.0px;}
+.shared-textbutton-0 > * { font-weight: 500; font-size: 14px; letter-spacing: 0.1px; line-height: 20px; }
+.shared-textbutton-0:hover { background-color: transparent; color: red; }
+.shared-textbutton-0:active { background-color: rgba(0, 0, 0, 0.12); }
+.shared-textbutton-0.disabled { color: rgba(0, 0, 0, 0.38); background-color: transparent; cursor: default; pointer-events: none; }
+
+.shared-container-2 { box-sizing: border-box; background: #FFFFFF; border-width: 1.0px; border-style: solid; border-color: #AAAAAA; border-radius: 8.0px; padding: 8px 12px; width: 100px; }
+.shared-row-0 { display: flex; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; direction: ltr; }
+
+            .shared-text-2 {
+                margin: 0; /* Reset default paragraph margin */
+                padding: 0;
+                color: #000000; font-size: 14.0px;
+                
+                
+            }
+            
+
+                .material-icon-0 {
+                    position: relative;
+                    font-family: 'Material Symbols Rounded';
+                    font-weight: normal;
+                    font-style: normal;
+                    font-size: 20px;
+                    line-height: 1;
+                    letter-spacing: normal;
+                    text-transform: none;
+                    z-index: 100;
+                    display: inline-block;
+                    white-space: nowrap;
+                    word-wrap: normal;
+                    direction: ltr;
+                    -webkit-font-smoothing: antialiased;
+                    text-rendering: optimizeLegibility;
+                    -moz-osx-font-smoothing: grayscale;
+                    font-feature-settings: 'liga';
+                    color: #000000;
+                    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+                }
+            
+
+.shared-container-4 { box-sizing: border-box; background: #FFFFFF; border-width: 1.0px; border-style: solid; border-color: #CCCCCC; border-radius: 8.0px; padding: 8px 12px; width: 100px; }</style>
+    
+        <script src="qwebchannel.js"></script>
+        <script>
+            // Suppress inset-area deprecation warnings
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    const message = args.join(' ');
+                    if (message.includes('inset-area') || 
+                        message.includes('position-area') ||
+                        message.includes('has been deprecated')) {
+                        return; // Suppress these specific warnings
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+            
+            document.addEventListener('DOMContentLoaded', () => {
+                new QWebChannel(qt.webChannelTransport, (channel) => {
+                    window.pywebview = channel.objects.pywebview;
+                    console.log("PyWebChannel connected.");
+                });
+            });
+            function handleClick(name) { if(window.pywebview) window.pywebview.on_pressed_str(name, ()=>{}); }
+            function handleClickWithArgs(callback_name, ...args) {
+                if (window.pywebview) {
+                    console.log("index", args);
+                    window.pywebview.on_pressed(callback_name, ...args).then(function(response) {
+                        console.log(response);
+                    }).catch(function(error) {
+                        console.error(error);
+                    });
+                } else {
+                    console.error('pywebview is not defined');
+                }
+            }
+            function handleItemTap(name, index) { if(window.pywebview) window.pywebview.on_item_tap(name, index, ()=>{}); }
+            function handleInput(name, value) {
+                if(window.pywebview) {
+                    window.pywebview.on_input_changed(name, value, ()=>{});
+                }
+            }
+        </script>
+        
+    
+</head>
+<body>
+    <div id="root-container"><div id="fw_id_1" class="shared-container-0"><div id="fw_id_2" class="shared-column-0"><p id="fw_id_3" class="shared-text-0" style="font-size: 16">Select a Lang:</p><div id="fw_id_4" class="" style="height: 8px"></div><div id="fw_id_5" class=""><div id="fw_id_6" class=""><div id="fw_id_7" class="shared-container-3"><div id="fw_id_8" class="shared-stack-0"><button id="fw_id_9" class="shared-textbutton-0" onclick="handleClickWithArgs('my_dropdown_toggle_callback_1923437502400', ['dropdown_button_', 'Python', ['Python', 'Rust', 'JavaScript', 'C++']])"><div id="fw_id_10" class="shared-container-2"><div id="fw_id_11" class="shared-row-0"><p id="fw_id_12" class="shared-text-2" style="color: #000000; font-size: 14.0">Python</p><div id="fw_id_13" class="" style="width: 8px"></div><i id="fw_id_14" class="material-icon-0">arrow_drop_down</i></div></div></button><div id="fw_id_15" class="" style="position: absolute; height: ; width: 100; bottom: ; top: 50; right: ; left: "><div id="fw_id_16" class="shared-container-3"><div id="fw_id_17" class="" style="width: 0px"></div></div></div></div></div></div></div><div id="fw_id_18" class="" style="height: 64px"></div><p id="fw_id_19" class="shared-text-0" style="font-size: 16">Select a Fruit:</p><div id="fw_id_20" class="" style="height: 8px"></div><div id="fw_id_21" class=""><div id="fw_id_22" class=""><div id="fw_id_23" class="shared-container-3"><div id="fw_id_24" class="shared-stack-0"><button id="fw_id_25" class="shared-textbutton-0" onclick="handleClickWithArgs('my_dropdown_toggle_callback_1923437503104', ['dropdown_button_', 'Apple', ['Apple', 'Orange', 'Banana', 'Grape', 'Mango']])"><div id="fw_id_26" class="shared-container-4"><div id="fw_id_27" class="shared-row-0"><p id="fw_id_28" class="shared-text-2" style="color: #000000; font-size: 14.0">Apple</p><div id="fw_id_29" class="" style="width: 8px"></div><i id="fw_id_30" class="material-icon-0">arrow_drop_down</i></div></div></button><div id="fw_id_31" class="" style="position: absolute; height: ; width: 100; bottom: ; top: 50; right: ; left: "><div id="fw_id_32" class="shared-container-3"><div id="fw_id_33" class="" style="width: 0px"></div></div></div></div></div></div></div><div id="fw_id_34" class="" style="height: 24px"></div><p id="fw_id_35" class="shared-text-0" style="font-size: 16">Select a Car:</p></div></div></div>
+    <div id="overlay-container"></div>
+
+    <!-- ADD SIMPLEBAR JS -->
+    <script src="./js/scroll-bar/simplebar.min.js"></script>
+    <!-- ADD THE NEW SLIDER JS ENGINE -->
+    
+</body>
+</html>

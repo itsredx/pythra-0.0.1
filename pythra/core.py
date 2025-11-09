@@ -36,6 +36,7 @@ from .reconciler import Reconciler, Patch, ReconciliationResult
 from .widgets import *  # Import all widgets for class lookups if needed
 from .package_manager import PackageManager
 from .package_system import PackageType
+from .styles import *
 
 
 # Type Hinting for circular dependencies
@@ -142,6 +143,17 @@ class Framework:
             for warning in warnings:
                 print(f"⚠️  PyThra Framework | Package Warning: {warning}")
             
+            # Populate the old-style plugins dictionary for JS module lookup
+            for pkg_name, pkg_info in loaded_packages.items():
+                if hasattr(pkg_info, 'package_json'):
+                    manifest = pkg_info.package_json
+                    js_modules = manifest.get('js_modules', {})
+                    if js_modules:
+                        self.plugins[pkg_name] = {
+                            'js_modules': js_modules
+                        }
+                        print(f"📦 PyThra Framework | Found JS modules in {pkg_name}: {js_modules}")
+            
             print(f"🎉 PyThra Framework | Successfully loaded {len(loaded_packages)} packages: {', '.join(loaded_packages.keys())}")
         
         # STEP 5: Start the Asset Server
@@ -167,6 +179,8 @@ class Framework:
         # These handle when your UI needs to be updated
         self._reconciliation_requested: bool = False
         self._pending_state_updates: Set[State] = set()
+
+        self._loaded_js_engines: Set[str] = set() # Tracks JS engines already sent to the browser
 
         self._result = None  # Stores UI update results
 
@@ -297,7 +311,9 @@ class Framework:
 
         # 4. Analyze required JS engines for optimization
         required_engines = self._analyze_required_js_engines(built_tree_root, result)
-        print(f"⚙️ PyThra Framework | Analysis Complete: {len(required_engines)} JS engines needed: {', '.join(required_engines) if required_engines else 'None'}")
+        print(f"⚙️  PyThra Framework | Analysis Complete: {len(required_engines)} JS engines needed: {', '.join(required_engines) if required_engines else 'None'}")
+
+        self._loaded_js_engines = required_engines  # Store the initially loaded engines
         
         # 5. Generate initial HTML, CSS, and JS with optimized loading
         root_key = initial_tree_to_reconcile.get_unique_id() if initial_tree_to_reconcile else None
@@ -444,7 +460,7 @@ class Framework:
                 if engine in engine_to_file_map:
                     files_to_load.add(engine_to_file_map[engine])
                 else:
-                    print(f"⚠️ Unknown engine requested: {engine}")
+                    print(f"⚠️  Unknown engine requested: {engine}")
         
         all_js_code = []
         loaded_files = set()  # Track loaded files to avoid duplicates
@@ -520,6 +536,7 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
         # Check reconciliation result for JS initializers
         for init in result.js_initializers:
             init_type = init.get("type")
+            print('init_type: ', init_type)
             if init_type == "ResponsiveClipPath":
                 required_engines.update(['ResponsiveClipPath', 'generateRoundedPath', 'scalePathAbsoluteMLA'])
             elif init_type == "SimpleBar":
@@ -533,6 +550,7 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
         # Check rendered widgets for engine requirements
         for node_data in result.new_rendered_map.values():
             props = node_data.get("props", {})
+            # print('init_type: ', props)
             
             # Check for various initialization flags
             if props.get("init_slider"):
@@ -547,6 +565,13 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
                 required_engines.add('PythraVirtualList')
             if props.get("responsive_clip_path"):
                 required_engines.update(['ResponsiveClipPath', 'generateRoundedPath', 'scalePathAbsoluteMLA'])
+                
+            # Check for js_init configuration
+            js_init = props.get("js_init")
+            if js_init and isinstance(js_init, dict):
+                engine_name = js_init.get("engine")
+                if engine_name:
+                    required_engines.add(engine_name)
             if props.get("_js_init"):
                 engine_name = props["_js_init"].get("engine")
                 if engine_name:
@@ -589,11 +614,8 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
         Performs a targeted, high-performance reconciliation cycle for only the
         widgets whose state has changed.
         """
-
-        # --- PROFILER SETUP ---
         profiler = cProfile.Profile()
         profiler.enable()
-        # --- END PROFILER SETUP ---
 
         self._reconciliation_requested = False
         if not self.window:
@@ -603,15 +625,14 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
         print("\n🔄 PyThra Framework | Processing Smart UI Update Cycle...")
         start_time = time.time()
 
-        # Get the full map of the currently rendered UI for the main context.
         main_context_map = self.reconciler.get_map_for_context("main")
-
-        # --- NEW ARCHITECTURE: SURGICAL UPDATES ---
         all_patches = []
         all_new_callbacks = {}
-        all_active_css_details = {} # To track if CSS might have changed
+        all_active_css_details = {}
+        
+        # --- NEW: Track required engines for this entire update cycle ---
+        all_required_engines_this_cycle = set()
 
-        # Process each pending state update individually.
         for state_instance in self._pending_state_updates:
             widget_to_rebuild = state_instance.get_widget()
             if not widget_to_rebuild:
@@ -621,70 +642,67 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
             widget_key = widget_to_rebuild.get_unique_id()
             old_widget_data = main_context_map.get(widget_key)
 
-            if not old_widget_data:
-                # Special case for the root widget
-                if widget_to_rebuild is self.root_widget:
-                    parent_html_id = "root-container"
-                else:
-                    print(f"Error: Could not find previous state for widget {widget_key}. A full rebuild may be required.")
-                    continue
-            else:
+            parent_html_id = "root-container"
+            if old_widget_data:
                 parent_html_id = old_widget_data["parent_html_id"]
+            elif widget_to_rebuild is not self.root_widget:
+                print(f"Error: Could not find previous state for widget {widget_key}. A full rebuild may be required.")
+                continue
 
             print(f"🔧 PyThra Framework | Updating: {widget_to_rebuild.__class__.__name__} (ID: {widget_key.__str_key__()[:8]}...)")
 
-            # 1. Build ONLY the subtree for the dirty widget.
-            # This is fast because it doesn't traverse the whole application.
             new_subtree = self._build_widget_tree(widget_to_rebuild)
-
-            # 2. Reconcile ONLY that specific subtree.
             subtree_result = self.reconciler.reconcile(
                 previous_map=main_context_map,
                 new_widget_root=new_subtree,
                 parent_html_id=parent_html_id,
-                old_root_key=widget_key, # Tell the reconciler exactly where to start
-                is_partial_reconciliation=True # CRITICAL: Prevents deleting the rest of the app
+                old_root_key=widget_key,
+                is_partial_reconciliation=True
             )
 
-            # 3. Aggregate the patches, callbacks, and CSS details from this subtree.
             all_patches.extend(subtree_result.patches)
             all_new_callbacks.update(subtree_result.registered_callbacks)
             all_active_css_details.update(subtree_result.active_css_details)
-
-            # 4. CRITICAL: Update the main context map in-place with the changes.
-            # This keeps the framework's "memory" of the UI consistent.
             main_context_map.update(subtree_result.new_rendered_map)
+            
+            # --- NEW: Analyze this subtree and aggregate required engines ---
+            required_in_subtree = self._analyze_required_js_engines(new_subtree, subtree_result)
+            all_required_engines_this_cycle.update(required_in_subtree)
+            # --- END NEW ---
 
-        # --- Optimized CSS and Script Generation ---
-
-        # Register any new callbacks that might have been created in the rebuild.
         for cb_id, cb_func in all_new_callbacks.items():
             self.api.register_callback(cb_id, cb_func)
 
-        # Implement CSS memoization check
-        # NOTE: self._last_css_keys should be initialized to set() in Framework.__init__
+        # --- NEW: DYNAMIC JS ENGINE INJECTION LOGIC ---
+        js_injection_script = ""
+        newly_required_engines = all_required_engines_this_cycle - self._loaded_js_engines
+        
+        if newly_required_engines:
+            print(f"🚀 PyThra Framework | Dynamically loading {len(newly_required_engines)} new JS engine(s): {newly_required_engines}")
+            js_injection_script = self._get_js_utility_functions(newly_required_engines)
+            self._loaded_js_engines.update(newly_required_engines)
+        # --- END OF NEW LOGIC ---
+
         new_css_keys = set(all_active_css_details.keys())
         css_update_script = ""
         if not hasattr(self, '_last_css_keys') or self._last_css_keys != new_css_keys:
-             print("🎨 PyThra Framework | CSS styles changed - Updating stylesheet...")
-             # We need to generate CSS from the *entire* app's styles, not just the subtree.
-             # We can get this by iterating over the updated main_context_map.
-             full_css_details = {
-                 data['props']['css_class']: (type(data['widget_instance']).generate_css_rule, data['widget_instance'].style_key)
-                 for data in main_context_map.values()
-                 if 'css_class' in data['props'] and hasattr(data['widget_instance'], 'style_key')
-             }
-             css_rules = self._generate_css_from_details(full_css_details)
-             css_update_script = self._generate_css_update_script(css_rules)
-             self._last_css_keys = new_css_keys
+            print("🎨 PyThra Framework | CSS styles changed - Updating stylesheet...")
+            full_css_details = {
+                data['props']['css_class']: (type(data['widget_instance']).generate_css_rule, data['widget_instance'].style_key)
+                for data in main_context_map.values()
+                if 'css_class' in data['props'] and hasattr(data['widget_instance'], 'style_key')
+            }
+            css_rules = self._generate_css_from_details(full_css_details)
+            css_update_script = self._generate_css_update_script(css_rules)
+            self._last_css_keys = new_css_keys
         else:
-             print("✅ PyThra Framework | CSS styles unchanged - Skipping regeneration")
+            print("✅ PyThra Framework | CSS styles unchanged - Skipping regeneration")
 
-        # Generate the DOM patch script from our aggregated patches.
-        # No new JS initializers are expected during a partial update.
         dom_patch_script = self._generate_dom_patch_script(all_patches, js_initializers=[])
 
-        combined_script = (css_update_script + "\n" + dom_patch_script).strip()
+        # --- CRITICAL: Prepend the JS injection script to the DOM patches ---
+        combined_script = (js_injection_script + "\n" + css_update_script + "\n" + dom_patch_script).strip()
+
         if combined_script:
             print(f"🛠️  PyThra Framework | Applying {len(all_patches)} UI changes to app...")
             print(f"📝 PyThra Framework | Patch Details: {[f'{p.action}({p.html_id[:8]}...)' for p in all_patches]}")
@@ -694,35 +712,20 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
 
         self._pending_state_updates.clear()
 
-        # --- FPS CALCULATION ADDED HERE ---
-         # --- CORRECTED FPS CALCULATION ---
         end_time = time.time()
         cycle_duration = end_time - start_time
+        fps = 1.0 / cycle_duration if cycle_duration > 0 else float('inf')
+
+        print(f"🎉 PyThra Framework | UI Update Complete! at (⏱️ {cycle_duration:.4f}s) ({(cycle_duration * 1000):.2f}ms) ({fps:.2f} FPS)")
         
-        # Calculate potential FPS based on this cycle's duration.
-        # This reflects the performance of the update logic itself.
-        if cycle_duration > 0:
-            fps = 1.0 / cycle_duration
-        else:
-            fps = float('inf') # Practically instantaneous
-        # --- END OF FPS CALCULATION ---
-
-        print(
-            f"🎉 PyThra Framework | UI Update Complete! (⏱️ {cycle_duration:.4f}s) at ({fps:.2f} FPS)"
-        )
-
-        # --- PROFILER REPORTING ---
-        # profiler.disable()
+        profiler.disable()
         s = io.StringIO()
-        # Sort stats by 'cumulative time' to see the biggest bottlenecks at the top
         ps = pstats.Stats(profiler, stream=s).sort_stats('cumulative')
-        ps.print_stats(20) # Print the top 20 most time-consuming functions
-
+        ps.print_stats(20)
         print("\n--- cProfile Report ---")
         print(s.getvalue())
         print("--- End of Report ---\n")
-        # --- END PROFILER REPORTING ---
-
+        
     # --- Widget Tree Building ---
     def _build_widget_tree(self, widget: Optional[Widget]) -> Optional[Widget]:
         """
@@ -1141,7 +1144,7 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
                 # --- GENERIC JS INITIALIZER FOR BOTH INSERT AND REPLACE ---
                 js_init_data = props.get("_js_init")
                 if js_init_data and isinstance(js_init_data, dict):
-                    print("js_init_data: ", js_init_data)
+                    # print("js_init_data: ", js_init_data)
                     engine_name = js_init_data.get("engine")
                     instance_name = js_init_data.get("instance_name")
                     options = js_init_data.get("options", {})
@@ -1336,7 +1339,11 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
             self.called = True
             print("🔧 PyThra Framework | Injecting JS utilities for the first time during reconciliation")
             # Prepend the combined JS utilities to the list of commands.
-            js_utilities = self._get_js_utility_functions()
+            # Get the required engines from the current reconciliation result
+            required_engines = self._analyze_required_js_engines(None, result)
+            js_utilities = self._get_js_utility_functions(required_engines)
+            print("🔧 PyThra Framework | Required JS engines for utilities:", required_engines)
+            print("🔧 PyThra Framework | Injecting JS utilities for engines:", js_utilities)
             js_commands.insert(0, js_utilities)
         else:
             print("🔧 PyThra Framework | Skipping JS utilities injection (already loaded)")
@@ -1385,7 +1392,7 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
                 # print("New class: ", new_class.split(' '),)
 
                 for _class in new_classes:
-                    print("New class: ",_class) 
+                    # print("New class: ",_class) 
 
                     # This JS is robust: it works even if classes are None or the same.
                     js_prop_updates.append(f"""
@@ -1535,9 +1542,13 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
                 
                 # Find the module path from the plugin manifest
                 js_module_info = self._find_js_module(engine_name)
-                path_js = "C:\\Users\\SMILETECH COMPUTERS\\Documents\\pythra-toolkit\\plugins\\markdown\\render\\editor.js"
                 # print("js_module_info: ", js_module_info)
-                if path_js:
+                if js_module_info:
+                    # Check if path is absolute
+                    module_path = js_module_info['path']
+                    if not os.path.isabs(module_path):
+                        module_path = os.path.join(self.project_root, module_path)
+                    path_js = module_path
                     imports.add(f"import {{ {engine_name} }} from '{path_js}';")
                     
                     options_json = json.dumps(options)
@@ -1581,19 +1592,39 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
                 imports.add("import { generateRoundedPath } from './js/pathGenerator.js';")
                 options = props.get("gradient_clip_options", {})
                 options_json = json.dumps(options)
-                js_commands.append(f"window._pythra_instances['{html_id}'] = new PythraGradientClipPath('{html_id}', {options_json});")
+                js_commands.append(f"""window._pythra_instances['{html_id}'] = new PythraGradientClipPath('{html_id}', {options_json});""")
             # --- END OF BLOCK ---
 
             # --- ADD THIS BLOCK ---
             # --- SIMPLIFIED VLIST LOGIC ---
             if props.get("init_virtual_list"):
+                print("Initializing Virtual List...")
                 imports.add("import { PythraVirtualList } from './js/virtual_list.js';")
                 options = props.get("virtual_list_options", {})
                 options_json = json.dumps(options)
                 # Use the stable key for the instance name
                 instance_name = f"{widget_key_val}_vlist"
                 # No more checks or timeouts. We just instantiate our engine.
-                js_commands.append(f"window._pythra_instances['{instance_name}'] = new PythraVirtualList('{html_id}', {options_json});")
+                js_commands.append(f"""
+                function waitForAndInit(className, initCallback) {{
+                            const interval = setInterval(() => {{
+                                // Check if the class is now available on the window object
+                                if (typeof window[className] === 'function') {{
+                                    clearInterval(interval); // Stop checking
+                                    console.log(`Class ${{className}} is defined. Initializing...`);
+                                    initCallback(); // Run the initialization code
+                                }} else {{
+                                    console.log(`Waiting for class ${{className}}...`);
+                                }}
+                            }}, 100); // Check every 100ms
+                        }}
+                        waitForAndInit('PythraVirtualList', () => {{
+                            window._pythra_instances['{instance_name}'] = new PythraVirtualList(
+                                '{html_id}', 
+                                {options_json}
+                                );
+                        }});
+                """)
             # --- END OF CHANGE ---
             # --- END OF BLOCK ---
 
@@ -1636,7 +1667,6 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
         # --- END OF NEW LOGIC ---
         # Your initializer logic for ClipPath etc. goes here if needed
         for init in result.js_initializers:
-            # print("init:: ", init)
             # --- ADD THIS BLOCK FOR SIMPLEBAR ---
             if init["type"] == "SimpleBar":
                 target_id = init["target_id"]
@@ -1735,7 +1765,8 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
 
         # --- INCLUDE JS UTILITIES IN INITIAL RENDER ---
         # Get JS utilities for initial render so all functions are available
-        js_utilities = self._get_js_utility_functions()
+        # Get the required engines from the current reconciliation result
+        js_utilities = self._get_js_utility_functions(required_engines)
         
         full_script = f"""
         <script>
@@ -1758,15 +1789,42 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
 
     # Helper method to find JS modules from discovered plugins
     def _find_js_module(self, engine_name: str) -> Optional[Dict]:
-        print("Plugins: ", self.plugins)
+        """Find a JS module by its engine name"""
+        # print("Looking for JS module:", engine_name)
+        # print("Plugins:", self.plugins)
+        # print("Plugin JS Modules:", self.plugin_js_modules)
+        
+        # First check the new-style plugin_js_modules
+        if engine_name in self.plugin_js_modules:
+            module_info = self.plugin_js_modules[engine_name]
+            print(f"✅ Found module in plugin_js_modules: {module_info}")
+            return module_info
+            
+        # Fall back to old-style plugins dict
         for plugin_name, plugin_info in self.plugins.items():
             modules = plugin_info.get("js_modules", {})
-            print("modules: ", modules)
+            print(f"Checking plugin {plugin_name} modules:", modules)
             if engine_name in modules:
                 return {
                     "plugin": plugin_name,
                     "path": f"/plugins/{plugin_name}/{modules[engine_name]}"
                 }
+        
+        # If not found, look in package manager's loaded packages
+        if hasattr(self, 'package_manager'):
+            loaded_packages = self.package_manager.get_loaded_packages()
+            print("Checking loaded packages:", loaded_packages.keys())
+            for pkg_name, pkg_info in loaded_packages.items():
+                js_modules = pkg_info.manifest.js_modules
+                if engine_name in js_modules:
+                    module_path = pkg_info.get_js_module_path(engine_name)
+                    if module_path:
+                        return {
+                            "plugin": pkg_name,
+                            "path": str(module_path)
+                        }
+        
+        print(f"⚠️ No JS module found for engine: {engine_name}")
         return None
 
     def _write_initial_files(

@@ -1,3 +1,6 @@
+
+
+import json
 from pythra import (
     Framework,
     StatefulWidget,
@@ -8,6 +11,8 @@ from pythra import (
     Widget,
     Container,
     Text,
+    Icon,
+    Icons,
     Colors,
     Center,
     SizedBox,
@@ -18,16 +23,30 @@ from pythra import (
     GradientTheme,
     CrossAxisAlignment,
     ElevatedButton,
+    Dropdown,
+    DropdownController,
+    DropdownTheme,
+    VerticalDirection,
 )
 from plugins.markdown import MarkdownEditor
 from plugins.markdown.controller import MarkdownEditorController
+from plugins.markdown.utils.sys_font_loader import get_system_fonts_as_json
 
+formatted_fonts_json = get_system_fonts_as_json()
+# print(json.loads(formatted_fonts_json))
+fonts = json.loads(formatted_fonts_json)
+labels = []
+for font in fonts:
+    labels.append(font["label"])
+    if font["label"] == "Verdana":
+        print("val: ", font["val"])
 
 class EditorPageState(State):
     def __init__(self):
         super().__init__()
         self.count = 0
         self.editor_controller = MarkdownEditorController()
+        self.d_controller = DropdownController(selectedValue=labels[0])
 
         # --- THE CRITICAL FIX ---
         # Create the MarkdownEditor widget instance ONCE and store it.
@@ -62,6 +81,28 @@ class EditorPageState(State):
             )
         # --- END OF FIX ---
 
+        self.dropdown = Dropdown(
+                controller=self.d_controller,
+                key=Key("my_dropdown"),
+                items=labels,
+                onChanged=self.changeFont,
+                dropDirection=VerticalDirection.DOWN,
+                theme=DropdownTheme(
+                    width=330,
+                    dropDownHeight=500,
+                    dropdownMargin=EdgeInsets.only(bottom=12),
+                    fontSize=12,
+                    borderWidth=0.0,
+                    borderColor=Colors.transparent,
+                    backgroundColor=(
+                        Colors.hex("#837b7b")
+                    ),
+                    dropdownColor=(
+                        Colors.hex("#837b7b")
+                    ),
+                ),
+            )
+
     def bold(self):
         self.editor_controller.exec_command('bold')
         self.editor_controller.focus()
@@ -74,6 +115,16 @@ class EditorPageState(State):
         self.count += 1
         print("Incremented count to:", self.count)
         self.setState()
+
+    def setFont(self, font_family: str):
+        self.editor_controller.set_font_name(font_family=font_family)
+        self.editor_controller.focus()
+
+    def changeFont(self, new_value):
+        print("Font changed!: ", new_value)
+        for font in fonts:
+            if font["label"] == new_value:
+                self.setFont(font["val"])
 
     def load_markdown(self):
         """Loads a sample Markdown string into the editor."""
@@ -106,6 +157,18 @@ greet()
         print(markdown_content)
         print("="*20 + "\n")
 
+    # --- ADD A NEW HANDLER METHOD ---
+    def replace_selection(self):
+        """Replaces the selected text with a sample Markdown quote."""
+        sample_quote_md = (
+            "> This is a blockquote that was just inserted!\n>\n"
+            "> It replaced the text you had highlighted."
+            "\nhey there"
+        )
+        self.editor_controller.replace_selection_from_markdown(sample_quote_md)
+        self.editor_controller.focus()
+        # As per the docstring, we DO NOT call setState() here.
+
     def build(self) -> Widget:
         return Container(
             key=Key("editor_page_wrapper_container"),
@@ -136,6 +199,12 @@ greet()
                         key=Key("inc_bold"),
                         onPressed=self.increment,
                     ),
+                    Icon(
+                        icon=Icons.javascript_rounded, 
+                        key=Key("smile_icon"),
+                        color=Colors.hex("#f0db4f"),
+                        size=32,
+                        ),
                         ],
                     ),
                     SizedBox(
@@ -162,6 +231,13 @@ greet()
                             child=Text("Export MD", key=Key("export_btn_text")),
                             key=Key("elv_export"),
                             onPressed=self.export_markdown,
+                        ),
+                        SizedBox(width=10),
+                        # --- ADD THE NEW BUTTON ---
+                        ElevatedButton(
+                            child=Text("Replace Selection", key=Key("replace_btn_text")),
+                            key=Key("elv_replace"),
+                            onPressed=self.replace_selection,
                         ),
                     ]
                 ),

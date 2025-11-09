@@ -3991,6 +3991,7 @@ class Dropdown(Widget):
                  items: List[Union[str, Tuple[str, Any]]],
                  onChanged: Callable[[Any], None],
                  hintText: str = "Select an option",
+                 dropDirection: Union[VerticalDirection, str] = VerticalDirection.DOWN,
                  # --- Theme properties can be added here later ---
                  backgroundColor: str = Colors.surfaceContainerHighest,
                  textColor: str = Colors.onSurface,
@@ -4009,13 +4010,18 @@ class Dropdown(Widget):
         self.theme = theme or DropdownTheme()
         self.onChanged = onChanged
         self.hintText = hintText
+        self.dropDirection = dropDirection
         
         # --- Style Properties ---
         self.backgroundColor = self.theme.backgroundColor or backgroundColor
         self.textColor = self.theme.textColor or textColor 
         self.borderColor = self.theme.borderColor or borderColor
         self.borderRadius = self.theme.borderRadius or borderRadius
+        self.hoverColor = self.theme.hoverColor or Colors.rgba(0, 0, 0, 0.08)
+        self.dropdownHoverColor = self.theme.dropdownHoverColor or Colors.rgba(0, 0, 0, 0.08)
+        self.itemHoverColor = self.theme.itemHoverColor or Colors.rgba(103, 80, 164, 0.1)
         self.width = f"{self.theme.width}px" if isinstance(self.theme.width, (int, float)) else f"{self.theme.width}"
+        self.dropDownHeight = f"{self.theme.dropDownHeight}px" if isinstance(self.theme.dropDownHeight, (int, float)) else f"{self.theme.dropDownHeight}"
         self.borderWidth = self.theme.borderWidth or 1
         self.fontSize = self.theme.fontSize
         self.padding = self.theme.padding.to_css_value() or "8px 12px"
@@ -4032,10 +4038,10 @@ class Dropdown(Widget):
         # will send the new value, and the framework will call this function.
         
         # --- CSS Style Management ---
-        self.style_key = (self.backgroundColor, self.textColor, self.borderColor, self.borderRadius,
-                            self.width, self.borderWidth, self.fontSize, self.padding, self.dropdownColor, 
+        self.style_key = (self.backgroundColor, self.textColor, self.borderColor, self.borderRadius, self.hoverColor, self.dropdownHoverColor,
+                            self.itemHoverColor, self.width, self.dropDownHeight, self.borderWidth, self.fontSize, self.padding, self.dropdownColor, 
                             self.dropdownTextColor, self.selectedItemColor, self.selectedItemShape, 
-                            self.dropdownMargin, self.itemPadding)
+                            self.dropdownMargin, self.itemPadding, self.dropDirection)
         
         if self.style_key not in Dropdown.shared_styles:
             self.css_class = f"shared-dropdown-{len(Dropdown.shared_styles)}"
@@ -4103,14 +4109,17 @@ class Dropdown(Widget):
     @staticmethod
     def generate_css_rule(style_key: Tuple, css_class: str) -> str:
         """Generates the CSS for the dropdown's appearance and states."""
-        (bg_color, text_color, border_color, border_radius, width, border_width, font_size, padding, dropdown_color, 
+        (bg_color, text_color, border_color, border_radius, hover_color, dropdown_hover_color, item_hover_color, width, drop_down_height, border_width, font_size, padding, dropdown_color, 
                             dropdown_text_color, selected_item_color, selected_item_shape, 
-                            dropdown_margin, item_padding) = style_key
+                            dropdown_margin, item_padding, drop_direction) = style_key
+
+        to_top_height = f"-{int(drop_down_height.replace('px', '').replace('%', '').replace('vh', '')) + 50}px"
 
         return f"""
         .{css_class}.dropdown-container {{
             position: relative;
             width: {width};
+            heifht: auto; //TODO
             font-family: sans-serif;
         }}
         .{css_class} .dropdown-value-container {{
@@ -4132,18 +4141,20 @@ class Dropdown(Widget):
             width: 20px;
             height: 20px;
             fill: currentColor;
+            {'transform: rotate(180deg);' if drop_direction.lower() == 'up' else ''}
             transition: transform 0.2s ease-in-out;
         }}
         .{css_class}.open .dropdown-caret {{
-            transform: rotate(180deg);
+            transform: rotate({'180deg' if drop_direction.lower() == 'down' else '0deg'});
         }}
         .{css_class} .dropdown-menu {{
             position: absolute;
             top: 100%;
             left: 0;
             right: 0;
+            height: {drop_down_height};
             background-color: {dropdown_color};
-            color: {dropdown_text_color},
+            color: {dropdown_text_color};
             border: 1px solid {border_color};
             border-radius: {border_radius}px;
             list-style: none;
@@ -4155,11 +4166,12 @@ class Dropdown(Widget):
             transform: translateY(-10px);
             transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            overflow-y: auto;
         }}
         .{css_class}.open .dropdown-menu {{
             opacity: 1;
             visibility: visible;
-            transform: translateY(0);
+            transform: translateY({0 if drop_direction.lower() == 'down' else to_top_height});
         }}
         .{css_class} .dropdown-item {{
             padding: 8px 12px;
@@ -4167,7 +4179,13 @@ class Dropdown(Widget):
             transition: background-color 0.2s;
         }}
         .{css_class} .dropdown-item:hover {{
-            background-color: {Colors.rgba(103, 80, 164, 0.1)}; /* Hover color */
+            background-color: {item_hover_color}; /* Hover color */
+        }}
+        .{css_class} .dropdown-value-container:hover {{
+            background-color: {hover_color}; /* Hover color */
+        }}
+        .{css_class} .dropdown-menu:hover {{
+            background-color: {dropdown_hover_color}; /* Hover color */
         }}
         """
 

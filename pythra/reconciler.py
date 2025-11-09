@@ -149,7 +149,7 @@ class Reconciler:
         self._external_js_init_queue: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
         self._registered_js_initializers: Dict[str, Dict[str, Dict[str, Any]]] = defaultdict(dict)
 
-        print("Reconciler Initialized")
+        print("🪄  PyThra Framework | Reconciler Initialized")
 
     def get_map_for_context(self, context_key: str) -> Dict[Union[Key, str], NodeData]:
         return self.context_maps.setdefault(context_key, {})
@@ -176,6 +176,28 @@ class Reconciler:
         Compares a new widget tree with the previous state and generates patches.
         """
         result = ReconciliationResult()
+
+        # Auto-delegate to Rust adapter if available for better performance.
+        try:
+            from .rust_reconciler_adapter import RustReconcilerAdapter
+            adapter = RustReconcilerAdapter(self)
+            if adapter.is_available():
+                print("🪄  Rust adapter available.")
+                try:
+                    rs_result = adapter.reconcile(
+                        previous_map, new_widget_root, parent_html_id,
+                        old_root_key, is_partial_reconciliation
+                    )
+                    # Let the adapter produce a full ReconciliationResult
+                    print(f'Rust reconciler: {rs_result}')
+
+                    return rs_result
+                except Exception:
+                    pass
+                # pass
+        except Exception:
+            # Any import or adapter error should not prevent normal Python flow
+            pass
 
         if old_root_key is None:
             # Find the root key from the previous map if not provided.
@@ -214,6 +236,8 @@ class Reconciler:
             result.js_initializers.extend([dict(q) for q in queued])
             # clear the queue for that context after pushing to result
             self._external_js_init_queue["main"].clear()
+
+        print(f'Python reconciler: {result}')
 
         return result
 

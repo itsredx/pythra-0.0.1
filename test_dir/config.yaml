@@ -1,0 +1,10 @@
+app_name: My Pythra App
+win_width: 1280
+win_height: 720
+frameless: false
+maximixed: false
+fixed_size: false
+Debug: true
+render_dir: render
+assets_dir: assets
+assets_server_port: 8008

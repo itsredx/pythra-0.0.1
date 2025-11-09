@@ -1,4 +1,4 @@
-from ...styles import *
+from pythra.styles import *
 
 # ==============================================================================
 # 1. THEME (The Data and Style Models)
@@ -13,7 +13,7 @@ class DerivedDropdownTheme:
         self,
         backgroundColor=Colors.hex("#FFFFFF"),
         borderColor=Colors.hex("#AAAAAA"),
-        width=45,
+        width=100,
         borderWidth=1.0,
         borderRadius=8.0,
         textColor=Colors.hex("#000000"),
@@ -24,6 +24,7 @@ class DerivedDropdownTheme:
         selectedItemColor=Colors.hex("#E0E0E0"),
         selectedItemShape= BorderRadius.all(4),
         dropdownMargin=EdgeInsets.only(top=45),
+        dropdownHeight=500,
         itemPadding = EdgeInsets.symmetric(horizontal=12, vertical=8),
     ):
         self.backgroundColor = backgroundColor
@@ -39,4 +40,5 @@ class DerivedDropdownTheme:
         self.selectedItemColor = selectedItemColor
         self.selectedItemShape = selectedItemShape
         self.dropdownMargin = dropdownMargin
+        self.dropdownHeight = dropdownHeight
         self.itemPadding = itemPadding

@@ -1,7 +1,16 @@
 # dropdown.py
-from ...styles import *
-from ...widgets import *
-from ...state import *
+
+import os
+import sys
+import json
+
+# Add the project root directory to Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from pythra.styles import *
+from pythra.widgets import *
+from pythra.state import *
+from pythra import Framework 
 from .controller import DerivedDropdownController
 from .style import DerivedDropdownTheme
 from typing import Callable, List, Optional
@@ -29,7 +38,7 @@ class DerivedDropdown(StatefulWidget):
         # Store configuration on the widget instance.
         self.controller = controller
         self.onChanged = onChanged
-        self.theme = theme or DerivedDropdownTheme()
+        self.theme = theme if theme else DerivedDropdownTheme()
 
         # print("key init: ", key)
 
@@ -46,8 +55,10 @@ class _DerivedDropdownState(State):
     def __init__(self):
         self.is_open: bool = False
         self.controller: DerivedDropdownController = None
-        self.theme: DerivedDropdownTheme = DerivedDropdownTheme()
+        self.theme: DerivedDropdownTheme = None
         self.selected_value: Optional[Any] = None
+        self.list_controller = VirtualListController()
+        self.parent_key = None
 
     def initState(self):
         """Called once when the state is created."""
@@ -92,49 +103,11 @@ class _DerivedDropdownState(State):
         #    However, to ensure the dropdown closes instantly, we'll call it.
         self.setState()
 
-    def build(self) -> Widget:
-        """Builds the dropdown UI, including the overlay menu if it's open."""
-        widget = self.get_widget()
-        if not widget:
-            return SizedBox()  # Return empty if widget is gone
-
-        # Get the authoritative configuration from the widget instance
-        self.controller = widget.controller
-        self.theme = widget.theme
-        self.selected_value = self.controller.value
-
-        # --- SOLUTION: Use the parent widget's key to create stable child keys ---
-        parent_key = widget.key.value
-
-        # --- Build the DerivedDropdown Menu (only if open) ---
-        menu_items = []
-        if self.is_open:
-            menu_items.append(
-                Container(
-                    key=Key(f"dropdown_menu_container{parent_key}"),
-                    margin=self.theme.dropdownMargin.edit(operation='+', top=40),
-                    padding=self.theme.padding,
-                    color=self.theme.dropdownColor,
-                    width=self.theme.width,
-                    zAxisIndex= 1900,
-                    # padding=EdgeInsets.all(4),
-                    decoration=BoxDecoration(
-                        color=self.theme.dropdownColor,
-                        borderRadius=BorderRadius.circular(self.theme.borderRadius),
-                        boxShadow=[
-                            BoxShadow(
-                                color=Colors.rgba(0, 0, 0, 0.15),
-                                blurRadius=12,
-                                offset=Offset(0, 6),
-                            )
-                        ],
-                    ),
-                    child=Column(
-                        mainAxisAlignment=MainAxisAlignment.START,
-                        crossAxisAlignment=CrossAxisAlignment.START,
-                        key=Key(f"dropdown_item_Column_{parent_key}"),
-                        children=[
-                            Container(
+    def item_builder(self, n) -> Widget:
+        print('index: ',n)
+        item = self.controller.items[n]
+        return Container(
+                                # height=self.theme.dropdownHeight,
                                 padding=self.theme.itemPadding
                                 or EdgeInsets.symmetric(horizontal=12, vertical=8),
                                 color=(
@@ -147,13 +120,13 @@ class _DerivedDropdownState(State):
                                     borderRadius=self.theme.selectedItemShape
                                     or BorderRadius.circular(4),
                                 ),
-                                key=Key(f"dropdown_item_{item}_padding_{parent_key}"),
+                                key=Key(f"dropdown_item_{item}_padding_{self.parent_key}"),
                                 child=ListTile(
-                                    key=Key(f"dropdown_item_{item}_{parent_key}"),
+                                    key=Key(f"dropdown_item_{item}_{self.parent_key}"),
                                     title=Text(
                                         item,
                                         key=Key(
-                                            f"dropdown_item_title_{item}_{parent_key}"
+                                            f"dropdown_item_title_{item}_{self.parent_key}"
                                         ),
                                         style=TextStyle(
                                             color=self.theme.dropdownTextColor
@@ -169,9 +142,107 @@ class _DerivedDropdownState(State):
                                     ),
                                 ),
                             )
-                            for item in self.controller.items
+
+    def build(self) -> Widget:
+        """Builds the dropdown UI, including the overlay menu if it's open."""
+        widget = self.get_widget()
+        if not widget:
+            return SizedBox()  # Return empty if widget is gone
+
+        # Get the authoritative configuration from the widget instance
+        self.controller = widget.controller
+        self.theme = widget.theme if widget.theme else DropdownTheme(width=300)
+        self.selected_value = self.controller.value
+
+        # --- SOLUTION: Use the parent widget's key to create stable child keys ---
+        parent_key = widget.key.value
+        self.parent_key = parent_key
+        self.item_builder(0)
+
+        # --- Build the DerivedDropdown Menu (only if open) ---
+        menu_items = []
+        if self.is_open:
+            menu_items.append(
+                Container(
+                    key=Key(f"dropdown_menu_container{parent_key}"),
+                    margin=self.theme.dropdownMargin.edit(operation='+', top=40),
+                    padding=self.theme.padding,
+                    color=self.theme.dropdownColor,
+                    width=self.theme.width,
+                    height=self.theme.dropdownHeight,
+                    zAxisIndex= 1900,
+                    # padding=EdgeInsets.all(4),
+                    decoration=BoxDecoration(
+                        color=self.theme.dropdownColor,
+                        borderRadius=BorderRadius.circular(self.theme.borderRadius),
+                        boxShadow=[
+                            BoxShadow(
+                                color=Colors.rgba(0, 0, 0, 0.15),
+                                blurRadius=12,
+                                offset=Offset(0, 6),
+                            )
                         ],
                     ),
+                    child=VirtualListView(
+                        controller=self.list_controller,
+                        key=Key(f'v_list_{parent_key}'),
+                        itemCount=4,
+                        itemBuilder=self.item_builder,
+                        itemExtent=60,
+                        initialItemCount=12,
+                        width=200,
+                        theme=ScrollbarTheme(
+                                width=14,
+                                thumbColor=Colors.lightpink,
+                                trackColor=Colors.hex("#3535353e"),
+                                thumbHoverColor=Colors.hex("#9c9b9b"),
+                                radius=6,
+                            ),
+                    ),
+                    # Column(
+                    #     mainAxisAlignment=MainAxisAlignment.START,
+                    #     crossAxisAlignment=CrossAxisAlignment.START,
+                    #     key=Key(f"dropdown_item_Column_{parent_key}"),
+                    #     children=[
+                    #         Container(
+                    #             # height=self.theme.dropdownHeight,
+                    #             padding=self.theme.itemPadding
+                    #             or EdgeInsets.symmetric(horizontal=12, vertical=8),
+                    #             color=(
+                    #                 self.theme.selectedItemColor
+                    #                 if item == self.selected_value
+                    #                 else Colors.transparent
+                    #             ),
+                    #             width="100%",
+                    #             decoration=BoxDecoration(
+                    #                 borderRadius=self.theme.selectedItemShape
+                    #                 or BorderRadius.circular(4),
+                    #             ),
+                    #             key=Key(f"dropdown_item_{item}_padding_{parent_key}"),
+                    #             child=ListTile(
+                    #                 key=Key(f"dropdown_item_{item}_{parent_key}"),
+                    #                 title=Text(
+                    #                     item,
+                    #                     key=Key(
+                    #                         f"dropdown_item_title_{item}_{parent_key}"
+                    #                     ),
+                    #                     style=TextStyle(
+                    #                         color=self.theme.dropdownTextColor
+                    #                     ),
+                    #                 ),
+                    #                 onTap=self.select_item,
+                    #                 onTapName=f"item_tap_callback_{id(self.select_item)}",
+                    #                 onTapArg=[item],
+                    #                 selected=item == self.selected_value,
+                    #                 selectedTileColor=self.theme.selectedItemColor,
+                    #                 contentPadding=EdgeInsets.symmetric(
+                    #                     horizontal=12, vertical=8
+                    #                 ),
+                    #             ),
+                    #         )
+                    #         for item in self.controller.items
+                    #     ],
+                    # ),
                 )
             )
         # print("widget key: ", widget.key, parent_key)
@@ -244,7 +315,7 @@ class _DerivedDropdownState(State):
                     # The menu is positioned relative to the Stack.
                     Positioned(
                         key=Key(f"dropdown_op_Positioned_{parent_key}_icon"),
-                        top=450,  # Position it just below the main box (adjust as needed)
+                        top=50,  # Position it just below the main box (adjust as needed)
                         left=0,
                         right=0,
                         width=self.theme.width,
@@ -278,7 +349,7 @@ class _DerivedDropdownState(State):
 
 
 
-"""
+
 # ==============================================================================
 # 3. EXAMPLE USAGE
 # ==============================================================================
@@ -404,4 +475,3 @@ if __name__ == "__main__":
 
     app.set_root(my_app)
     app.run(title="DerivedDropdown Test")
-"""

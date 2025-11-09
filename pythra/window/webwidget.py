@@ -53,6 +53,7 @@ os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
     "--disable-dev-shm-usage"             # Prevents /dev/shm usage issues on some systems
 )
 
+
 # 📝 ALTERNATIVE CONFIGURATIONS (Currently commented out)
 # These are other Chromium flags you might use for different purposes:
 # - GPU acceleration control
@@ -74,17 +75,20 @@ os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
 # 📦 PySide6 (Qt for Python) - Main GUI Framework
 # These imports give us the building blocks for creating desktop applications
 from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout    # Basic UI components
-from PySide6.QtCore import Qt, QObject, Slot, QUrl, QSize, qInstallMessageHandler, QtMsgType  # Core functionality
+from PySide6.QtCore import Qt, QObject, Slot, QUrl, QSize, qInstallMessageHandler, QtMsgType, QTimer, QEvent, Signal  # Core functionality
 from PySide6.QtWebEngineWidgets import QWebEngineView               # Web browser widget
 from PySide6.QtWebEngineCore import QWebEngineSettings              # Browser configuration
 from PySide6.QtWebChannel import QWebChannel                        # Python ↔ JavaScript communication
-from PySide6.QtGui import QShortcut, QKeySequence                   # Keyboard shortcuts and UI helpers
+from PySide6.QtGui import QShortcut, QKeySequence, QGuiApplication  # Keyboard shortcuts and UI helpers
 
 # 🐍 Standard Python Libraries
 import sys                                      # System-specific parameters and functions
 import re                                       # Regular expressions for pattern matching
 import io                                       # Input/Output operations
 from contextlib import redirect_stdout, redirect_stderr  # Context managers for stream redirection
+
+import threading
+import wmi
 
 # =============================================================================
 # PYTHRA FRAMEWORK IMPORTS
@@ -94,6 +98,9 @@ from contextlib import redirect_stdout, redirect_stderr  # Context managers for 
 # These classes define the data structures for touch and gesture events
 # that get passed between the JavaScript frontend and Python backend
 from ..events import TapDetails, PanUpdateDetails
+
+QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
+QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
 
 # =============================================================================
 # CONSOLE OUTPUT FILTERING SYSTEM
@@ -272,6 +279,38 @@ sys.stdout = FilteredOutput(sys.stdout)  # Filter normal print() statements
 sys.stderr = FilteredOutput(sys.stderr)  # Filter error messages and warnings
 
 
+
+def watch_for_resume(on_resume_callback):
+    """Run in background thread and call callback on resume"""
+    c = wmi.WMI()
+    watcher = c.watch_for(
+        notification_type="Creation",
+        wmi_class="Win32_PowerManagementEvent"
+    )
+    print("Watching for power management events...")
+    while True:
+        event = watcher()
+        if event.EventType == 7:
+            print("System has resumed from sleep.")
+            on_resume_callback()
+
+
+def setup_resume_watcher(window):
+    """Start watching for resume and trigger window resize via a Qt signal (thread-safe)."""
+    def on_resume():
+        # This runs in background thread; emit the threaded signal to the GUI thread.
+        try:
+            print("watcher: emitting resume_signal")
+            window.resume_signal.emit()
+        except Exception as e:
+            print("watcher: failed to emit resume_signal:", e)
+
+    # run watcher in background thread
+    thread = threading.Thread(target=watch_for_resume, args=(on_resume,), daemon=True)
+    thread.start()
+
+
+
 class WindowManager:
     def __init__(self):
         self.windows = {}
@@ -440,6 +479,7 @@ class DebugWindow(QWebEngineView):
 
 
 class WebWindow(QWidget):
+    resume_signal = Signal()   # queued, thread-safe
     def __init__(
         self,
         title,
@@ -529,6 +569,10 @@ class WebWindow(QWidget):
 
         # Add a toggle to show/hide the debug window
         self.debug_window.hide()
+        # Connect to app state changes so we can detect resume/activate
+        app.applicationStateChanged.connect(self._on_application_state_changed)
+        # Connect resume signal to slot that runs in the GUI thread
+        self.resume_signal.connect(self._on_system_resume_slot)
 
        
 
@@ -581,6 +625,64 @@ class WebWindow(QWidget):
     def toggle_overlay(self):
         self.overlay_box.setVisible(not self.overlay_box.isVisible())
 
+    @Slot()
+    def _on_system_resume_slot(self):
+        """Runs on the GUI thread when system resumes."""
+        try:
+            print("GUI: handling system resume — syncing webview viewport now.")
+            # call the sync helper which sets viewport and fires JS resize
+            self._sync_webview_viewport()
+            # optional: force a small delayed re-sync in case DPI changes arrive slightly later
+            QTimer.singleShot(200, self._sync_webview_viewport)
+        except Exception as e:
+            print("Error in _on_system_resume_slot:", e)
+
+
+    def resizeEvent(self, event):
+        # Ensure Qt does the normal handling
+        super().resizeEvent(event)
+
+        # Defer the sync very slightly so all layout updates have happened
+        QTimer.singleShot(0, self._sync_webview_viewport)
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        # Sync on show as well
+        QTimer.singleShot(0, self._sync_webview_viewport)
+
+    def _on_application_state_changed(self, state):
+        # Qt.ApplicationActive means app is now active (user returned / woke PC)
+        if state == Qt.ApplicationActive:
+            # Wait a little for the OS/Qt to finish restoring screens/DPI
+            QTimer.singleShot(150, self._sync_webview_viewport)
+
+    def _sync_webview_viewport(self):
+        """
+        Force web engine to match the widget size and dispatch a browser resize
+        so web content reflows correctly after sleep/resize/DPI changes.
+        """
+        try:
+            # Make sure view has correct widget geometry
+            w = self.webview.width()
+            h = self.webview.height()
+
+            # Resize the internal view (defensive — should be same)
+            self.webview.resize(w, h)
+
+            # Tell the QWebEnginePage about the new viewport size
+            # This helps Chromium re-create the compositor/viewport properly.
+            page = self.webview.page()
+            if hasattr(page, "setViewportSize"):
+                page.setViewportSize(self.webview.size())
+
+            # Trigger a browser 'resize' event so any JS/CSS reflow happens
+            page.runJavaScript('window.dispatchEvent(new Event("resize"));')
+
+            # force repaint
+            self.webview.update()
+        except Exception as e:
+            print("Warning: failed to sync webview viewport:", e)
+
 
 # Create Window Function
 def create_window(
@@ -625,6 +727,8 @@ def start(window, debug):
     # Example to toggle debug window (could connect to a button or shortcut)
     if debug:
         window.toggle_debug_window()
+
+    setup_resume_watcher(window)
 
     sys.exit(app.exec())
 

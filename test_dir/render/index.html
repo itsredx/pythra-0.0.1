@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Animated Gradient Clip Path Border Test</title>
+    <!-- ADD SIMPLEBAR CSS -->
+    <link rel="stylesheet" href="./js/scroll-bar/simplebar.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link id="base-stylesheet" type="text/css" rel="stylesheet" href="styles.css?v=1761986492">
+    <style id="dynamic-styles">
+                    @property --gradient-angle-shared-container-0 {
+                        syntax: '<angle>';
+                        initial-value: 0deg;
+                        inherits: false;
+                    }
+                    
+
+                    @keyframes bgRotate-shared-container-0 {
+                        0% { --gradient-angle-shared-container-0: 0deg; }
+                        100% { --gradient-angle-shared-container-0: 360deg; }
+                    }
+                    
+.shared-container-0 { box-sizing: border-box; background: repeating-conic-gradient(from var(--gradient-angle-shared-container-0), red, yellow, green, blue, red); animation: bgRotate-shared-container-0 4s linear infinite; padding: 20px; height: 100vh; }
+.shared-column-0 { display: flex; flex-direction: column; justify-content: space-evenly; align-items: stretch; height: 100%; direction: ltr; }
+
+            .shared-text-0 {
+                margin: 0; /* Reset default paragraph margin */
+                padding: 0;
+                
+                
+                
+            }
+            
+
+.shared-container-4 { box-sizing: border-box; background: #E7E0EC; padding: 32px; height: 80vh; }
+.shared-column-2 { display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; height: 100%; direction: ltr; }
+.shared-elevatedbutton-0 { display: inline-flex; align-items: center; justify-content: center; padding: 8px 16px; margin: 4px; border: none; border-radius: 20px; background-color: blue; color: white; cursor: pointer; text-align: center; text-decoration: none; outline: none; box-sizing: border-box; overflow: hidden; position: relative; transition: box-shadow 0.28s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.15s linear; -webkit-appearance: none; -moz-appearance: none; appearance: none; box-shadow: 0px 1.0px 2.0px 0px rgba(0,0,0,0.15), 0px 2.0px 4.0px 1px rgba(0,0,0,0.10); }
+.shared-elevatedbutton-0:hover { 
+                box-shadow: 0px 1.5px 3.0px 0px rgba(0,0,0,0.18), 0px 3.0px 6.0px 1px rgba(0,0,0,0.13); 
+                
+                /* Add background overlay? */ 
+                }
+.shared-elevatedbutton-0:active { box-shadow: none; background-color: rgba(0, 0, 0, 0.12) }
+.shared-elevatedbutton-0.disabled { background-color: rgba(0, 0, 0, 0.12); color: rgba(0, 0, 0, 0.38); box-shadow: none; cursor: default; pointer-events: none; }
+
+
+.shared-container-5 { box-sizing: border-box; display: flex; justify-content: center; align-items: center; }
+.shared-column-3 { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; height: 100%; direction: ltr; }
+.shared-row-0 { display: flex; flex-direction: row; justify-content: flex-start; align-items: center; width: 100%; direction: ltr; }
+
+        .shared-checkbox-0.checkbox-container {
+            position: relative;
+            width: 18.0px; height: 18.0px;
+            border: 2.0px solid #49454F;
+            border-radius: 4px;
+            background-color: transparent;
+            cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .shared-checkbox-0 .checkbox-svg {
+            width: 100%; height: 100%;
+            fill: none;
+            stroke: #FFFFFF;
+            stroke-width: 3.0;
+            stroke-linecap: round; stroke-linejoin: round;
+        }
+        .shared-checkbox-0 .checkbox-checkmark {
+            stroke-dasharray: 29;
+            stroke-dashoffset: 29;
+            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        .shared-checkbox-0.checkbox-container:active::before {
+            content: '';
+            position: absolute; top: 50%; left: 50%;
+            width: 0; height: 0;
+            background-color: rgba(103, 80, 164, 0.15);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: checkbox-ripple-shared-checkbox-0 0.4s ease-out;
+        }
+        @keyframes checkbox-ripple-shared-checkbox-0 {
+            from { width: 0; height: 0; opacity: 1; }
+            to { width: 40.0px; height: 40.0px; opacity: 0; }
+        }
+        
+
+        .shared-checkbox-1.checkbox-container {
+            position: relative;
+            width: 24.0px; height: 24.0px;
+            border: 2.0px solid green;
+            border-radius: 4px;
+            background-color: green;
+            cursor: pointer;
+            display: inline-flex; align-items: center; justify-content: center;
+            transition: background-color 0.15s ease-out, border-color 0.15s ease-out;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .shared-checkbox-1 .checkbox-svg {
+            width: 100%; height: 100%;
+            fill: none;
+            stroke: white;
+            stroke-width: 3.0;
+            stroke-linecap: round; stroke-linejoin: round;
+        }
+        .shared-checkbox-1 .checkbox-checkmark {
+            stroke-dasharray: 29;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        .shared-checkbox-1.checkbox-container:active::before {
+            content: '';
+            position: absolute; top: 50%; left: 50%;
+            width: 0; height: 0;
+            background-color: rgba(103, 80, 164, 0.15);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: checkbox-ripple-shared-checkbox-1 0.4s ease-out;
+        }
+        @keyframes checkbox-ripple-shared-checkbox-1 {
+            from { width: 0; height: 0; opacity: 1; }
+            to { width: 40.0px; height: 40.0px; opacity: 0; }
+        }
+        
+
+.shared-container-6 { box-sizing: border-box; padding: 16px; }
+.shared-row-1 { display: flex; flex-direction: row; justify-content: space-between; align-items: center; width: 100%; direction: ltr; }
+
+        /* --- Style for shared-switch-0 ('on' state: True) --- */
+        .shared-switch-0.switch-container {
+            position: relative;
+            width: 52px;
+            height: 32px;
+            border-radius: 16px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0;
+            transition: background-color 0.2s ease-in-out;
+            background-color: green;
+        }
+        .shared-switch-0 .switch-thumb {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background-color: #FFFFFF;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transition: transform 0.2s cubic-bezier(0.4, 0.0, 0.2, 1), background-color 0.2s ease-in-out;
+            transform: translateX(24px);
+        }
+        </style>
+    
+        <script src="qwebchannel.js"></script>
+        <script>
+            // Suppress inset-area deprecation warnings
+            (function() {
+                const originalWarn = console.warn;
+                console.warn = function(...args) {
+                    const message = args.join(' ');
+                    if (message.includes('inset-area') || 
+                        message.includes('position-area') ||
+                        message.includes('has been deprecated')) {
+                        return; // Suppress these specific warnings
+                    }
+                    originalWarn.apply(console, args);
+                };
+            })();
+            
+            document.addEventListener('DOMContentLoaded', () => {
+                new QWebChannel(qt.webChannelTransport, (channel) => {
+                    window.pywebview = channel.objects.pywebview;
+                    console.log("PyWebChannel connected.");
+                });
+            });
+            function handleClick(name) { if(window.pywebview) window.pywebview.on_pressed_str(name, ()=>{}); }
+            function handleClickWithArgs(callback_name, ...args) {
+                if (window.pywebview) {
+                    console.log("index", args);
+                    window.pywebview.on_pressed(callback_name, ...args).then(function(response) {
+                        console.log(response);
+                    }).catch(function(error) {
+                        console.error(error);
+                    });
+                } else {
+                    console.error('pywebview is not defined');
+                }
+            }
+            function handleItemTap(name, index) { if(window.pywebview) window.pywebview.on_item_tap(name, index, ()=>{}); }
+            function handleInput(name, value) {
+                if(window.pywebview) {
+                    window.pywebview.on_input_changed(name, value, ()=>{});
+                }
+            }
+        </script>
+        
+    
+</head>
+<body>
+    <div id="root-container"><div id="fw_id_1" class="shared-container-0"><div id="fw_id_2" class="shared-column-0"><p id="fw_id_3" class="shared-text-0">Navitation Test</p><div id="fw_id_4" class="" style="height: 12px"></div><div id="fw_id_5" class=""><div id="fw_id_6" class=""><div id="fw_id_7" class="shared-container-4"><div id="fw_id_8" class="shared-column-2"><div id="fw_id_9" class="" style="height: 24px"></div><button id="fw_id_10" class="shared-elevatedbutton-0" onclick="handleClick('&lt;lambda&gt;')"><p id="fw_id_11" class="shared-text-0">Go to Settings</p></button><div id="fw_id_12" class="" style="height: 24px"></div><div id="fw_id_13" class=""><div id="fw_id_14" class="shared-container-5"><div id="fw_id_15" class="shared-column-3"><div id="fw_id_16" class="shared-row-0"><div id="fw_id_17" class="checkbox-container shared-checkbox-0" onclick="handleClick('checkbox_press_default_checkbox')">
+            <svg class="checkbox-svg" viewBox="0 0 24 24">
+                <path class="checkbox-checkmark" d="M1.73,12.91 8.1,19.28 22.79,4.59"/>
+            </svg>
+        </div><div id="fw_id_18" class="" style="width: 8px"></div><p id="fw_id_19" class="shared-text-0">Default Checkbox</p></div><div id="fw_id_20" class="" style="height: 8px"></div><div id="fw_id_21" class="shared-row-0"><div id="fw_id_22" class="checkbox-container shared-checkbox-1" onclick="handleClick('checkbox_press_custom_checkbox')">
+            <svg class="checkbox-svg" viewBox="0 0 24 24">
+                <path class="checkbox-checkmark" d="M1.73,12.91 8.1,19.28 22.79,4.59"/>
+            </svg>
+        </div><div id="fw_id_23" class="" style="width: 8px"></div><p id="fw_id_24" class="shared-text-0">Custom Themed Checkbox</p></div></div></div></div><div id="fw_id_25" class="" style="height: 16px"></div><div id="fw_id_26" class=""><div id="fw_id_27" class="shared-container-6"><div id="fw_id_28" class="shared-row-1"><p id="fw_id_29" class="shared-text-0">Notifications</p><div id="fw_id_30" class="switch-container shared-switch-0" onclick="handleClick('switch_press_notification_switch')">
+            <div class="switch-track"></div>
+            <div class="switch-thumb"></div>
+        </div></div></div></div></div></div></div></div></div></div></div>
+    <div id="overlay-container"></div>
+
+    <!-- ADD SIMPLEBAR JS -->
+    <script src="./js/scroll-bar/simplebar.min.js"></script>
+    <!-- ADD THE NEW SLIDER JS ENGINE -->
+    
+</body>
+</html>

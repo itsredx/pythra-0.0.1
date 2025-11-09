@@ -1,4 +1,4 @@
-// PythraMarkdownEditor - A full-featured, self-contained, and memory-safe WYSIWYG Editor Engine
+// PythraMarkdownEditor - A full-featured, themeable, and memory-safe WYSIWYG Editor Engine
 class PythraMarkdownEditor {
     constructor(elementOrId, options = {}) {
         if (typeof elementOrId === 'string') {
@@ -13,15 +13,16 @@ class PythraMarkdownEditor {
 
         this.options = options;
         this.options.showControls = this.options.showControls ?? true;
+        this.options.showGrid = this.options.showGrid ?? false;
+        
         this.editorElement = null;
         this._changeTimer = null;
         this._changeHandler = null;
         this._feedbackHandler = null;
-        this.options.showGrid = this.options.showGrid ?? false;
 
         if (this.container) {
-            this.container.style.width = this.options.width || '100%';
-            this.container.style.height = this.options.height || 'auto';
+            this.container.style.width = this.options.width || (this.options.style?.defaults?.width || '100%');
+            this.container.style.height = this.options.height || (this.options.style?.defaults?.height || 'auto');
         }
 
         if (!window._pythraEditorStylesInjected) {
@@ -29,10 +30,65 @@ class PythraMarkdownEditor {
             window._pythraEditorStylesInjected = true;
         }
 
+        // --- NEW: Apply the dynamic styles from Python ---
+        this._applyStyles();
+
         this.init();
+    }
+    
+    // --- NEW METHOD: Applies styles from options as CSS variables ---
+    _applyStyles() {
+        if (!this.options.style || !this.container) return;
+
+        const style = this.options.style;
+        const root = this.container; // Set variables on the component's root element
+
+        const setVar = (name, value) => value && root.style.setProperty(name, value);
+
+        // Theme styles
+        if (style.theme) {
+            setVar('--pe-accent-color', style.theme.accentColor);
+            setVar('--pe-accent-hover', style.theme.accentHover);
+            setVar('--pe-border-color', style.theme.borderColor);
+            setVar('--pe-border-radius', style.theme.borderRadius);
+            setVar('--pe-border-width', style.theme.borderWidth);
+            if (style.theme.focusRing) {
+                setVar('--pe-focus-ring-color', style.theme.focusRing.color);
+                setVar('--pe-focus-ring-width', style.theme.focusRing.width);
+            }
+        }
+        
+        // Toolbar styles
+        if (style.toolbar) {
+            setVar('--pe-toolbar-bg', style.toolbar.backgroundColor);
+            setVar('--pe-toolbar-hover', style.toolbar.hoverColor);
+            setVar('--pe-toolbar-active', style.toolbar.activeColor);
+            setVar('--pe-toolbar-icon', style.toolbar.iconColor);
+            setVar('--pe-toolbar-shadow', style.toolbar.shadow);
+        }
+        
+        // Content area styles
+        if (style.content) {
+            setVar('--pe-content-bg', style.content.backgroundColor);
+            setVar('--pe-content-text', style.content.textColor);
+            setVar('--pe-content-font', style.content.fontFamily);
+            setVar('--pe-content-font-size', style.content.fontSize);
+            setVar('--pe-content-line-height', style.content.lineHeight);
+            setVar('--pe-content-padding', style.content.padding);
+            setVar('--pe-content-placeholder', style.content.placeholderColor);
+        }
+        
+        // Grid styles
+        if (style.grid) {
+            setVar('--pe-grid-dot-color', style.grid.dotColor);
+            setVar('--pe-grid-dot-size', `${style.grid.dotSize || 1}px`);
+            setVar('--pe-grid-dot-spacing', `${style.grid.dotSpacing || 20}px`);
+        }
     }
 
     init() {
+        // ... The init() method and all other logic remains exactly the same ...
+        // It will now benefit from the styles applied in the constructor.
         let controlPanel = this.container.querySelector('.control-panel');
         let editorEl = this.container.querySelector('[contenteditable="true"]');
 
@@ -44,15 +100,12 @@ class PythraMarkdownEditor {
                 toggleBtn = document.createElement('button');
                 toggleBtn.id = `toggleControls_${this.options.instanceId || ''}`;
                 toggleBtn.className = 'pythra-toggle-button';
-                // Prepend the button so it's always at the top
                 this.container.prepend(toggleBtn);
                 
                 controlPanel = this.createControlPanel();
-                // Insert after the toggle button
                 toggleBtn.insertAdjacentElement('afterend', controlPanel);
             }
             
-            // --- THIS IS THE FINAL FIX FOR PRESERVING HIDDEN STATE ---
             if (this.options.controlsInitiallyHidden && !controlPanel.classList.contains('hidden')) {
                 controlPanel.classList.add('hidden');
             } else if (!this.options.controlsInitiallyHidden && controlPanel.classList.contains('hidden')) {
@@ -88,15 +141,9 @@ class PythraMarkdownEditor {
             this.editorElement.innerHTML = this.options.initialContent;
         }
 
-        // --- NEW: Apply the grid class based on the option ---
         if (this.editorElement) {
-            if (this.options.showGrid) {
-                this.editorElement.classList.add('grid-background');
-            } else {
-                this.editorElement.classList.remove('grid-background');
-            }
+            this.editorElement.classList.toggle('grid-background', this.options.showGrid);
         }
-        // --- END NEW LOGIC ---
 
         this._setupChangeHandler();
         this._setupVisualFeedbackHandlers();
@@ -104,6 +151,8 @@ class PythraMarkdownEditor {
         if (this.imageResizer) this.imageResizer.destroy();
         this.imageResizer = new PythraImageResizer(this.editorElement);
     }
+
+    // ... createControlPanel, createButton, etc. are all correct ...
 
     createControlPanel() {
         const panel = document.createElement('div');
@@ -207,7 +256,44 @@ class PythraMarkdownEditor {
             this.editorElement.addEventListener(eventType, this._feedbackHandler);
         });
     }
-
+    
+    // --- MODIFIED: injectStyles now uses CSS variables ---
+    injectStyles() {
+        const style = document.createElement('style');
+        style.id = 'pythra-editor-styles';
+        style.textContent = `
+            :root{
+                --pe-accent-color: #007aff; --pe-accent-hover: #005bb5;
+                --pe-border-color: #dee2e6; --pe-border-radius: 6px; --pe-border-width: 1px;
+                --pe-focus-ring-color: rgba(0,122,255,0.25); --pe-focus-ring-width: 3px;
+                --pe-toolbar-bg: #f1f3f5; --pe-toolbar-hover: #e9ecef; --pe-toolbar-active: #007aff; --pe-toolbar-icon: #212529;
+                --pe-content-bg: #ffffff; --pe-content-text: #212529;
+                --pe-content-font: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+                --pe-content-font-size: 16px; --pe-content-line-height: 1.7; --pe-content-padding: 1.5rem;
+                --pe-content-placeholder: #6c757d;
+                --pe-grid-dot-color: #D3D3D3; --pe-grid-dot-size: 1px; --pe-grid-dot-spacing: 20px;
+            }
+            .pythra-editor-wrapper{box-sizing:border-box;display:flex;flex-direction:column;background:var(--pe-content-bg);border:var(--pe-border-width) solid var(--pe-border-color);border-radius:var(--pe-border-radius);box-shadow:0 4px 12px rgba(0,0,0,0.05);}
+            .pythra-editor-wrapper [contenteditable]{color: var(--pe-content-text); font-family:var(--pe-content-font); font-size: var(--pe-content-font-size); line-height: var(--pe-content-line-height); padding: var(--pe-content-padding); flex-grow:1;min-height:150px;border-top:1px solid var(--pe-border-color);outline:none;overflow-y:auto;}
+            .pythra-editor-wrapper [contenteditable]:focus{border-color:var(--pe-accent-color) !important;box-shadow:0 0 0 var(--pe-focus-ring-width) var(--pe-focus-ring-color)}
+            .pythra-editor-wrapper [contenteditable]:empty:before{content:"Start writing...";color:var(--pe-content-placeholder);font-style:italic}
+            .pythra-editor-wrapper .pythra-toggle-button{flex-shrink:0;width:100%;padding:0.75rem;font-size:1rem;font-weight:600;color:white;background-color:var(--pe-accent-color);border:none;border-radius:var(--pe-border-radius) var(--pe-border-radius) 0 0;cursor:pointer;transition:background-color 0.2s ease;}
+            .pythra-editor-wrapper .pythra-toggle-button:hover{background-color:var(--pe-accent-hover)}
+            .control-panel{flex-shrink:0;background:var(--pe-toolbar-bg);padding:1rem;display:flex;flex-direction:column;gap:1rem;transition:all 0.3s ease-in-out;max-height:1000px;opacity:1;overflow:hidden;}
+            .control-panel.hidden{max-height:0;padding-top:0;padding-bottom:0;opacity:0;}
+            .control-group{display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center}
+            .control-panel button,.control-panel select,.control-panel input[type="color"]{color:var(--pe-toolbar-icon); font-family:var(--pe-content-font);font-size:0.9rem;padding:0.5rem 0.75rem;background:var(--pe-content-bg);border:1px solid var(--pe-border-color);border-radius:var(--pe-border-radius);cursor:pointer;transition:all 0.2s ease;}
+            .control-panel button:hover,.control-panel select:hover{background:var(--pe-toolbar-hover)}
+            .control-panel button.active{background-color:var(--pe-toolbar-active);color:white;border-color:var(--pe-accent-hover)}
+            .control-panel select:focus{border-color:var(--pe-accent-color);box-shadow:0 0 0 var(--pe-focus-ring-width) var(--pe-focus-ring-color);background-color:var(--pe-content-bg);}
+            .pythra-image-resizer-wrapper{position:absolute;border:2px solid var(--pe-accent-color);pointer-events:none;}
+            .pythra-resize-handle{position:absolute;width:10px;height:10px;background-color:var(--pe-accent-color);border:1px solid white;border-radius:50%;pointer-events:auto;}
+            .pythra-editor-wrapper [contenteditable].grid-background {background-image:radial-gradient(var(--pe-grid-dot-color) var(--pe-grid-dot-size), transparent 0); background-size: var(--pe-grid-dot-spacing) var(--pe-grid-dot-spacing);}
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // ... (rest of the class and file are correct) ...
     updateButtonStates() {
         ['bold', 'italic', 'underline', 'strikeThrough'].forEach(command => {
             const button = document.getElementById(`btn-${command}_${this.options.instanceId}`);
@@ -217,43 +303,7 @@ class PythraMarkdownEditor {
             } catch (e) { /* This can safely fail if editor is not focused */ }
         });
     }
-    
-    injectStyles() {
-        const style = document.createElement('style');
-        style.id = 'pythra-editor-styles';
-        style.textContent = `
-            :root{--pe-color-primary:#007aff;--pe-color-primary-dark:#005bb5;--pe-color-surface:#ffffff;--pe-color-border:#dee2e6;--pe-color-text:#212529;--pe-color-text-muted:#6c757d;--pe-font-stack:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--pe-border-radius:6px;}
-            .pythra-editor-wrapper{box-sizing:border-box;display:flex;flex-direction:column;background:var(--pe-color-surface);border:1px solid var(--pe-color-border);border-radius:var(--pe-border-radius);box-shadow:0 4px 12px rgba(0,0,0,0.05);}
-            .pythra-editor-wrapper [contenteditable]{font-family:var(--pe-font-stack);flex-grow:1;min-height:150px;border-top:1px solid var(--pe-color-border);padding:1.5rem;line-height:1.7;outline:none;overflow-y:auto;}
-            .pythra-editor-wrapper [contenteditable]:focus{border-color:var(--pe-color-primary) !important;box-shadow:0 0 0 3px rgba(0,122,255,0.25)}
-            .pythra-editor-wrapper [contenteditable]:empty:before{content:"Start writing...";color:var(--pe-color-text-muted);font-style:italic}
-            .pythra-editor-wrapper .pythra-toggle-button{flex-shrink:0;width:100%;padding:0.75rem;font-size:1rem;font-weight:600;color:white;background-color:var(--pe-color-primary);border:none;border-radius:var(--pe-border-radius) var(--pe-border-radius) 0 0;cursor:pointer;transition:background-color 0.2s ease;}
-            .pythra-editor-wrapper .pythra-toggle-button:hover{background-color:var(--pe-color-primary-dark)}
-            .control-panel{flex-shrink:0;background:#f1f3f5;padding:1rem;display:flex;flex-direction:column;gap:1rem;transition:all 0.3s ease-in-out;max-height:1000px;opacity:1;overflow:hidden;}
-            .control-panel.hidden{max-height:0;padding-top:0;padding-bottom:0;opacity:0;}
-            .control-group{display:flex;flex-wrap:wrap;gap:0.5rem;align-items:center}
-            .control-panel button,.control-panel select,.control-panel input[type="color"]{font-family:var(--pe-font-stack);font-size:0.9rem;padding:0.5rem 0.75rem;background:var(--pe-color-surface);border:1px solid var(--pe-color-border);border-radius:var(--pe-border-radius);cursor:pointer;transition:background-color 0.2s ease,border-color 0.2s ease, box-shadow 0.2s ease;}
-            .control-panel button:hover,.control-panel select:hover{background:#e9ecef}
-            .control-panel button.active{background-color:var(--pe-color-primary);color:white;border-color:var(--pe-color-primary-dark)}
-            .control-panel select{-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.5rem center;background-size:1em;padding-right:2rem;}
-            .control-panel select:focus{border-color:var(--pe-color-primary);box-shadow:0 0 0 3px rgba(0,122,255,0.25);background-color:var(--pe-color-surface);}
-            .control-panel input[type="color"]{padding:0.25rem;height:38px;min-width:40px;border:1px solid var(--pe-color-border);background:transparent}
-            .pythra-image-resizer-wrapper{position:absolute;border:2px solid var(--pe-color-primary);pointer-events:none;}
-            .pythra-resize-handle{position:absolute;width:10px;height:10px;background-color:var(--pe-color-primary);border:1px solid white;border-radius:50%;pointer-events:auto;}
-            .pythra-resize-handle.top-left{top:-6px;left:-6px;cursor:nwse-resize;}
-            .pythra-resize-handle.top-right{top:-6px;right:-6px;cursor:nesw-resize;}
-            .pythra-resize-handle.bottom-left{bottom:-6px;left:-6px;cursor:nesw-resize;}
-            .pythra-resize-handle.bottom-right{bottom:-6px;right:-6px;cursor:nwse-resize;}
-            /* --- NEW: CSS for the dotted grid background --- */
-            .pythra-editor-wrapper [contenteditable].grid-background {
-                /* Creates a repeating pattern of dots */
-                background-image: radial-gradient(circle, #D3D3D3 1px, rgba(0,0,0,0) 1px);
-                background-size: 20px 20px; /* Adjust these values to change dot spacing */
-            }
-        `;
-        document.head.appendChild(style);
-    }
-    
+
     execCommand(command, value = null) {
         if (!command) return;
         try {
@@ -288,7 +338,7 @@ class PythraMarkdownEditor {
         clearTimeout(this._changeTimer);
     }
 }
-
+// ... (rest of file)
 window.PythraMarkdownEditor = PythraMarkdownEditor;
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -332,7 +382,7 @@ class PythraImageResizer {
         
         this.wrapper = document.createElement('div');
         this.wrapper.className = 'pythra-image-resizer-wrapper';
-        // Append to editor's parent to avoid contenteditable issues
+        this.editor.parentNode.style.position = this.editor.parentNode.style.position || 'relative';
         this.editor.parentNode.appendChild(this.wrapper);
         this.positionWrapper();
         
@@ -357,10 +407,7 @@ class PythraImageResizer {
     positionWrapper() {
         if (!this.selectedImage || !this.wrapper) return;
         
-        // This needs to be relative to the parent of the editor now
         const editorParent = this.editor.parentNode;
-        this.editor.parentNode.style.position = this.editor.parentNode.style.position || 'relative';
-
         const imgRect = this.selectedImage.getBoundingClientRect();
         const parentRect = editorParent.getBoundingClientRect();
         
@@ -386,8 +433,6 @@ class PythraImageResizer {
         if (!this.startRect) return;
 
         const dx = e.clientX - this.startPos.x;
-        const dy = e.clientY - this.startPos.y;
-
         let newWidth = this.startRect.width;
         
         if (this.handlePosition.includes('right')) {

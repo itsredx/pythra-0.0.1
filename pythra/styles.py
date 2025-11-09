@@ -679,7 +679,7 @@ class BoxShadow:
 
 
 # --- ClipBehavior Refactored (Using Enum) ---
-class ClipBehavior(Enum):
+class ClipBehavior:
     """Specifies how content should be clipped."""
     NONE = 'none' # CSS overflow: visible (effectively)
     HARD_EDGE = 'hardEdge' # CSS overflow: hidden
@@ -1148,6 +1148,8 @@ class ButtonStyle:
                  disabledBackgroundColor: Optional[str] = None, # Background when disabled
                  disabledForegroundColor: Optional[str] = None, # Text/Icon when disabled
                  shadowColor: Optional[str] = None, # Color of elevation shadow
+                 hoverColor: Optional[str] = None,
+                 activeColor: Optional[str] = None,
                  # overlayColor: Optional[str] = None, # TODO: Handle hover/focus/pressed overlay (CSS :hover/:active or JS)
                  # --- Shape & Border ---
                  elevation: Optional[float] = None, # Shadow depth (used to generate BoxShadow)
@@ -1186,6 +1188,8 @@ class ButtonStyle:
         self.disabledBackgroundColor = disabledBackgroundColor
         self.disabledForegroundColor = disabledForegroundColor
         self.shadowColor = shadowColor
+        self.hoverColor = hoverColor
+        self.activeColor = activeColor
         self.elevation = elevation
         self.padding = padding
         self.margin = margin
@@ -1204,6 +1208,8 @@ class ButtonStyle:
         styles = {}
         if self.backgroundColor: styles['background-color'] = self.backgroundColor
         if self.foregroundColor: styles['color'] = self.foregroundColor # Applies to text/icon color usually
+        if self.hoverColor: styles['hover-color'] = self.hoverColor
+        if self.activeColor: styles['active-color'] = self.activeColor
         # Disabled colors handled by specific .disabled class rules, not here directly
 
         # --- Shadow ---
@@ -1240,6 +1246,7 @@ class ButtonStyle:
             styles['border'] = 'none'
 
         if self.shape:
+            print("Shape value in btnStyle: ", self.shape.to_css_value())
             if isinstance(self.shape, BorderRadius):
                 styles['border-radius'] = self.shape.to_css_value()
             elif isinstance(self.shape, (int, float)):
@@ -1279,6 +1286,8 @@ class ButtonStyle:
                 self.disabledBackgroundColor == other.disabledBackgroundColor and
                 self.disabledForegroundColor == other.disabledForegroundColor and
                 self.shadowColor == other.shadowColor and
+                self.hoverColor == other.hoverColor and
+                self.activeColor == other.activeColor and
                 self.elevation == other.elevation and
                 self.padding == other.padding and
                 self.margin == other.margin and
@@ -1295,7 +1304,7 @@ class ButtonStyle:
         return hash((
             self.backgroundColor, self.foregroundColor,
             self.disabledBackgroundColor, self.disabledForegroundColor,
-            self.shadowColor, self.elevation, self.padding, self.margin,
+            self.shadowColor, self.hoverColor, self.activeColor, self.elevation, self.padding, self.margin,
             self.minimumSize, self.maximumSize, # Tuples are hashable
             self.side, self.shape, self.textStyle, self.alignment
         ))
@@ -1305,7 +1314,7 @@ class ButtonStyle:
         props = []
         # Add checks to show only non-default/non-None values
         attrs = ['backgroundColor', 'foregroundColor', 'disabledBackgroundColor', 'disabledForegroundColor',
-                 'shadowColor', 'elevation', 'padding', 'margin','minimumSize', 'maximumSize',
+                 'shadowColor', 'hoverColor', 'activeColor', 'elevation', 'padding', 'margin','minimumSize', 'maximumSize',
                  'side', 'shape', 'textStyle', 'alignment']
         for attr in attrs:
             value = getattr(self, attr)
@@ -1321,7 +1330,7 @@ class ButtonStyle:
         return {attr: getattr(self, attr).to_dict() if hasattr(getattr(self, attr), 'to_dict') else getattr(self, attr)
                 for attr in [
                     'backgroundColor', 'foregroundColor', 'disabledBackgroundColor', 'disabledForegroundColor',
-                    'shadowColor', 'elevation', 'padding', 'margin', 'minimumSize', 'maximumSize',
+                    'shadowColor', 'hoverColor', 'activeColor', 'elevation', 'padding', 'margin', 'minimumSize', 'maximumSize',
                     'side', 'shape', 'textStyle', 'alignment'
                 ] if getattr(self, attr) is not None}
 
@@ -1331,7 +1340,7 @@ class ButtonStyle:
          return tuple(getattr(self, attr).to_tuple() if hasattr(getattr(self, attr), 'to_tuple') else getattr(self, attr)
                       for attr in [
                           'backgroundColor', 'foregroundColor', 'disabledBackgroundColor', 'disabledForegroundColor',
-                          'shadowColor', 'elevation', 'padding', 'margin', 'minimumSize', 'maximumSize',
+                          'shadowColor', 'hoverColor', 'activeColor', 'elevation', 'padding', 'margin', 'minimumSize', 'maximumSize',
                           'side', 'shape', 'textStyle', 'alignment'
                       ])
 
@@ -2004,7 +2013,12 @@ class DropdownTheme:
         self,
         backgroundColor=Colors.hex("#FFFFFF"),
         borderColor=Colors.hex("#AAAAAA"),
+        hoverColor=Colors.rgba(0, 0, 0, 0.1),
+        dropdownHoverColor=Colors.rgba(0, 0, 0, 0.08),
+        itemHoverColor=Colors.rgba(103, 80, 164, 0.1),
         width = "100%",
+        height = "auto",
+        dropDownHeight = "auto",
         borderWidth=1.0,
         borderRadius=8.0,
         textColor=Colors.hex("#000000"),
@@ -2019,7 +2033,12 @@ class DropdownTheme:
     ):
         self.backgroundColor = backgroundColor
         self.borderColor = borderColor
+        self.hoverColor = hoverColor
+        self.dropdownHoverColor = dropdownHoverColor
+        self.itemHoverColor = itemHoverColor
         self.width = width
+        self.height = height
+        self.dropDownHeight = dropDownHeight
         self.borderWidth = borderWidth
         self.borderRadius = borderRadius
         self.textColor = textColor

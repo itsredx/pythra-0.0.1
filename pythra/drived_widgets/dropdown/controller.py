@@ -10,7 +10,7 @@ class DerivedDropdownController:
     def __init__(self, value=None, items: Optional[List[str]] = None):
         self.value = value
         self.items = items or []
-        print("Items: ", self.items)
+        # print("Items: ", self.items)
         self._listeners = []
 
     def set_value(self, new_value: str):
