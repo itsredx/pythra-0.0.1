@@ -167,7 +167,16 @@ class FilteredOutput:
             return  # 🚫 SUPPRESS: Don't print this message
         
         # ✅ ALLOW: Message is clean, pass it to the original stream
-        self.original_stream.write(message)
+        try:
+            self.original_stream.write(message)
+        except UnicodeEncodeError:
+            # If encoding fails (e.g., on Windows with CP1252), encode with errors='replace'
+            try:
+                encoded = message.encode(self.original_stream.encoding or 'utf-8', errors='replace').decode(self.original_stream.encoding or 'utf-8', errors='replace')
+                self.original_stream.write(encoded)
+            except Exception:
+                # Last resort: strip non-ASCII and write
+                self.original_stream.write(message.encode('ascii', errors='replace').decode('ascii'))
     
     def flush(self):
         """

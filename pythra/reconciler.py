@@ -61,6 +61,7 @@ only those elements, leaving everything else untouched.
 import uuid
 import html
 import json
+import sys
 from typing import Any, Dict, List, Optional, Tuple, Union, Callable, Literal
 from dataclasses import dataclass, field
 from collections import defaultdict
@@ -859,4 +860,522 @@ class Reconciler:
             self._external_js_init_queue[context_key] = [i for i in q if i.get("_id") != initializer_id]
             return True
         return False
+
+
+# --- Optional: Runtime adapter to use the Rust reconciler as a drop-in replacement ---
+# If the compiled `rust_reconciler` extension is available, this adapter will
+# delegate calls to it and normalize the result to the Python `ReconciliationResult`
+# so the rest of the Python codebase can use the same API without changes.
+try:
+    import rust_reconciler
+    _RUST_AVAILABLE = True
+except Exception:
+    rust_reconciler = None
+    _RUST_AVAILABLE = False
+
+
+if _RUST_AVAILABLE:
+    class RustReconcilerAdapter:
+        """A thin adapter that exposes the same `Reconciler` API as the
+        Python implementation but delegates to the compiled Rust extension.
+        """
+
+        def __init__(self):
+            # detect whether the extension exposes a Reconciler class or a module-level function
+            if hasattr(rust_reconciler, "Reconciler"):
+                self._impl = rust_reconciler.Reconciler()
+                self._use_class = True
+            else:
+                # module-level function: reconcile(old_tree_py, new_tree_py)
+                self._impl = rust_reconciler.reconcile
+                self._use_class = False
+            # Also capture the module-level reconcile if present (safe dict-based API)
+            self._module_reconcile = getattr(rust_reconciler, "reconcile", None)
+        
+        def is_available(self) -> bool:
+            return True
+
+        def get_map_for_context(self, context_key: str):
+            # Check if we have a cached context_maps attribute (set by Framework during initial render)
+            if hasattr(self, "context_maps") and isinstance(self.context_maps, dict):
+                return self.context_maps.get(context_key, {})
+            
+            # best-effort: Rust implementation manages its own contexts; if class available, delegate
+            if self._use_class and hasattr(self._impl, "get_map_for_context"):
+                return self._impl.get_map_for_context(context_key)
+            return {}
+
+        def clear_context(self, context_key: str):
+            if self._use_class and hasattr(self._impl, "clear_context"):
+                return self._impl.clear_context(context_key)
+
+        def clear_all_contexts(self):
+            if self._use_class and hasattr(self._impl, "clear_all_contexts"):
+                return self._impl.clear_all_contexts()
+
+        def _generate_html_stub(self, widget: "Widget", html_id: str, props: Dict) -> str:
+            """Generate HTML for a widget using the Rust helper when available.
+
+            The Rust extension may provide either a module-level `generate_html_stub`
+            helper or a method on the `Reconciler` class instance. Try those first
+            for performance parity. If neither is available or calling them fails,
+            fall back to the original Python implementation that lives above in
+            this module (we call the same logic as the Python Reconciler did).
+            """
+            # Try class-backed implementation
+            try:
+                if self._use_class and hasattr(self._impl, "generate_html_stub"):
+                    result = self._impl.generate_html_stub(widget, html_id, props)
+                    return result
+
+                # Try module-level helper
+                gen = getattr(rust_reconciler, "generate_html_stub", None)
+                if gen is not None:
+                    result = gen(widget, html_id, props)
+                    print(f"DEBUG: rust_reconciler.generate_html_stub returned: {result[:100] if result else 'None'}")
+                    return result
+            except Exception as e:
+                # Ignore and fall back to Python implementation below
+                print(f"DEBUG: Rust stub generator failed: {type(e).__name__}: {e}")
+                import traceback
+                traceback.print_exc()
+
+            # Fallback: replicate the same behavior as the Python Reconciler's
+            # `_generate_html_stub` method defined earlier in this module. We
+            # call that method by creating a temporary Python Reconciler instance
+            # to reuse its implementation.
+            try:
+                # The original Python Reconciler class is defined earlier in this
+                # file under the name `Reconciler` prior to the adapter override.
+                # Import it by its original qualified name via the module's globals.
+                OriginalReconciler = globals().get("Reconciler")
+                if OriginalReconciler and hasattr(OriginalReconciler, "_generate_html_stub"):
+                    # Instantiate a throwaway Reconciler to reuse the method implementation
+                    temp = OriginalReconciler.__new__(OriginalReconciler)
+                    # Call the unbound method with the temp as self
+                    return OriginalReconciler._generate_html_stub(temp, widget, html_id, props)
+            except Exception:
+                pass
+
+            # As a final safety net produce a minimal stub
+            tag = getattr(type(widget), "__name__", "div")
+            return f'<div id="{html_id}" class="{props.get("css_class", "")}"></div>'
+
+        def _get_widget_render_tag(self, widget: "Widget") -> str:
+            """Delegate to the original Python reconciler's tag resolver."""
+            OriginalReconciler = globals().get("Reconciler")
+            try:
+                if OriginalReconciler and hasattr(OriginalReconciler, "_get_widget_render_tag"):
+                    temp = OriginalReconciler.__new__(OriginalReconciler)
+                    return OriginalReconciler._get_widget_render_tag(temp, widget)
+            except Exception:
+                pass
+            # Basic fallback
+            return getattr(type(widget), "__name__", "div")
+
+        def _diff_props(self, old_props: Dict, new_props: Dict) -> Optional[Dict]:
+            """Delegate property diffing to the original implementation."""
+            OriginalReconciler = globals().get("Reconciler")
+            try:
+                if OriginalReconciler and hasattr(OriginalReconciler, "_diff_props"):
+                    temp = OriginalReconciler.__new__(OriginalReconciler)
+                    return OriginalReconciler._diff_props(temp, old_props, new_props)
+            except Exception:
+                pass
+            # Naive fallback
+            changes = {}
+            all_keys = set(old_props.keys()) | set(new_props.keys())
+            for k in all_keys:
+                if old_props.get(k) != new_props.get(k):
+                    changes[k] = new_props.get(k)
+            return changes or None
+
+        def _collect_details(self, widget, props, result):
+            """Collect CSS, callbacks and other details via Python implementation."""
+            OriginalReconciler = globals().get("Reconciler")
+            try:
+                if OriginalReconciler and hasattr(OriginalReconciler, "_collect_details"):
+                    temp = OriginalReconciler.__new__(OriginalReconciler)
+                    return OriginalReconciler._collect_details(temp, widget, props, result)
+            except Exception:
+                pass
+            return None
+
+        def reconcile(
+            self,
+            previous_map: Dict,
+            new_widget_root: Optional["Widget"],
+            parent_html_id: str,
+            old_root_key: Optional[Union[Key, str]] = None,
+            is_partial_reconciliation: bool = False,
+        ) -> ReconciliationResult:
+            # Normalize previous_map
+            old_map = previous_map or {}
+
+            if self._use_class:
+                # Ensure keys and certain nested fields are converted to strings so the Rust side
+                # (which expects JSON-serializable dicts with string keys) can accept them.
+                def _prepare_map_for_rust(m: Dict) -> Dict:
+                    if not isinstance(m, dict):
+                        return {}
+                    out = {}
+                    # Helper to sanitize props into JSON-safe values
+                    def _sanitize_value(val):
+                        import inspect
+                        import json
+                        
+                        # Basic types are JSON-serializable
+                        if val is None or isinstance(val, (str, int, float, bool)):
+                            return val
+                        
+                        # Check if it's ANY kind of callable (functions, methods, lambdas, etc)
+                        if callable(val) or inspect.ismethod(val) or inspect.isfunction(val) or inspect.isbuiltin(val):
+                            return None
+                        
+                        # Lists/tuples: sanitize elements
+                        if isinstance(val, (list, tuple)):
+                            return [_sanitize_value(v) for v in val]
+                        
+                        # Dicts: sanitize keys and values recursively
+                        if isinstance(val, dict):
+                            return {str(k): _sanitize_value(v) for k, v in val.items()}
+                        
+                        # Try to JSON serialize - this is the final test
+                        try:
+                            json.dumps(val)
+                            return val
+                        except (TypeError, ValueError):
+                            # Not JSON-serializable, convert to string
+                            return str(val) if val is not None else None
+                    def _stringify_key(obj):
+                        # Prefer an explicit __str_key__ hook if present
+                        try:
+                            hook = getattr(obj, "__str_key__", None)
+                            if callable(hook):
+                                return hook()
+                        except Exception:
+                            pass
+
+                        # Fall back to value attribute if present (common Key implementations)
+                        try:
+                            if hasattr(obj, "value"):
+                                print("Key value: ", str(obj.value))
+                                return str(obj.value)
+                        except Exception:
+                            pass
+
+                        # Last resort: use str()
+                        try:
+                            return str(obj)
+                        except Exception:
+                            return repr(obj)
+
+                    for k, v in m.items():
+                        ks = _stringify_key(k)
+
+                        if isinstance(v, dict):
+                            nv = {}
+                            for nk, nv_val in v.items():
+                                # convert embedded keys used by the reconciler
+                                if nk in ("key", "parent_key"):
+                                    # Rust expects string values for these fields. Convert None -> ""
+                                    # and stringify any non-str keys to avoid passing NoneType to Rust.
+                                    if nv_val is None:
+                                        nv[nk] = ""
+                                    elif isinstance(nv_val, str):
+                                        nv[nk] = nv_val
+                                    else:
+                                        nv[nk] = _stringify_key(nv_val)
+                                elif nk == "widget_instance":
+                                    # Do not pass live Python objects to Rust; use null
+                                    nv[nk] = None
+                                elif nk == "props":
+                                    # Sanitize props dict to JSON-safe values
+                                    try:
+                                        if isinstance(nv_val, dict):
+                                            nv[nk] = {str(pk): _sanitize_value(pv) for pk, pv in nv_val.items()}
+                                        else:
+                                            nv[nk] = _sanitize_value(nv_val)
+                                    except Exception:
+                                        nv[nk] = {}
+                                else:
+                                    # Sanitize generic values to avoid method/function serialization
+                                    try:
+                                        nv[nk] = _sanitize_value(nv_val)
+                                    except Exception:
+                                        nv[nk] = None
+                            out[ks] = nv
+                        else:
+                            # Non-dict entries in the map are unexpected; coerce to safe empty dict
+                            out[ks] = {}
+                    return out
+                    # Quick self-check: ensure the prepared map is JSON-serializable.
+                    try:
+                        import json as _json
+                        _json.dumps(out)
+                    except Exception as _e:
+                        # Attempt to find the first non-serializable entry for diagnostics
+                        def _find_bad(path, val):
+                            if val is None or isinstance(val, (str, int, float, bool)):
+                                return None
+                            if isinstance(val, (list, tuple)):
+                                for i, v in enumerate(val):
+                                    res = _find_bad(f"{path}[{i}]", v)
+                                    if res:
+                                        return res
+                                return None
+                            if isinstance(val, dict):
+                                for k, v in val.items():
+                                    res = _find_bad(f"{path}.{k}", v)
+                                    if res:
+                                        return res
+                                return None
+                            return (path, type(val).__name__)
+
+                        bad = _find_bad("root", out)
+                        print("Sanitizer: json.dumps failed when preparing map for Rust:", _e)
+                        print("Sanitizer: first non-serializable entry:", bad)
+                        # fall through and return out anyway; diagnostics will be in logs
+
+                rust_old_map = _prepare_map_for_rust(old_map)
+
+                # For safety prefer the dict-based module reconcile when possible.
+                # This avoids passing Python widget instances (which may return Key objects)
+                # into Rust's `extract::<String>()` calls.
+                if self._module_reconcile is not None:
+                    # synthesize a minimal new_map from the Python widget tree (stringify keys)
+                    if new_widget_root is None:
+                        rust_new_map = {}
+                    elif isinstance(new_widget_root, dict):
+                        rust_new_map = _prepare_map_for_rust(new_widget_root)
+                    else:
+                        # walk the root widget and create a basic node entry
+                        try:
+                            root_key = new_widget_root.get_unique_id()
+                        except Exception:
+                            root_key = "root"
+                        try:
+                            props = new_widget_root.render_props()
+                        except Exception:
+                            props = {}
+
+                        rust_new_map = {
+                            str(root_key): {
+                                "html_id": "fw_id_adapter",
+                                "widget_type": getattr(new_widget_root, "__class__", type(new_widget_root)).__name__,
+                                "key": str(root_key),
+                                "widget_instance": None,
+                                "props": props,
+                                "parent_html_id": parent_html_id,
+                                "parent_key": None,
+                                "children_keys": [],
+                            }
+                        }
+
+                    # Sanitize the synthesized new map before passing to the Rust module
+                    try:
+                        rust_new_map = _prepare_map_for_rust(rust_new_map)
+                    except Exception:
+                        # Fallback: ensure it's at least a dict of strings
+                        rust_new_map = {str(k): {} for k in rust_new_map.keys()}
+
+                    rust_result = self._module_reconcile(rust_old_map, rust_new_map)
+                else:
+                    # Fallback: call the class method, attempting to sanitize widget ids
+                    # NOTE: Widget.render_props is already patched globally to return sanitized props
+                    rust_new_widget = new_widget_root
+                    try:
+                        uniq = None
+                        if rust_new_widget is not None:
+                            uniq = rust_new_widget.get_unique_id()
+                        if uniq is not None and not isinstance(uniq, str):
+                            uniq_str = _prepare_map_for_rust({uniq: None})
+                            if isinstance(uniq_str, dict):
+                                uniq_str = next(iter(uniq_str.keys()))
+                            else:
+                                uniq_str = str(uniq)
+
+                            class _WidgetProxy:
+                                def __init__(self, w, ks):
+                                    self._w = w
+                                    self._ks = ks
+
+                                def get_unique_id(self):
+                                    return self._ks
+
+                                def __getattr__(self, name):
+                                    return getattr(self._w, name)
+
+                            rust_new_widget = _WidgetProxy(new_widget_root, uniq_str)
+                    except Exception as e:
+                        print(f"DEBUG: _WidgetProxy creation failed: {e}")
+                        rust_new_widget = new_widget_root
+
+                    print("rust_new_widget key:", rust_new_widget.get_unique_id() if rust_new_widget else 'None')
+                    print("rust_old_map keys:", list(rust_old_map.keys()))
+                    print("parent_html_id:", parent_html_id)
+                    print("is_partial_reconciliation:", is_partial_reconciliation)
+                    print("old_root_key:", old_root_key)
+
+                    rust_result = self._impl.reconcile(rust_old_map, rust_new_widget, parent_html_id, is_partial_reconciliation, old_root_key)
+                # The Rust class implementation returns a mapping-like object with keys similar to the Python one
+                return _convert_rust_result_to_py(rust_result)
+
+            # Module-level function case: expects two dict-like maps and returns either a list of patches or a dict
+            if new_widget_root is None:
+                new_map = {}
+            elif isinstance(new_widget_root, dict):
+                new_map = new_widget_root
+            else:
+                # Synthesize a minimal new_map entry from the Python widget object
+                try:
+                    key = new_widget_root.get_unique_id()
+                    props = new_widget_root.render_props()
+                except Exception:
+                    # If we can't extract widget shape, fall back to empty map
+                    key = "root"
+                    props = {}
+
+                new_map = {
+                    key: {
+                        "html_id": "fw_id_adapter",
+                        "widget_type": getattr(new_widget_root, "__class__", type(new_widget_root)).__name__,
+                        "key": key,
+                        "widget_instance": None,
+                        "props": props,
+                        "parent_html_id": parent_html_id,
+                        "parent_key": None,
+                        "children_keys": [],
+                    }
+                }
+
+            out = self._impl(old_map, new_map)
+            return _convert_rust_result_to_py(out)
+
+
+    def _convert_rust_result_to_py(raw):
+        """Normalize what the Rust extension returns into the Python
+        ReconciliationResult dataclass used by the codebase.
+
+        The Rust side may return:
+        - a list of patch dicts (module-level `reconcile`), or
+        - a mapping-like object with keys: 'patches', 'new_rendered_map',
+          'active_css_details', 'registered_callbacks', 'js_initializers'
+        """
+        try:
+            from collections.abc import Mapping
+        except Exception:
+            Mapping = dict
+
+        if isinstance(raw, list):
+            patches = []
+            for p in raw:
+                try:
+                    patches.append(Patch(action=p.get("action"), html_id=p.get("html_id"), data=p.get("data", {})))
+                except Exception:
+                    # best-effort: skip malformed entries
+                    continue
+            return ReconciliationResult(patches=patches)
+
+        if isinstance(raw, Mapping):
+            patches_raw = raw.get("patches", [])
+            patches = []
+            for p in patches_raw:
+                try:
+                    patches.append(Patch(action=p.get("action"), html_id=p.get("html_id"), data=p.get("data", {})))
+                except Exception:
+                    continue
+
+            new_map = raw.get("new_rendered_map", {})
+
+            result_kwargs = {"patches": patches}
+            # If the ReconciliationResult dataclass contains new_rendered_map, include it
+            if "new_rendered_map" in ReconciliationResult.__annotations__:
+                result_kwargs["new_rendered_map"] = new_map
+
+            # === DEBUG: Print what we got from Rust ===
+            print(f"\n=== DEBUG: Rust returned new_rendered_map with {len(new_map)} entries ===")
+            for key in list(new_map.keys())[:5]:
+                print(f"  Key: {key}, HTML len: {len(new_map[key].get('html', ''))}")
+            print("=== END DEBUG ===\n")
+
+            # Convert active_css_details (class -> (generator_callable, style_key))
+            active_css_raw = raw.get("active_css_details", {}) or {}
+            active_css = {}
+            try:
+                for css_class, val in active_css_raw.items():
+                    # val is expected to be a 2-tuple (callable, style_key)
+                    try:
+                        gen_callable, style_key = val
+                        active_css[css_class] = (gen_callable, style_key)
+                    except Exception:
+                        # best-effort: skip invalid entries
+                        continue
+            except Exception:
+                active_css = {}
+
+            if "active_css_details" in ReconciliationResult.__annotations__:
+                # If Rust didn't provide active_css_details, try to synthesize them
+                # from the returned new_rendered_map by inspecting widget instances
+                if active_css:
+                    result_kwargs["active_css_details"] = active_css
+                else:
+                    fallback_css = {}
+                    try:
+                        for node in new_map.values():
+                            try:
+                                props = node.get("props", {}) or {}
+                                css_list = (props.get("css_class", "") or "").split()
+                                widget_instance = node.get("widget_instance")
+                                if not widget_instance:
+                                    continue
+                                for css_class in css_list:
+                                    if not css_class:
+                                        continue
+                                    if css_class in fallback_css:
+                                        continue
+                                    # Prefer class-level generator if available
+                                    gen = None
+                                    style_key = None
+                                    try:
+                                        wt = type(widget_instance)
+                                        if hasattr(wt, "generate_css_rule"):
+                                            gen = getattr(wt, "generate_css_rule")
+                                        if hasattr(widget_instance, "style_key"):
+                                            style_key = getattr(widget_instance, "style_key")
+                                    except Exception:
+                                        gen = None
+                                        style_key = None
+                                    if gen and style_key is not None:
+                                        fallback_css[css_class] = (gen, style_key)
+                            except Exception:
+                                continue
+                    except Exception:
+                        fallback_css = {}
+                    result_kwargs["active_css_details"] = fallback_css
+
+            # Registered callbacks (string -> callable)
+            callbacks_raw = raw.get("registered_callbacks", {}) or {}
+            callbacks = {}
+            try:
+                for name, cb in callbacks_raw.items():
+                    try:
+                        callbacks[name] = cb
+                    except Exception:
+                        continue
+            except Exception:
+                callbacks = {}
+
+            if "registered_callbacks" in ReconciliationResult.__annotations__:
+                result_kwargs["registered_callbacks"] = callbacks
+
+            # JS initializers (list)
+            js_inits = raw.get("js_initializers", []) or []
+            if "js_initializers" in ReconciliationResult.__annotations__:
+                result_kwargs["js_initializers"] = list(js_inits)
+
+            return ReconciliationResult(**result_kwargs)
+
+    # Replace the module-level Reconciler name so other imports get the adapter transparently
+    Reconciler = RustReconcilerAdapter
 

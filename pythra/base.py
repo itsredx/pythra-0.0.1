@@ -68,7 +68,11 @@ class Key:
         return f"Key({self.value!r})"
 
     def __str_key__(self) -> str:
-        return self.value
+        # Always return a string representation of the underlying value so
+        # adapters and serializers (like the Rust reconciler) receive a
+        # predictable string key. This prevents passing raw Key or other
+        # non-string objects where a string key is expected.
+        return str(self.value)
 
 # =============================================================================
 # HASHABLE HELPER - The "Style Comparator" for PyThra

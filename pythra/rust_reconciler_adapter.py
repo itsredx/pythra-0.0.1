@@ -31,6 +31,36 @@ class RustReconcilerAdapter:
         """Check if the Rust reconciler is available."""
         return self._rust_mod is not None
 
+    def _generate_html_stub(self, widget: "Widget", html_id: str, props: Dict) -> str:
+        """Generate an HTML stub for a widget.
+
+        Prefer the Rust implementation when the compiled module exposes a helper.
+        Fall back to the framework's Python `_generate_html_stub` implementation
+        when the Rust helper is unavailable or fails.
+        """
+        # Try the rust module first (if it provides a helper function)
+        if self._rust_mod is not None:
+            try:
+                # Module-level helper (if exposed)
+                if hasattr(self._rust_mod, "generate_html_stub"):
+                    return self._rust_mod.generate_html_stub(widget, html_id, props)
+
+                # Some builds may expose a Reconciler class with helper methods
+                if hasattr(self._rust_mod, "Reconciler"):
+                    try:
+                        rust_reconciler = getattr(self._rust_mod, "Reconciler")()
+                        if hasattr(rust_reconciler, "generate_html_stub"):
+                            return rust_reconciler.generate_html_stub(widget, html_id, props)
+                    except Exception:
+                        # If instantiation or call fails, fall through to Python fallback
+                        pass
+            except Exception:
+                # Any unexpected error should fall back to Python implementation
+                pass
+
+        # Fallback: delegate to the Python Reconciler's HTML generator
+        return self.reconciler._generate_html_stub(widget, html_id, props)
+
     def _build_old_tree_map(self, previous_map: Dict) -> Dict:
         """Convert framework's previous_map to Rust-compatible old_tree format."""
         old_tree = {}

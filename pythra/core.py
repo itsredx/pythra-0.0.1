@@ -305,7 +305,19 @@ class Framework:
         self._result = result # Store the result
 
         # 3. Update framework state from the result
-        self.reconciler.context_maps["main"] = result.new_rendered_map
+        # The reconciler may be an adapter (RustReconcilerAdapter) which does
+        # not expose a `context_maps` attribute. Always force storing the map
+        # so downstream code can look up widgets during state updates.
+        try:
+            # Try direct attribute first (native Python reconciler)
+            self.reconciler.context_maps["main"] = result.new_rendered_map
+        except (AttributeError, TypeError):
+            # Adapter case: force attach context_maps to the adapter
+            # This ensures get_map_for_context() returns the same mutable dict
+            if not hasattr(self.reconciler, "context_maps"):
+                setattr(self.reconciler, "context_maps", {})
+            self.reconciler.context_maps["main"] = result.new_rendered_map
+            
         for cb_id, cb_func in result.registered_callbacks.items():
             self.api.register_callback(cb_id, cb_func)
 
@@ -317,8 +329,14 @@ class Framework:
         
         # 5. Generate initial HTML, CSS, and JS with optimized loading
         root_key = initial_tree_to_reconcile.get_unique_id() if initial_tree_to_reconcile else None
+        
+        # Convert Key to string if needed (Rust reconciler uses string keys)
+        if isinstance(root_key, Key):
+            root_key = root_key.value
+        
         html_content = self._generate_html_from_map(root_key, result.new_rendered_map)
         css_rules = self._generate_css_from_details(result.active_css_details)
+        print(f"initial css_rules: {css_rules}")
         js_script = self._generate_initial_js_script(result, required_engines)
 
         # 6. Write files
@@ -640,7 +658,9 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
                 continue
 
             widget_key = widget_to_rebuild.get_unique_id()
-            old_widget_data = main_context_map.get(widget_key)
+            # Convert Key to string for map lookup (Rust reconciler uses string keys)
+            widget_key_str = widget_key.value if isinstance(widget_key, Key) else str(widget_key)
+            old_widget_data = main_context_map.get(widget_key_str)
 
             parent_html_id = "root-container"
             if old_widget_data:
@@ -649,14 +669,14 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
                 print(f"Error: Could not find previous state for widget {widget_key}. A full rebuild may be required.")
                 continue
 
-            print(f"🔧 PyThra Framework | Updating: {widget_to_rebuild.__class__.__name__} (ID: {widget_key.__str_key__()[:8]}...)")
+            print(f"🔧 PyThra Framework | Updating: {widget_to_rebuild.__class__.__name__} (ID: {widget_key_str[:8]}...)")
 
             new_subtree = self._build_widget_tree(widget_to_rebuild)
             subtree_result = self.reconciler.reconcile(
                 previous_map=main_context_map,
                 new_widget_root=new_subtree,
                 parent_html_id=parent_html_id,
-                old_root_key=widget_key,
+                old_root_key=widget_key_str,
                 is_partial_reconciliation=True
             )
 
@@ -664,6 +684,12 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
             all_new_callbacks.update(subtree_result.registered_callbacks)
             all_active_css_details.update(subtree_result.active_css_details)
             main_context_map.update(subtree_result.new_rendered_map)
+            
+            # === DEBUG: Print new_rendered_map structure ===
+            print(f"\n=== DEBUG: subtree_result.new_rendered_map size: {len(subtree_result.new_rendered_map)} ===")
+            for key, data in list(subtree_result.new_rendered_map.items())[:3]:  # Print first 3
+                print(f"  Key: {key}, Widget Type: {data.get('widget_type', 'N/A')}, HTML len: {len(data.get('html', ''))}")
+            print("=== END DEBUG ===\n")
             
             # --- NEW: Analyze this subtree and aggregate required engines ---
             required_in_subtree = self._analyze_required_js_engines(new_subtree, subtree_result)
@@ -706,6 +732,24 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
         if combined_script:
             print(f"🛠️  PyThra Framework | Applying {len(all_patches)} UI changes to app...")
             print(f"📝 PyThra Framework | Patch Details: {[f'{p.action}({p.html_id[:8]}...)' for p in all_patches]}")
+            
+            # === DEBUG: Print full patch details ===
+            print("\n=== FULL PATCH DETAILS ===")
+            for i, patch in enumerate(all_patches):
+                print(f"\n[PATCH {i}] Action: {patch.action}, HTML ID: {patch.html_id}")
+                if patch.action == "INSERT":
+                    print(f"  Parent ID: {patch.data.get('parent_html_id')}")
+                    html_content = patch.data.get('html', '')
+                    print(f"  HTML Content ({len(html_content)} chars): {html_content[:500]}...")
+                    print(f"  Props: {patch.data.get('props', {})}")
+                else:
+                    print(f"  Data: {patch.data}")
+            print("=== END PATCH DETAILS ===\n")
+            
+            print("\n=== GENERATED JAVASCRIPT ===")
+            print(dom_patch_script[:2000])  # Print first 2000 chars
+            print("=== END JAVASCRIPT (truncated) ===\n")
+            
             self.window.evaluate_js(self.id, combined_script)
         else:
             print("✨ PyThra Framework | UI is up-to-date - No changes needed")
@@ -725,8 +769,10 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
         print("\n--- cProfile Report ---")
         print(s.getvalue())
         print("--- End of Report ---\n")
-        
+    
+    # --- Map Sanitization ---
     # --- Widget Tree Building ---
+
     def _build_widget_tree(self, widget: Optional[Widget]) -> Optional[Widget]:
         """
         The "Widget Tree Builder" - converts your nested widgets into a complete tree structure.
@@ -749,15 +795,15 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
             The same widget, but with all its children properly built and connected
             
         Example Widget Tree:
-        ```
-        Scaffold (StatelessWidget)
-        └─ Column (Regular Widget)
-            ├─ Text("Hello") (Regular Widget)
-            └─ Counter (StatefulWidget)
-                └─ Text("Count: 5") (Built from Counter's state)
-        ```
         
-        This method makes sure every widget in your tree is "ready to render".
+        Scaffold (StatelessWidget)
+        ─ Column (Regular Widget)
+            ─ Text("Hello") (Regular Widget)
+             - Counter (StatefulWidget)
+                ─ Text("Count: 5") (Built from Counter's state)
+        
+        
+        This method makes sure every widget in your tree is 'ready to render'.
         """
         if widget is None:
             return None
@@ -871,9 +917,43 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
             for child_key in node_data.get("children_keys", [])
         )
 
-        if ">" in stub and "</" in stub:
-            tag = self.reconciler._get_widget_render_tag(widget_instance)
+        # Determine the HTML tag for this widget in a RECONCILER-agnostic way.
+        # Some reconciler implementations (Rust) may not expose the Python
+        # `_get_widget_render_tag` behaviour, so compute it locally to avoid
+        # mismatches between the stub's closing tag and the expected tag.
+        try:
+            widget_type_name = type(widget_instance).__name__ if widget_instance is not None else ""
+            tag_map = {
+                "Text": "p",
+                "Image": "img",
+                "Icon": "i",
+                "Spacer": "div",
+                "SizedBox": "div",
+                "TextButton": "button",
+                "ElevatedButton": "button",
+                "IconButton": "button",
+                "FloatingActionButton": "button",
+                "SnackBarAction": "button",
+                "ListTile": "div",
+                "Divider": "div",
+                "Dialog": "div",
+                "AspectRatio": "div",
+                "ClipPath": "div",
+            }
+            if widget_type_name == "Icon" and getattr(widget_instance, "custom_icon_source", None):
+                tag = "img"
+            else:
+                tag = tag_map.get(widget_type_name, "div")
+
             closing_tag = f"</{tag}>"
+        except Exception:
+            closing_tag = "</div>"
+
+        # If the stub contains a closing tag AND children HTML was generated,
+        # inject the children into the stub (between opening and closing tags).
+        if ">" in stub and "</" in stub and len(children_html) > 0:
+            # Use the locally-computed closing_tag (already validated above)
+            # to avoid reconciler compatibility issues.
             if stub.endswith(closing_tag):
                 content_part = stub[: -len(closing_tag)]
                 return f"{content_part}{children_html}{closing_tag}"
@@ -898,6 +978,8 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
                 traceback.print_exc()
 
         print(f"🪄  PyThra Framework | Generated CSS for {len(all_rules)} active shared classes.")
+        if all_rules:
+            print(f"📋 CSS classes: {', '.join(css_details.keys())}")
         # print(f"Rules: {all_rules}")
         return "\n".join(all_rules)
 
@@ -1894,6 +1976,7 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
         try:
             with open(self.css_file_path, "w", encoding="utf-8") as c:
                 c.write(base_css + font_face_rules)
+                print(f"✅ Base CSS written to {self.css_file_path}")
             with open(self.html_file_path, "w", encoding="utf-8") as f:
                 f.write(
                     f"""<!DOCTYPE html>
@@ -1920,6 +2003,7 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
 </body>
 </html>"""
                 )
+                print(f"✅ HTML written to {self.html_file_path} with {len(initial_css_rules)} chars of inline CSS")
         except IOError as e:
             print(f"Error writing initial files: {e}")
 
