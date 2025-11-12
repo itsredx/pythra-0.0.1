@@ -1037,6 +1037,10 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
 
             action, target_id, data = patch.action, patch.html_id, patch.data
 
+            # Normalize missing data to an empty dict to avoid NoneType errors.
+            if data is None:
+                data = {}
+
             # --- THIS IS THE FIX ---
             # Create a sanitized version of the data for logging.
             sanitized_data_for_log = self._sanitize_for_json(data)
@@ -1048,12 +1052,15 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
             # print("Patch details: ",action, target_id, data)
 
             if action == "INSERT":
-                parent_id, html_stub, props, before_id = (
-                    data["parent_html_id"],
-                    data["html"],
-                    data["props"],
-                    data["before_id"],
-                )
+                # Defensive access: if data isn't shaped as expected, skip this patch
+                if not isinstance(data, dict):
+                    print(f"Warning: INSERT patch for {target_id} has no data; skipping.")
+                    continue
+
+                parent_id = data.get("parent_html_id")
+                html_stub = data.get("html", "")
+                props = data.get("props", {})
+                before_id = data.get("before_id")
                 # Escape the HTML for safe injection into a JS template literal
                 final_escaped_html = (
                     json.dumps(html_stub)[1:-1]
@@ -1065,6 +1072,17 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
                 )
                 command_js = f"""
                     var parentEl = document.getElementById('{parent_id}');
+                    // Fallback: if parent not found, try root-container, then body
+                    if (!parentEl) {{
+                        parentEl = document.getElementById('root-container');
+                        if (!parentEl) parentEl = document.body;
+                        if (parentEl && parentEl !== document.body) {{
+                            console.warn('INSERT: Parent element {parent_id} not found for {target_id}; falling back to root-container');
+                        }} else if (parentEl === document.body) {{
+                            console.warn('INSERT: Parent element {parent_id} not found for {target_id}; falling back to body');
+                        }}
+                    }}
+                    
                     if (parentEl) {{
                         try {{
                             // Create a temporary, disconnected container
@@ -1091,10 +1109,10 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
                             console.error('INSERT: DOM operation failed for {target_id}:', e);
                         }}
                     }} else {{
-                        console.error('INSERT: Parent element {parent_id} not found for {target_id}');
+                        console.error('INSERT: Could not find parent {parent_id} or fallback containers for {target_id}');
                     }}
                 """
-                props = data.get("props", {})
+                props = props or {}
 
                 # --- ADD THIS BLOCK ---
                 if props.get("init_gradient_clip_border"):
@@ -1280,7 +1298,8 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
                 command_js = f'var el = document.getElementById("{target_id}"); if(el) el.remove();'
             elif action == "UPDATE":
                 # Pass the element's ID to the prop updater, not the element itself
-                prop_update_js = self._generate_prop_update_js(target_id, data["props"])
+                props_for_update = data.get("props", {}) if isinstance(data, dict) else {}
+                prop_update_js = self._generate_prop_update_js(target_id, props_for_update)
                 if prop_update_js:
                     command_js = f"""
                         var elToUpdate = document.getElementById("{target_id}");
@@ -1297,7 +1316,8 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
 
 
             elif action == "MOVE":
-                parent_id, before_id = data["parent_html_id"], data["before_id"]
+                parent_id = data.get("parent_html_id") if isinstance(data, dict) else None
+                before_id = data.get("before_id") if isinstance(data, dict) else None
                 before_id_js = (
                     f"document.getElementById('{before_id}')" if before_id else "null"
                 )
@@ -1323,8 +1343,12 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
 
             # --- ADD THIS NEW BLOCK ---
             elif action == "REPLACE":
-                new_html_stub = data["new_html"]
-                new_props = data["new_props"]
+                if not isinstance(data, dict):
+                    print(f"Warning: REPLACE patch for {target_id} has no data; skipping.")
+                    continue
+
+                new_html_stub = data.get("new_html", "")
+                new_props = data.get("new_props", {})
                 
                 # Use a robust replacement method. `outerHTML` is simple and effective.
                 # It replaces the entire element, including the element itself.
@@ -1346,7 +1370,7 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
                 # needs a JS engine and initialize it.
                 
                 # Check for Dropdown
-                if new_props.get("init_dropdown"):
+                if isinstance(new_props, dict) and new_props.get("init_dropdown"):
                     options_json = json.dumps(new_props.get("dropdown_options", {}))
                     # The element ID is the same, but the element itself is new.
                     command_js += f"""
@@ -1402,7 +1426,7 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
                 loggable_data_str = json.dumps(make_loggable(data))
 
                 is_textfield_patch = False
-                if "props" in data and isinstance(data["props"], dict):
+                if isinstance(data, dict) and "props" in data and isinstance(data["props"], dict):
                     if "onChangedName" in data["props"]:
                         is_textfield_patch = True
 
@@ -1420,12 +1444,9 @@ if (typeof scalePathAbsoluteMLA !== 'undefined') window.scalePathAbsoluteMLA = s
         if not self.called:
             self.called = True
             print("🔧 PyThra Framework | Injecting JS utilities for the first time during reconciliation")
-            # Prepend the combined JS utilities to the list of commands.
-            # Get the required engines from the current reconciliation result
-            required_engines = self._analyze_required_js_engines(None, result)
-            js_utilities = self._get_js_utility_functions(required_engines)
-            print("🔧 PyThra Framework | Required JS engines for utilities:", required_engines)
-            print("🔧 PyThra Framework | Injecting JS utilities for engines:", js_utilities)
+            # We don't have the full ReconciliationResult here; just inject the base utilities.
+            js_utilities = self._get_js_utility_functions(set())
+            print("🔧 PyThra Framework | Injecting JS utilities for engines (base):", js_utilities[:120])
             js_commands.insert(0, js_utilities)
         else:
             print("🔧 PyThra Framework | Skipping JS utilities injection (already loaded)")

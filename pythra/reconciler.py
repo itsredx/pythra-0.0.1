@@ -272,6 +272,11 @@ class Reconciler:
             new_props = new_widget.render_props()
             self._collect_details(new_widget, new_props, result)
             
+            # CRITICAL: First, recursively remove all old descendants to avoid duplication
+            # This ensures that when we insert the new widget's children, the old ones
+            # are already cleaned up from the DOM tree.
+            self._remove_descendants_recursive(old_data.get("children_keys", []), previous_map, result)
+            
             # Insert the new node and its children into the map first.
             self._insert_node_recursive(new_widget, parent_html_id, parent_key, result, previous_map)
 
@@ -492,6 +497,39 @@ class Reconciler:
             # into the same parent DOM element. Otherwise, they are rendered inside the parent's new DOM element.
             child_parent_html_id = parent_html_id if widget_type_name in ["StatefulWidget", "StatelessWidget"] else html_id
             self._insert_node_recursive(child, child_parent_html_id, key, result, previous_map)
+
+    def _remove_descendants_recursive(
+        self,
+        children_keys: List[Union[Key, str]],
+        previous_map: Dict,
+        result: ReconciliationResult,
+    ):
+        """
+        Recursively removes all descendants (and their descendants) from the patch list.
+        This ensures that when we replace a widget, all its old children are properly
+        removed from the DOM before new children are inserted.
+        """
+        for key in children_keys:
+            if key not in previous_map:
+                continue
+            
+            old_data = previous_map[key]
+            
+            # First, recursively remove this node's children
+            self._remove_descendants_recursive(
+                old_data.get("children_keys", []),
+                previous_map,
+                result
+            )
+            
+            # Then, remove this node itself
+            result.patches.append(Patch(action="REMOVE", html_id=old_data["html_id"], data={}))
+            
+            # Dispose of stateful widgets
+            if isinstance(old_data.get("widget_instance"), StatefulWidget):
+                state = old_data["widget_instance"].get_state()
+                if state:
+                    state.dispose()
 
     def _diff_children_recursive(
         self,

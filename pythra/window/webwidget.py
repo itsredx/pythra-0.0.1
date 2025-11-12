@@ -370,6 +370,7 @@ class Api(QObject):
         if callback_name in self.callbacks:
             for x in args[0]: f"webwiget arg: {x}"
             self.callbacks[callback_name](*args)
+            print(f"Callback '{callback_name}' executed successfully.")
 
             return f"Callback '{callback_name}' executed successfully."
         else:
@@ -378,8 +379,9 @@ class Api(QObject):
     @Slot(str, result=str)
     def on_pressed_str(self, callback_name):
         if callback_name in self.callbacks:
-            # print("callbacks: ", self.callbacks)
+            print("callbacks: ", self.callbacks)
             self.callbacks[callback_name]()
+            print(f"Callback '{callback_name}' executed successfully.")
 
             return f"Callback '{callback_name}' executed successfully."
         else:
